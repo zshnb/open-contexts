@@ -99,3 +99,6 @@ open dist/OpenContexts.app
 
 </details>
 
+## 许可证
+
+本项目采用 [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)。允许在遵守许可证条款的前提下商业使用、修改和分发。
