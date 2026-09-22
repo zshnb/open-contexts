@@ -186,7 +186,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func configureMenuBar() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = NSImage(systemSymbolName: "rectangle.3.group", accessibilityDescription: "OpenContexts")
+        let image = NSImage(systemSymbolName: "rectangle.stack", accessibilityDescription: "OpenContexts")
+        image?.size = NSSize(width: 18, height: 18)
+        image?.isTemplate = true
+        item.button?.image = image
+        item.button?.setAccessibilityLabel("OpenContexts")
         let menu = NSMenu()
         menu.addItem(withTitle: "设置…", action: #selector(showSettings), keyEquivalent: ",").target = self
         menu.addItem(withTitle: "授予辅助功能权限…", action: #selector(requestAccessibility), keyEquivalent: "")
