@@ -170,7 +170,9 @@ public final class GroupStore: ObservableObject {
         if let documentURL = window.documentURL, !documentURL.isEmpty {
             return "document\u{0}\(window.appID)\u{0}\(documentURL)"
         }
-        guard !window.title.isEmpty else { return nil }
+        guard !window.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return "application\u{0}\(window.appID)"
+        }
         return "title\u{0}\(window.appID)\u{0}\(window.title)"
     }
 
@@ -178,22 +180,32 @@ public final class GroupStore: ObservableObject {
         if let documentURL = window.documentURL, !documentURL.isEmpty {
             return "document\u{0}\(window.appID)\u{0}\(documentURL)"
         }
-        guard !window.title.isEmpty else { return nil }
+        guard !window.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return "application\u{0}\(window.appID)"
+        }
         return "title\u{0}\(window.appID)\u{0}\(window.title)"
     }
 
     private func matchKeys(_ window: WindowInfo) -> [String] {
-        var keys = window.title.isEmpty ? [] : ["title\u{0}\(window.appID)\u{0}\(window.title)"]
+        var keys = window.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? []
+            : ["title\u{0}\(window.appID)\u{0}\(window.title)"]
         if let documentURL = window.documentURL, !documentURL.isEmpty {
             keys.append("document\u{0}\(window.appID)\u{0}\(documentURL)")
+        } else if keys.isEmpty {
+            keys.append("application\u{0}\(window.appID)")
         }
         return keys
     }
 
     private func matchKeys(_ window: SavedWindow) -> [String] {
-        var keys = window.title.isEmpty ? [] : ["title\u{0}\(window.appID)\u{0}\(window.title)"]
+        var keys = window.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? []
+            : ["title\u{0}\(window.appID)\u{0}\(window.title)"]
         if let documentURL = window.documentURL, !documentURL.isEmpty {
             keys.append("document\u{0}\(window.appID)\u{0}\(documentURL)")
+        } else if keys.isEmpty {
+            keys.append("application\u{0}\(window.appID)")
         }
         return keys
     }

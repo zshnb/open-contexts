@@ -71,34 +71,56 @@ final class GroupStoreTests: XCTestCase {
         XCTAssertEqual(savedAmbiguity.windows(in: GroupStore.ungroupedID).map(\.id), ["new"])
     }
 
-    func testUnrecoverableActiveWindowsStayUsableButDoNotPersist() throws {
+    func testUntitledWindowSurvivesDesktopSwitchAndRestart() throws {
         let fileURL = temporaryFileURL()
         let store = GroupStore(fileURL: fileURL)
         store.reconcile([
-            window("blank", title: ""),
-            window("same-1", title: "Same"),
-            window("same-2", title: "Same")
+            window("old", appID: "com.netease.163music", title: " \n"),
+            window("neighbor", title: "Editor")
         ])
-        XCTAssertEqual(Set(store.windows(in: GroupStore.ungroupedID).map(\.id)),
-                       ["blank", "same-1", "same-2"])
+        store.createGroup(name: "Music")
+        let music = try XCTUnwrap(store.groups.last?.id)
+        store.moveWindow(id: "old", to: music)
+        store.moveWindow(id: "neighbor", to: music)
+        XCTAssertEqual(try persistedWindows(at: fileURL, in: music).count, 2)
 
-        store.createGroup(name: "Temporary")
-        let temporary = try XCTUnwrap(store.groups.last?.id)
-        store.moveWindow(id: "blank", to: temporary)
-        XCTAssertEqual(store.windows(in: temporary).map(\.id), ["blank"])
-        XCTAssertTrue(try persistedWindows(at: fileURL, in: temporary).isEmpty)
-        XCTAssertTrue(try persistedWindows(at: fileURL, in: GroupStore.ungroupedID).isEmpty)
+        store.reconcile([])
+        store.reconcile([
+            window("new-neighbor", title: "Editor"),
+            window("new", appID: "com.netease.163music", title: "")
+        ])
+        XCTAssertEqual(store.windows(in: music).map(\.id), ["new", "new-neighbor"])
+        store.reconcile([])
 
         let restarted = GroupStore(fileURL: fileURL)
         restarted.reconcile([
-            window("new-blank", title: ""),
-            window("new-same-1", title: "Same"),
-            window("new-same-2", title: "Same")
+            window("restarted-neighbor", title: "Editor"),
+            window("restarted", appID: "com.netease.163music", title: "")
         ])
-        XCTAssertEqual(Set(restarted.windows(in: GroupStore.ungroupedID).map(\.id)),
-                       ["new-blank", "new-same-1", "new-same-2"])
-        restarted.reconcile([])
-        XCTAssertTrue(try persistedWindows(at: fileURL, in: GroupStore.ungroupedID).isEmpty)
+        XCTAssertEqual(restarted.windows(in: music).map(\.id), ["restarted", "restarted-neighbor"])
+    }
+
+    func testUntitledFallbackRejectsAmbiguousAndDifferentWindows() throws {
+        let fileURL = temporaryFileURL()
+        let original = GroupStore(fileURL: fileURL)
+        original.reconcile([window("old", title: "")])
+        original.createGroup(name: "Saved")
+        let saved = try XCTUnwrap(original.groups.last?.id)
+        original.moveWindow(id: "old", to: saved)
+
+        let differentApp = GroupStore(fileURL: fileURL)
+        differentApp.reconcile([window("other-app", appID: "com.example.Other", title: "")])
+        XCTAssertTrue(differentApp.windows(in: saved).isEmpty)
+
+        let named = GroupStore(fileURL: fileURL)
+        named.reconcile([window("named", title: "Named")])
+        XCTAssertTrue(named.windows(in: saved).isEmpty)
+
+        let ambiguous = GroupStore(fileURL: fileURL)
+        ambiguous.reconcile([window("blank-1", title: ""), window("blank-2", title: "")])
+        XCTAssertTrue(ambiguous.windows(in: saved).isEmpty)
+        XCTAssertEqual(Set(ambiguous.windows(in: GroupStore.ungroupedID).map(\.id)),
+                       ["blank-1", "blank-2"])
     }
 
     func testUniqueUngroupedWindowSurvivesRepeatedRestartsWithoutGrowth() throws {
@@ -139,7 +161,7 @@ final class GroupStoreTests: XCTestCase {
         XCTAssertEqual(Set(try persistedWindows(at: fileURL, in: GroupStore.ungroupedID)
             .compactMap { $0["id"] as? String }), ["doc-1", "doc-2"])
         XCTAssertEqual(try persistedWindows(at: fileURL, in: customID).compactMap { $0["id"] as? String },
-                       ["custom-document"])
+                       ["custom-blank", "custom-document"])
 
         store.reconcile([
             window("live-custom", title: "Changed", documentURL: "file:///custom"),
