@@ -59,6 +59,8 @@ public final class GroupStore: ObservableObject {
             updateSavedWindow(id: savedID, from: window)
         }
 
+        pruneUnrecoverableHistory()
+
         let newWindows = uniqueWindows.filter { savedIDByWindowID[$0.id] == nil }
         let liveKeyCounts = Dictionary(grouping: uniqueWindows.flatMap(matchKeys), by: { $0 }).mapValues(\.count)
         let savedWindows = windowsByGroup.values.flatMap { $0 }
@@ -172,6 +174,14 @@ public final class GroupStore: ObservableObject {
         return "title\u{0}\(window.appID)\u{0}\(window.title)"
     }
 
+    private func preferredMatchKey(_ window: SavedWindow) -> String? {
+        if let documentURL = window.documentURL, !documentURL.isEmpty {
+            return "document\u{0}\(window.appID)\u{0}\(documentURL)"
+        }
+        guard !window.title.isEmpty else { return nil }
+        return "title\u{0}\(window.appID)\u{0}\(window.title)"
+    }
+
     private func matchKeys(_ window: WindowInfo) -> [String] {
         var keys = window.title.isEmpty ? [] : ["title\u{0}\(window.appID)\u{0}\(window.title)"]
         if let documentURL = window.documentURL, !documentURL.isEmpty {
@@ -199,12 +209,37 @@ public final class GroupStore: ObservableObject {
     }
 
     private func changed() {
+        pruneUnrecoverableHistory()
         save()
         revision += 1
     }
 
+    @discardableResult
+    private func pruneUnrecoverableHistory() -> Bool {
+        let activeSavedIDs = Set(savedIDByWindowID.values)
+        let keyCounts = Dictionary(grouping: windowsByGroup.values.flatMap { $0 }.flatMap { saved in
+            matchKeys(saved).map { ($0, saved.id) }
+        }, by: { $0.0 }).mapValues(\.count)
+        var pruned = false
+
+        for group in groups {
+            let oldWindows = windowsByGroup[group.id, default: []]
+            let keptWindows = oldWindows.filter { saved in
+                if activeSavedIDs.contains(saved.id) { return true }
+                guard let key = preferredMatchKey(saved) else { return false }
+                return group.id != Self.ungroupedID || keyCounts[key] == 1
+            }
+            if keptWindows != oldWindows {
+                windowsByGroup[group.id] = keptWindows
+                pruned = true
+            }
+        }
+        return pruned
+    }
+
     private func load() {
         guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
+        var cleaned = false
         do {
             let state = try JSONDecoder().decode(State.self, from: Data(contentsOf: fileURL))
             let ids = state.groups.map(\.id)
@@ -218,10 +253,13 @@ public final class GroupStore: ObservableObject {
             groups = state.groups
             windowsByGroup = state.windowsByGroup
             for id in ids where windowsByGroup[id] == nil { windowsByGroup[id] = [] }
+            cleaned = pruneUnrecoverableHistory()
         } catch {
             persistenceBlocked = true
             persistenceError = "无法读取分组数据：\(error.localizedDescription)"
+            return
         }
+        if cleaned { save() }
     }
 
     private func save() {
@@ -229,7 +267,18 @@ public final class GroupStore: ObservableObject {
         do {
             try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(),
                                                     withIntermediateDirectories: true)
-            let data = try JSONEncoder().encode(State(groups: groups, windowsByGroup: windowsByGroup))
+            let allWindows = windowsByGroup.values.flatMap { $0 }
+            let keyCounts = Dictionary(grouping: allWindows.flatMap { saved in
+                matchKeys(saved).map { ($0, saved.id) }
+            }, by: { $0.0 }).mapValues(\.count)
+            let persistedWindows = Dictionary(uniqueKeysWithValues: groups.map { group in
+                let windows = windowsByGroup[group.id, default: []].filter { saved in
+                    guard let key = preferredMatchKey(saved) else { return false }
+                    return group.id != Self.ungroupedID || keyCounts[key] == 1
+                }
+                return (group.id, windows)
+            })
+            let data = try JSONEncoder().encode(State(groups: groups, windowsByGroup: persistedWindows))
             try data.write(to: fileURL, options: .atomic)
             persistenceError = nil
         } catch {

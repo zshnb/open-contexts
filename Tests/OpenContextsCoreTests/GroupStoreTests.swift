@@ -71,6 +71,85 @@ final class GroupStoreTests: XCTestCase {
         XCTAssertEqual(savedAmbiguity.windows(in: GroupStore.ungroupedID).map(\.id), ["new"])
     }
 
+    func testUnrecoverableActiveWindowsStayUsableButDoNotPersist() throws {
+        let fileURL = temporaryFileURL()
+        let store = GroupStore(fileURL: fileURL)
+        store.reconcile([
+            window("blank", title: ""),
+            window("same-1", title: "Same"),
+            window("same-2", title: "Same")
+        ])
+        XCTAssertEqual(Set(store.windows(in: GroupStore.ungroupedID).map(\.id)),
+                       ["blank", "same-1", "same-2"])
+
+        store.createGroup(name: "Temporary")
+        let temporary = try XCTUnwrap(store.groups.last?.id)
+        store.moveWindow(id: "blank", to: temporary)
+        XCTAssertEqual(store.windows(in: temporary).map(\.id), ["blank"])
+        XCTAssertTrue(try persistedWindows(at: fileURL, in: temporary).isEmpty)
+        XCTAssertTrue(try persistedWindows(at: fileURL, in: GroupStore.ungroupedID).isEmpty)
+
+        let restarted = GroupStore(fileURL: fileURL)
+        restarted.reconcile([
+            window("new-blank", title: ""),
+            window("new-same-1", title: "Same"),
+            window("new-same-2", title: "Same")
+        ])
+        XCTAssertEqual(Set(restarted.windows(in: GroupStore.ungroupedID).map(\.id)),
+                       ["new-blank", "new-same-1", "new-same-2"])
+        restarted.reconcile([])
+        XCTAssertTrue(try persistedWindows(at: fileURL, in: GroupStore.ungroupedID).isEmpty)
+    }
+
+    func testUniqueUngroupedWindowSurvivesRepeatedRestartsWithoutGrowth() throws {
+        let fileURL = temporaryFileURL()
+        for index in 0..<3 {
+            let store = GroupStore(fileURL: fileURL)
+            let id = "window-\(index)"
+            store.reconcile([window(id, title: "Unique")])
+            XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), [id])
+            store.reconcile([])
+            XCTAssertEqual(try persistedWindows(at: fileURL, in: GroupStore.ungroupedID).count, 1)
+        }
+    }
+
+    func testLoadCleansLegacyJunkWithoutDeletingDistinctDocuments() throws {
+        let fileURL = temporaryFileURL()
+        let customID = "custom"
+        try writeState([
+            "groups": [
+                ["id": GroupStore.ungroupedID, "name": "未分组"],
+                ["id": customID, "name": "Docs"]
+            ],
+            "windowsByGroup": [
+                GroupStore.ungroupedID: [
+                    savedWindow("blank", title: ""),
+                    savedWindow("title-conflict", title: "Fallback"),
+                    savedWindow("doc-1", title: "Same", documentURL: "file:///one"),
+                    savedWindow("doc-2", title: "Same", documentURL: "file:///two")
+                ],
+                customID: [
+                    savedWindow("custom-blank", title: ""),
+                    savedWindow("custom-document", title: "Fallback", documentURL: "file:///custom")
+                ]
+            ]
+        ], to: fileURL)
+
+        let store = GroupStore(fileURL: fileURL)
+        XCTAssertEqual(Set(try persistedWindows(at: fileURL, in: GroupStore.ungroupedID)
+            .compactMap { $0["id"] as? String }), ["doc-1", "doc-2"])
+        XCTAssertEqual(try persistedWindows(at: fileURL, in: customID).compactMap { $0["id"] as? String },
+                       ["custom-document"])
+
+        store.reconcile([
+            window("live-custom", title: "Changed", documentURL: "file:///custom"),
+            window("live-1", title: "Same", documentURL: "file:///one"),
+            window("live-2", title: "Same", documentURL: "file:///two")
+        ])
+        XCTAssertEqual(store.windows(in: customID).map(\.id), ["live-custom"])
+        XCTAssertEqual(Set(store.windows(in: GroupStore.ungroupedID).map(\.id)), ["live-1", "live-2"])
+    }
+
     func testCorruptPersistenceIsReportedAndNeverOverwritten() throws {
         let fileURL = temporaryFileURL()
         let corrupt = Data("not json".utf8)
@@ -132,6 +211,24 @@ final class GroupStoreTests: XCTestCase {
         FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
             .appendingPathComponent("groups.json")
+    }
+
+    private func persistedWindows(at fileURL: URL, in groupID: String) throws -> [[String: Any]] {
+        let object = try JSONSerialization.jsonObject(with: Data(contentsOf: fileURL))
+        let root = try XCTUnwrap(object as? [String: Any])
+        let windowsByGroup = try XCTUnwrap(root["windowsByGroup"] as? [String: Any])
+        return try XCTUnwrap(windowsByGroup[groupID] as? [[String: Any]])
+    }
+
+    private func savedWindow(_ id: String, title: String, documentURL: String? = nil) -> [String: Any] {
+        ["id": id, "appID": "com.example.Editor", "title": title,
+         "documentURL": documentURL ?? NSNull()]
+    }
+
+    private func writeState(_ state: [String: Any], to fileURL: URL) throws {
+        try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(),
+                                                withIntermediateDirectories: true)
+        try JSONSerialization.data(withJSONObject: state).write(to: fileURL)
     }
 
     private func window(_ id: String, appID: String = "com.example.Editor",
