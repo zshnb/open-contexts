@@ -902,6 +902,7 @@ private final class SidebarItemView: NSView, NSDraggingSource {
         case .window: .systemFont(ofSize: 13, weight: .regular)
         }
         titleLabel.lineBreakMode = .byTruncatingTail
+        titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(titleLabel)
 
@@ -1138,6 +1139,7 @@ private final class SwitcherRow: NSButton {
         titleLabel.font = .systemFont(ofSize: 13, weight: selected ? .medium : .regular)
         titleLabel.textColor = textColor
         titleLabel.lineBreakMode = .byTruncatingTail
+        titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         iconView.imageScaling = .scaleProportionallyDown
         [appLabel, iconView, titleLabel].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
@@ -1352,7 +1354,8 @@ enum PanelSmokeCheck {
         sidebar.smokeStopHoverPolling()
         let windows = (0..<200).map {
             WindowInfo(id: "smoke-\($0)", appID: "smoke", appName: "Smoke",
-                       title: "Window \($0)", processID: ProcessInfo.processInfo.processIdentifier)
+                       title: "Window \($0) " + String(repeating: "Long title ", count: 40),
+                       processID: ProcessInfo.processInfo.processIdentifier)
         }
         let groups = [WindowGroup(id: GroupStore.ungroupedID, name: "未分组")]
         let area = screen.visibleFrame
