@@ -13,12 +13,21 @@ final class WindowEligibilityTests: XCTestCase {
         XCTAssertTrue(include(.attributes(role: "AXWindow", subrole: "AXDialog"), isModal: true))
         XCTAssertTrue(include(.attributes(role: "AXWindow", subrole: "AXSystemDialog"), isModal: true))
         XCTAssertTrue(include(.attributes(role: "AXWindow", subrole: "AXDialog"),
-                              taskCapability: .supported))
+                              hasTitle: true, taskCapability: .supported))
         XCTAssertTrue(include(.attributes(role: "AXWindow", subrole: "AXUnknown"),
                               taskCapability: .supported))
         XCTAssertFalse(include(.attributes(role: "AXWindow", subrole: "AXFloatingWindow")))
         XCTAssertFalse(include(.attributes(role: "AXPopover", subrole: nil)))
         XCTAssertFalse(include(.attributes(role: "AXWindow", subrole: nil)))
+    }
+
+    func testBlankNonModalDialogIsExcludedDespiteTaskCapability() {
+        let dialog = WindowCandidateState.attributes(role: "AXWindow", subrole: "AXDialog")
+        XCTAssertFalse(include(dialog, taskCapability: .supported))
+        XCTAssertTrue(include(dialog, hasTitle: true, taskCapability: .supported))
+        XCTAssertTrue(include(dialog, hasDocument: true, taskCapability: .supported))
+        XCTAssertTrue(include(dialog, isModal: true, taskCapability: .supported))
+        XCTAssertTrue(include(dialog, modalStatusUnknown: true, taskCapability: .supported))
     }
 
     func testNonModalSystemDialogIsExcludedDespiteTaskCapability() {
@@ -39,7 +48,10 @@ final class WindowEligibilityTests: XCTestCase {
         XCTAssertTrue(include(.missingRole, previouslyTracked: true))
         XCTAssertFalse(include(.attributeReadFailed, previouslyTracked: false))
         XCTAssertFalse(include(.notListed, previouslyTracked: true))
+        XCTAssertFalse(include(.attributes(role: "AXWindow", subrole: "AXDialog"),
+                               taskCapability: .readFailed, previouslyTracked: true))
         XCTAssertTrue(include(.attributes(role: "AXWindow", subrole: "AXDialog"),
+                              modalStatusUnknown: true,
                               taskCapability: .readFailed, previouslyTracked: true))
         XCTAssertFalse(include(.attributes(role: "AXWindow", subrole: "AXDialog"),
                                hasTitle: true, previouslyTracked: true))

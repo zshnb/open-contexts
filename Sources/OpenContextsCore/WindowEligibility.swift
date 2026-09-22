@@ -43,6 +43,10 @@ public enum WindowEligibilityPolicy {
         if state == .attributes(role: "AXWindow", subrole: "AXSystemDialog") {
             return modalStatusUnknown && previouslyTracked
         }
+        if state == .attributes(role: "AXWindow", subrole: "AXDialog"),
+           !modalStatusUnknown, !isModal, !hasTitle, !hasDocument {
+            return false
+        }
         switch taskCapability {
         case .supported: return true
         case .readFailed: return previouslyTracked

@@ -361,7 +361,8 @@ final class WindowService: ObservableObject {
                     modalStatusUnknown = false
                 case .noValue:
                     isModal = false
-                    modalStatusUnknown = roleState == .attributes(role: "AXWindow", subrole: "AXSystemDialog")
+                    modalStatusUnknown = roleState == .attributes(role: "AXWindow", subrole: "AXDialog")
+                        || roleState == .attributes(role: "AXWindow", subrole: "AXSystemDialog")
                 case .failure(.invalidUIElement):
                     continue
                 case .failure:
