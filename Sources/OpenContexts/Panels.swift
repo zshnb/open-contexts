@@ -25,6 +25,7 @@ final class SidebarPanel: NSPanel {
     private var alwaysVisible = false
     private var fullscreen = false
     private var position: SidebarPosition = .right
+    private var itemDisplayMode: SidebarItemDisplayMode = .iconAndTitle
     private var hoverState = SidebarHoverState()
     private var hoverTimer: Timer?
     private var dragging = false
@@ -34,7 +35,9 @@ final class SidebarPanel: NSPanel {
     private var renderedGroups: [WindowGroup] = []
     private var renderedWindows: [String: [WindowInfo]] = [:]
     private var renderedPosition: SidebarPosition = .right
+    private var renderedItemDisplayMode: SidebarItemDisplayMode = .iconAndTitle
     private var naturalContentHeight: CGFloat = 52
+    private var naturalContentWidth: CGFloat = 52
     private var pendingUpdate: PendingSidebarUpdate?
     private var iconRetryTasks: [String: Task<Void, Never>] = [:]
     private var iconRetrySchedules: [String: IconRetrySchedule] = [:]
@@ -42,6 +45,7 @@ final class SidebarPanel: NSPanel {
     private var renderedBadges: [String: String] = [:]
     private var positionConstraints: [NSLayoutConstraint] = []
     private var stackCrossAxisConstraint: NSLayoutConstraint?
+    private var bottomItemWidthConstraints: [NSLayoutConstraint] = []
     private var previewDrop: SidebarDrop?
 
     private struct PendingSidebarUpdate {
@@ -50,6 +54,7 @@ final class SidebarPanel: NSPanel {
         let alwaysVisible: Bool
         let fullscreen: Bool
         let position: SidebarPosition
+        let itemDisplayMode: SidebarItemDisplayMode
     }
 
     private enum SidebarDrop: Equatable {
@@ -88,6 +93,7 @@ final class SidebarPanel: NSPanel {
         effect.translatesAutoresizingMaskIntoConstraints = false
 
         scroll.drawsBackground = false
+        scroll.scrollerStyle = .overlay
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
         scroll.translatesAutoresizingMaskIntoConstraints = false
@@ -134,25 +140,34 @@ final class SidebarPanel: NSPanel {
     }
 
     func update(groups: [WindowGroup], windowsByGroup: [String: [WindowInfo]],
-                alwaysVisible: Bool, fullscreen: Bool, position: SidebarPosition = .right) {
+                alwaysVisible: Bool, fullscreen: Bool, position: SidebarPosition = .right,
+                itemDisplayMode: SidebarItemDisplayMode = .iconAndTitle) {
         let presentationChanged = self.alwaysVisible != alwaysVisible || self.fullscreen != fullscreen
         self.alwaysVisible = alwaysVisible
         self.fullscreen = fullscreen
         guard !dragging else {
             pendingUpdate = PendingSidebarUpdate(groups: groups, windowsByGroup: windowsByGroup,
                                                  alwaysVisible: alwaysVisible, fullscreen: fullscreen,
-                                                 position: position)
+                                                 position: position, itemDisplayMode: itemDisplayMode)
             layoutPanel(animated: false)
             return
         }
         self.position = position
+        self.itemDisplayMode = itemDisplayMode
         let positionChanged = renderedPosition != position
-        if positionChanged {
+        let displayModeChanged = renderedItemDisplayMode != itemDisplayMode
+        if positionChanged || displayModeChanged {
             renderedPosition = position
             configurePosition()
         }
-        guard groups != renderedGroups || windowsByGroup != renderedWindows || positionChanged else {
-            if presentationChanged { layoutPanel(animated: false) }
+        if displayModeChanged { renderedItemDisplayMode = itemDisplayMode }
+        guard groups != renderedGroups || windowsByGroup != renderedWindows
+                || positionChanged || displayModeChanged else {
+            if presentationChanged {
+                if position == .bottom { configureBottomItemWidths() }
+                layoutPanel(animated: false)
+                layoutDocumentView()
+            }
             return
         }
         renderedGroups = groups
@@ -163,6 +178,8 @@ final class SidebarPanel: NSPanel {
         }
         iconRetrySchedules = iconRetrySchedules.filter { activeIconKeys.contains($0.key) }
         iconCache = iconCache.filter { activeIconKeys.contains($0.key) }
+        NSLayoutConstraint.deactivate(bottomItemWidthConstraints)
+        bottomItemWidthConstraints = []
         stack.arrangedSubviews.forEach {
             stack.removeArrangedSubview($0)
             $0.removeFromSuperview()
@@ -200,6 +217,7 @@ final class SidebarPanel: NSPanel {
                     iconKey: iconKey,
                     badgeKey: window.appID,
                     badge: renderedBadges[window.appID],
+                    showsTitle: itemDisplayMode == .iconAndTitle,
                     style: .window(id: window.id, groupID: group.id),
                     onClick: { [weak self] in self?.onActivate(window.id) },
                     onDraggingChanged: { [weak self] in self?.sourceDraggingChanged($0) }
@@ -214,14 +232,19 @@ final class SidebarPanel: NSPanel {
         }
         let create = CallbackButton(title: "＋ 新建分组") { [weak self] in self?.createGroup() }
         stack.addArrangedSubview(create)
-        create.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -16).isActive = true
+        constrainAuxiliaryItem(create)
         let endDrop = GroupEndDropView()
         stack.addArrangedSubview(endDrop)
-        endDrop.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -16).isActive = true
-        naturalContentHeight = Self.contentHeight(groupCount: groups.count,
-                                                  windowCount: groups.reduce(0) {
-            $0 + windowsByGroup[$1.id, default: []].count
-        })
+        constrainAuxiliaryItem(endDrop)
+        if position == .bottom {
+            naturalContentHeight = 44
+            configureBottomItemWidths()
+        } else {
+            naturalContentHeight = Self.contentHeight(groupCount: groups.count,
+                                                      windowCount: groups.reduce(0) {
+                $0 + windowsByGroup[$1.id, default: []].count
+            })
+        }
         layoutPanel(animated: false)
         layoutDocumentView()
     }
@@ -270,6 +293,7 @@ final class SidebarPanel: NSPanel {
 
     func move(to screen: NSScreen) {
         displayScreen = screen
+        if position == .bottom { configureBottomItemWidths() }
         layoutPanel(animated: false)
         layoutDocumentView()
     }
@@ -294,16 +318,24 @@ final class SidebarPanel: NSPanel {
         let area = fullscreen ? displayScreen.frame : displayScreen.visibleFrame
         let height = min(naturalContentHeight, area.height)
         let y = area.midY - height / 2
+        let expandedWidth = itemDisplayMode == .icon ? CGFloat(44) : sidebarWidth
         switch position {
         case .left:
             return (
                 NSRect(x: area.minX, y: y, width: edgeWidth, height: height),
-                NSRect(x: area.minX, y: y, width: sidebarWidth, height: height)
+                NSRect(x: area.minX, y: y, width: expandedWidth, height: height)
             )
         case .right:
             return (
                 NSRect(x: area.maxX - edgeWidth, y: y, width: edgeWidth, height: height),
-                NSRect(x: area.maxX - sidebarWidth, y: y, width: sidebarWidth, height: height)
+                NSRect(x: area.maxX - expandedWidth, y: y, width: expandedWidth, height: height)
+            )
+        case .bottom:
+            let width = min(naturalContentWidth, area.width)
+            let x = area.midX - width / 2
+            return (
+                NSRect(x: x, y: area.minY, width: width, height: edgeWidth),
+                NSRect(x: x, y: area.minY, width: width, height: height)
             )
         }
     }
@@ -352,7 +384,8 @@ final class SidebarPanel: NSPanel {
         }
         let next = pendingUpdate ?? PendingSidebarUpdate(
             groups: renderedGroups, windowsByGroup: renderedWindows,
-            alwaysVisible: alwaysVisible, fullscreen: fullscreen, position: position
+            alwaysVisible: alwaysVisible, fullscreen: fullscreen, position: position,
+            itemDisplayMode: itemDisplayMode
         )
         self.pendingUpdate = nil
         previewDrop = nil
@@ -361,7 +394,7 @@ final class SidebarPanel: NSPanel {
         renderedWindows = [:]
         update(groups: next.groups, windowsByGroup: next.windowsByGroup,
                alwaysVisible: next.alwaysVisible, fullscreen: next.fullscreen,
-               position: next.position)
+               position: next.position, itemDisplayMode: next.itemDisplayMode)
     }
 
     private func restorePreviewOrder() {
@@ -407,14 +440,15 @@ final class SidebarPanel: NSPanel {
 
     private func proposedDrop(_ sender: NSDraggingInfo) -> SidebarDrop? {
         let pasteboard = sender.draggingPasteboard
-        let y = stack.convert(sender.draggingLocation, from: nil).y
+        let point = stack.convert(sender.draggingLocation, from: nil)
+        let coordinate = position == .bottom ? point.x : point.y
         if let id = pasteboard.string(forType: .openContextsWindow),
-           let destination = windowDestination(at: y) {
+           let destination = windowDestination(at: coordinate) {
             return normalizedWindowDrop(id: id, destination: destination)
         }
         if let id = pasteboard.string(forType: .openContextsGroup) {
             guard id != GroupStore.ungroupedID else { return nil }
-            let beforeGroupID = groupDestination(at: y)
+            let beforeGroupID = groupDestination(at: coordinate)
             guard beforeGroupID != GroupStore.ungroupedID else { return nil }
             if beforeGroupID == id {
                 guard case .group(let previewID, _)? = previewDrop, previewID == id else { return nil }
@@ -436,18 +470,18 @@ final class SidebarPanel: NSPanel {
                        beforeWindowID: destination.beforeWindowID)
     }
 
-    private func windowDestination(at y: CGFloat) -> (groupID: String, beforeWindowID: String?)? {
+    private func windowDestination(at coordinate: CGFloat) -> (groupID: String, beforeWindowID: String?)? {
         let rows = sidebarRows
         var currentGroup: String?
         for (index, row) in rows.enumerated() {
             switch row.style {
             case .group(let id):
                 currentGroup = id
-                if y <= row.frame.maxY { return (id, nil) }
+                if coordinate <= primaryMax(row.frame) { return (id, nil) }
             case .window(let id, _):
                 guard let currentGroup else { continue }
-                if y <= row.frame.midY { return (currentGroup, id) }
-                if y <= row.frame.maxY {
+                if coordinate <= primaryMid(row.frame) { return (currentGroup, id) }
+                if coordinate <= primaryMax(row.frame) {
                     let nextID: String? = rows.dropFirst(index + 1).prefix { row in
                         if case .window = row.style { return true }
                         return false
@@ -462,11 +496,19 @@ final class SidebarPanel: NSPanel {
         return currentGroup.map { ($0, nil) }
     }
 
-    private func groupDestination(at y: CGFloat) -> String? {
+    private func groupDestination(at coordinate: CGFloat) -> String? {
         for row in sidebarRows {
-            if case .group(let id) = row.style, y <= row.frame.midY { return id }
+            if case .group(let id) = row.style, coordinate <= primaryMid(row.frame) { return id }
         }
         return nil
+    }
+
+    private func primaryMid(_ frame: NSRect) -> CGFloat {
+        position == .bottom ? frame.midX : frame.midY
+    }
+
+    private func primaryMax(_ frame: NSRect) -> CGFloat {
+        position == .bottom ? frame.maxX : frame.maxY
     }
 
     private var sidebarRows: [SidebarItemView] {
@@ -531,37 +573,104 @@ final class SidebarPanel: NSPanel {
     private func configurePosition() {
         NSLayoutConstraint.deactivate(positionConstraints)
         stackCrossAxisConstraint?.isActive = false
-        stack.orientation = .vertical
-        stack.alignment = .leading
+        let bottom = position == .bottom
+        stack.orientation = bottom ? .horizontal : .vertical
+        stack.alignment = bottom ? .centerY : .leading
         stack.spacing = 0
         stack.edgeInsets = NSEdgeInsets(top: 6, left: 4, bottom: 6, right: 4)
-        effect.layer?.maskedCorners = position == .left
-            ? [.layerMaxXMinYCorner, .layerMaxXMaxYCorner]
-            : [.layerMinXMinYCorner, .layerMinXMaxYCorner]
-        scroll.hasVerticalScroller = true
+        switch position {
+        case .left:
+            effect.layer?.maskedCorners = [.layerMaxXMinYCorner, .layerMaxXMaxYCorner]
+        case .right:
+            effect.layer?.maskedCorners = [.layerMinXMinYCorner, .layerMinXMaxYCorner]
+        case .bottom:
+            effect.layer?.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        }
+        scroll.hasVerticalScroller = !bottom
         scroll.hasHorizontalScroller = false
-        stackCrossAxisConstraint = stack.widthAnchor.constraint(equalTo: scroll.contentView.widthAnchor)
-        positionConstraints = [
-            effect.widthAnchor.constraint(equalToConstant: sidebarWidth),
-            effect.topAnchor.constraint(equalTo: rootView.topAnchor),
-            effect.bottomAnchor.constraint(equalTo: rootView.bottomAnchor),
-            position == .left
-                ? effect.leadingAnchor.constraint(equalTo: rootView.leadingAnchor)
-                : effect.trailingAnchor.constraint(equalTo: rootView.trailingAnchor)
-        ]
+        scroll.horizontalScrollElasticity = .none
+        scroll.verticalScrollElasticity = bottom ? .none : .automatic
+        stackCrossAxisConstraint = bottom
+            ? stack.heightAnchor.constraint(equalTo: scroll.contentView.heightAnchor)
+            : stack.widthAnchor.constraint(equalTo: scroll.contentView.widthAnchor)
+        if bottom {
+            positionConstraints = [
+                effect.leadingAnchor.constraint(equalTo: rootView.leadingAnchor),
+                effect.trailingAnchor.constraint(equalTo: rootView.trailingAnchor),
+                effect.topAnchor.constraint(equalTo: rootView.topAnchor),
+                effect.bottomAnchor.constraint(equalTo: rootView.bottomAnchor)
+            ]
+        } else {
+            positionConstraints = [
+                effect.widthAnchor.constraint(equalToConstant: itemDisplayMode == .icon ? 44 : sidebarWidth),
+                effect.topAnchor.constraint(equalTo: rootView.topAnchor),
+                effect.bottomAnchor.constraint(equalTo: rootView.bottomAnchor),
+                position == .left
+                    ? effect.leadingAnchor.constraint(equalTo: rootView.leadingAnchor)
+                    : effect.trailingAnchor.constraint(equalTo: rootView.trailingAnchor)
+            ]
+        }
         NSLayoutConstraint.activate(positionConstraints)
         stackCrossAxisConstraint?.isActive = true
     }
 
     private func constrainSidebarItem(_ view: NSView) {
-        view.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -8).isActive = true
+        if position != .bottom {
+            view.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -8).isActive = true
+        }
+    }
+
+    private func constrainAuxiliaryItem(_ view: NSView) {
+        if position != .bottom {
+            view.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -16).isActive = true
+        }
+    }
+
+    private func configureBottomItemWidths() {
+        guard position == .bottom else { return }
+        NSLayoutConstraint.deactivate(bottomItemWidthConstraints)
+        let area = fullscreen ? displayScreen.frame : displayScreen.visibleFrame
+        let contentWidth = max(0, area.width - stack.edgeInsets.left - stack.edgeInsets.right)
+        let windows = sidebarRows.filter { if case .window = $0.style { return true }; return false }
+        let fixedViews = stack.arrangedSubviews.filter { view in
+            guard let row = view as? SidebarItemView else { return true }
+            if case .window = row.style { return false }
+            return true
+        }
+        let desiredFixedWidths = fixedViews.map {
+            $0 is GroupEndDropView ? 12 : min(sidebarWidth, max(0, $0.fittingSize.width))
+        }
+        let desiredFixedTotal = desiredFixedWidths.reduce(0, +)
+        let itemCount = fixedViews.count + windows.count
+        let fixedBudget = windows.isEmpty || itemCount == 0 ? contentWidth
+            : contentWidth * CGFloat(fixedViews.count) / CGFloat(itemCount)
+        let fixedScale = desiredFixedTotal > fixedBudget && desiredFixedTotal > 0
+            ? fixedBudget / desiredFixedTotal : 1
+        let fixedWidths = desiredFixedWidths.map { $0 * fixedScale }
+        let fixedTotal = fixedWidths.reduce(0, +)
+        let maximumWindowWidth: CGFloat = itemDisplayMode == .icon ? 32 : sidebarWidth
+        let windowWidth = windows.isEmpty ? 0
+            : min(maximumWindowWidth, max(0, contentWidth - fixedTotal) / CGFloat(windows.count))
+        bottomItemWidthConstraints = zip(fixedViews, fixedWidths).map {
+            $0.0.widthAnchor.constraint(equalToConstant: $0.1)
+        } + windows.map { $0.widthAnchor.constraint(equalToConstant: windowWidth) }
+        NSLayoutConstraint.activate(bottomItemWidthConstraints)
+        naturalContentWidth = min(area.width, stack.edgeInsets.left + stack.edgeInsets.right
+                                  + fixedTotal + windowWidth * CGFloat(windows.count))
     }
 
     private func layoutDocumentView() {
         rootView.layoutSubtreeIfNeeded()
         scroll.layoutSubtreeIfNeeded()
-        stack.setFrameSize(NSSize(width: max(scroll.contentSize.width, 1),
-                                  height: max(naturalContentHeight, scroll.contentSize.height)))
+        if position == .bottom {
+            scroll.contentView.scroll(to: .zero)
+            scroll.reflectScrolledClipView(scroll.contentView)
+            stack.setFrameSize(NSSize(width: naturalContentWidth,
+                                      height: max(scroll.contentSize.height, 1)))
+        } else {
+            stack.setFrameSize(NSSize(width: max(scroll.contentSize.width, 1),
+                                      height: max(naturalContentHeight, scroll.contentSize.height)))
+        }
         stack.layoutSubtreeIfNeeded()
     }
 
@@ -611,8 +720,40 @@ final class SidebarPanel: NSPanel {
     fileprivate var smokePositionLayoutIsValid: Bool {
         positionConstraints.count == 4 && positionConstraints.allSatisfy(\.isActive)
             && stackCrossAxisConstraint?.isActive == true
-            && stack.orientation == .vertical
+            && stack.orientation == (position == .bottom ? .horizontal : .vertical)
             && stack.spacing == 0
+    }
+
+    fileprivate var smokeTitleVisibilityIsValid: Bool {
+        let windows = sidebarRows.filter { if case .window = $0.style { return true }; return false }
+        return !windows.isEmpty && windows.allSatisfy(\.smokeTitleVisibilityIsValid)
+    }
+
+    fileprivate func smokeWindowItemsAreValid(showsTitle: Bool, maximumWidth: CGFloat) -> Bool {
+        let windows = sidebarRows.filter { if case .window = $0.style { return true }; return false }
+        return !windows.isEmpty && windows.allSatisfy {
+            $0.smokeShowsTitle == showsTitle && $0.frame.width <= maximumWidth + 0.5
+        }
+    }
+
+    fileprivate func smokeWindowWidthIs(_ expected: CGFloat) -> Bool {
+        let windows = sidebarRows.filter { if case .window = $0.style { return true }; return false }
+        return !windows.isEmpty && windows.allSatisfy { abs($0.frame.width - expected) <= 0.5 }
+    }
+
+    fileprivate func smokeBottomItemsFit(windowCount: Int, maximumWindowWidth: CGFloat) -> Bool {
+        guard position == .bottom else { return false }
+        let windows = sidebarRows.filter { if case .window = $0.style { return true }; return false }
+        guard windows.count == windowCount, let firstWidth = windows.first?.frame.width,
+              firstWidth > 0, windows.allSatisfy({ abs($0.frame.width - firstWidth) <= 0.5
+                  && $0.frame.width <= maximumWindowWidth + 0.5 }) else { return false }
+        let viewport = scroll.contentView.bounds
+        return !scroll.hasHorizontalScroller && !scroll.hasVerticalScroller
+            && abs(viewport.minX) < 0.5
+            && stack.frame.width <= scroll.contentSize.width + 0.5
+            && stack.arrangedSubviews.allSatisfy {
+                $0.frame.minX >= -0.5 && $0.frame.maxX <= stack.bounds.maxX + 0.5
+            }
     }
 
     fileprivate var smokeNaturalContentHeight: CGFloat { naturalContentHeight }
@@ -657,7 +798,12 @@ final class SidebarPanel: NSPanel {
     }
     fileprivate func smokeEndDrag() { sourceDraggingChanged(false) }
     fileprivate var smokeHasOverflow: Bool {
-        naturalContentHeight > scroll.contentSize.height && stack.frame.height > scroll.contentSize.height
+        position == .bottom
+            ? naturalContentWidth > scroll.contentSize.width && stack.frame.width > scroll.contentSize.width
+            : naturalContentHeight > scroll.contentSize.height && stack.frame.height > scroll.contentSize.height
+    }
+    fileprivate var smokeVerticalScrollerIsEnabled: Bool {
+        position != .bottom && scroll.hasVerticalScroller
     }
 
     fileprivate func smokeScrollLastWindowIntoView() -> Bool {
@@ -694,9 +840,11 @@ final class SidebarPanel: NSPanel {
     fileprivate var smokeSidebarFrames: (edge: NSRect, expanded: NSRect) { sidebarFrames() }
     fileprivate var smokeIsHidden: Bool { !isVisible }
     fileprivate var smokeRoundedCornersAreValid: Bool {
-        let expected: CACornerMask = position == .left
-            ? [.layerMaxXMinYCorner, .layerMaxXMaxYCorner]
-            : [.layerMinXMinYCorner, .layerMinXMaxYCorner]
+        let expected: CACornerMask = switch position {
+        case .left: [.layerMaxXMinYCorner, .layerMaxXMaxYCorner]
+        case .right: [.layerMinXMinYCorner, .layerMinXMaxYCorner]
+        case .bottom: [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        }
         return effect.layer?.maskedCorners == expected
     }
 
@@ -708,7 +856,12 @@ final class SidebarPanel: NSPanel {
 
     fileprivate var smokeLayoutDescription: String {
         let heights = stack.arrangedSubviews.compactMap { ($0 as? SidebarItemView)?.frame.height }
-        return "position=\(position.rawValue) frame=\(frame) natural=\(naturalContentHeight) clip=\(scroll.contentSize) stack=\(stack.frame) rows=\(heights) constraints=\(positionConstraints.map(\.isActive)) cross=\(stackCrossAxisConstraint?.isActive == true)"
+        let windowWidths = sidebarRows.compactMap { row -> CGFloat? in
+            if case .window = row.style { return row.frame.width }
+            return nil
+        }
+        let itemBounds = stack.arrangedSubviews.reduce(CGRect.null) { $0.union($1.frame) }
+        return "position=\(position.rawValue) frame=\(frame) natural=\(naturalContentWidth)x\(naturalContentHeight) clip=\(scroll.contentView.bounds) stack=\(stack.frame) items=\(itemBounds) windows=\(windowWidths.min() ?? -1)...\(windowWidths.max() ?? -1) scrollers=\(scroll.hasHorizontalScroller)/\(scroll.hasVerticalScroller) rows=\(heights) constraints=\(positionConstraints.map(\.isActive)) cross=\(stackCrossAxisConstraint?.isActive == true)"
     }
 }
 
@@ -870,6 +1023,7 @@ private final class SidebarItemView: NSView, NSDraggingSource {
     private let titleLabel: NSTextField
     private weak var iconView: NSImageView?
     private weak var badgeLabel: NSTextField?
+    private let showsTitle: Bool
     private var badgeWidthConstraint: NSLayoutConstraint?
     private var badgeHeightConstraint: NSLayoutConstraint?
     private var badgeTrailingConstraint: NSLayoutConstraint?
@@ -882,11 +1036,13 @@ private final class SidebarItemView: NSView, NSDraggingSource {
 
     init(title: String, icon: NSImage? = nil, iconKey: String? = nil,
          badgeKey: String? = nil, badge: String? = nil,
+         showsTitle: Bool = true,
          style: Style, onClick: (() -> Void)?,
          onDraggingChanged: @escaping (Bool) -> Void) {
         self.style = style
         self.iconKey = iconKey
         self.badgeKey = badgeKey
+        self.showsTitle = showsTitle
         self.onClick = onClick
         self.onDraggingChanged = onDraggingChanged
         titleLabel = NSTextField(labelWithString: title)
@@ -894,8 +1050,10 @@ private final class SidebarItemView: NSView, NSDraggingSource {
 
         wantsLayer = true
         layer?.cornerRadius = 7
+        layer?.masksToBounds = true
         setAccessibilityRole(onClick == nil ? .group : .button)
         setAccessibilityLabel(title)
+        toolTip = title
 
         titleLabel.font = switch style {
         case .group: .systemFont(ofSize: 12, weight: .semibold)
@@ -904,13 +1062,18 @@ private final class SidebarItemView: NSView, NSDraggingSource {
         titleLabel.lineBreakMode = .byTruncatingTail
         titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(titleLabel)
+        if showsTitle { addSubview(titleLabel) }
 
         let leading: CGFloat = 4
-        var constraints = [
-            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6),
-            titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor)
-        ]
+        var constraints: [NSLayoutConstraint] = []
+        if showsTitle {
+            let trailing = titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6)
+            trailing.priority = .defaultHigh
+            constraints += [
+                trailing,
+                titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor)
+            ]
+        }
         if let icon {
             let imageView = NSImageView(image: icon)
             iconView = imageView
@@ -934,7 +1097,6 @@ private final class SidebarItemView: NSView, NSDraggingSource {
             badgeTrailingConstraint = trailing
             badgeTopConstraint = top
             constraints += [
-                imageView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
                 imageView.centerYAnchor.constraint(equalTo: centerYAnchor),
                 imageView.widthAnchor.constraint(equalToConstant: 18),
                 imageView.heightAnchor.constraint(equalToConstant: 18),
@@ -942,10 +1104,21 @@ private final class SidebarItemView: NSView, NSDraggingSource {
                 top,
                 width,
                 height,
-                titleLabel.leadingAnchor.constraint(equalTo: imageView.trailingAnchor, constant: 7)
             ]
+            if showsTitle {
+                let imageLeading = imageView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4)
+                imageLeading.priority = .defaultHigh
+                constraints += [
+                    imageLeading,
+                    titleLabel.leadingAnchor.constraint(equalTo: imageView.trailingAnchor, constant: 7)
+                ]
+            } else {
+                constraints.append(imageView.centerXAnchor.constraint(equalTo: centerXAnchor))
+            }
         } else {
-            constraints.append(titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: leading))
+            if showsTitle {
+                constraints.append(titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: leading))
+            }
         }
         let height: CGFloat = switch style {
         case .group: 32
@@ -1002,6 +1175,11 @@ private final class SidebarItemView: NSView, NSDraggingSource {
         }
         return abs(frame.height - expected) < 0.5
     }
+
+    fileprivate var smokeTitleVisibilityIsValid: Bool {
+        showsTitle == (titleLabel.superview != nil) && toolTip?.isEmpty == false
+    }
+    fileprivate var smokeShowsTitle: Bool { showsTitle }
 
     fileprivate var smokeHoverAppearanceIsValid: Bool {
         switch style {
@@ -1402,6 +1580,7 @@ enum PanelSmokeCheck {
                        alwaysVisible: true, fullscreen: false, position: .right)
         sidebar.contentView?.layoutSubtreeIfNeeded()
         guard abs(sidebar.frame.height - area.height) < 1, sidebar.smokeHasOverflow,
+              sidebar.smokeVerticalScrollerIsEnabled,
               sidebar.smokeScrollLastWindowIntoView() else {
             sidebar.close()
             return fail("sidebar overflow mismatch: \(sidebar.smokeLayoutDescription) expectedArea=\(area)")
@@ -1420,7 +1599,7 @@ enum PanelSmokeCheck {
                            alwaysVisible: false, fullscreen: false, position: position)
             var frames = sidebar.smokeSidebarFrames
             guard edgeFrame(sidebar.frame, in: area, position: position, width: 8),
-                  abs(sidebar.frame.height - oneHeight) < 1, sidebar.smokeIsHidden,
+                  (position == .bottom || abs(sidebar.frame.height - oneHeight) < 1), sidebar.smokeIsHidden,
                   sidebar.smokeRoundedCornersAreValid else {
                 sidebar.close()
                 return fail("sidebar collapsed mismatch: \(sidebar.smokeLayoutDescription) expectedArea=\(area)")
@@ -1429,8 +1608,9 @@ enum PanelSmokeCheck {
             let insidePoint = CGPoint(x: frames.expanded.midX, y: frames.expanded.midY)
             let outsidePoint = CGPoint(x: frames.expanded.midX, y: frames.expanded.maxY + 40)
             sidebar.smokeUpdateHover(pointer: edgePoint, now: 0)
-            guard edgeFrame(sidebar.frame, in: area, position: position, width: 188),
-                  abs(sidebar.frame.height - oneHeight) < 1, !sidebar.smokeIsHidden else {
+            let expandedCrossSize: CGFloat = position == .bottom ? 44 : 188
+            guard edgeFrame(sidebar.frame, in: area, position: position, width: expandedCrossSize),
+                  (position == .bottom || abs(sidebar.frame.height - oneHeight) < 1), !sidebar.smokeIsHidden else {
                 sidebar.close()
                 return fail("sidebar hover mismatch: \(sidebar.smokeLayoutDescription) expectedArea=\(area)")
             }
@@ -1438,7 +1618,7 @@ enum PanelSmokeCheck {
                            alwaysVisible: false, fullscreen: false, position: position)
             sidebar.smokeUpdateHover(pointer: insidePoint, now: 0.05)
             sidebar.smokeUpdateHover(pointer: outsidePoint, now: 0.1)
-            guard edgeFrame(sidebar.frame, in: area, position: position, width: 188),
+            guard edgeFrame(sidebar.frame, in: area, position: position, width: expandedCrossSize),
                   !sidebar.smokeIsHidden else {
                 sidebar.close()
                 return fail("sidebar collapsed before delay: \(sidebar.smokeLayoutDescription)")
@@ -1458,7 +1638,7 @@ enum PanelSmokeCheck {
 
             sidebar.smokeUpdateHover(pointer: edgePoint, now: 0.3)
             sidebar.smokeUpdateHover(pointer: outsidePoint, now: 0.4, dragging: true)
-            guard edgeFrame(sidebar.frame, in: area, position: position, width: 188),
+            guard edgeFrame(sidebar.frame, in: area, position: position, width: expandedCrossSize),
                   !sidebar.smokeIsHidden else {
                 sidebar.close()
                 return fail("sidebar collapsed during drag: \(sidebar.smokeLayoutDescription)")
@@ -1480,7 +1660,7 @@ enum PanelSmokeCheck {
                 return fail("sidebar fullscreen collapse mismatch: \(sidebar.smokeLayoutDescription) expectedArea=\(screen.frame)")
             }
             sidebar.smokeUpdateHover(pointer: CGPoint(x: frames.edge.midX, y: frames.edge.midY), now: 1)
-            guard edgeFrame(sidebar.frame, in: screen.frame, position: position, width: 188),
+            guard edgeFrame(sidebar.frame, in: screen.frame, position: position, width: expandedCrossSize),
                   !sidebar.smokeIsHidden else {
                 sidebar.close()
                 return fail("sidebar fullscreen hover mismatch: \(sidebar.smokeLayoutDescription) expectedArea=\(screen.frame)")
@@ -1492,6 +1672,60 @@ enum PanelSmokeCheck {
                   sidebar.smokeIsHidden else {
                 sidebar.close()
                 return fail("sidebar fullscreen did not collapse after leave: \(sidebar.smokeLayoutDescription)")
+            }
+        }
+
+        sidebar.update(groups: groups, windowsByGroup: [GroupStore.ungroupedID: [windows[0]]],
+                       alwaysVisible: true, fullscreen: false, position: .bottom,
+                       itemDisplayMode: .icon)
+        sidebar.contentView?.layoutSubtreeIfNeeded()
+        guard sidebar.smokePositionLayoutIsValid, sidebar.smokeTitleVisibilityIsValid,
+              sidebar.smokeWindowItemsAreValid(showsTitle: false, maximumWidth: 32),
+              sidebar.smokeBottomItemsFit(windowCount: 1, maximumWindowWidth: 32),
+              sidebar.smokeWindowWidthIs(32),
+              sidebar.frame.width < area.width,
+              abs(sidebar.frame.midX - area.midX) < 1,
+              sidebar.frame.minX >= area.minX, sidebar.frame.maxX <= area.maxX,
+              sidebar.frame.minY >= area.minY, sidebar.frame.maxY <= area.maxY else {
+            sidebar.close()
+            return fail("sidebar bottom icon layout mismatch: \(sidebar.smokeLayoutDescription)")
+        }
+        sidebar.update(groups: groups, windowsByGroup: [GroupStore.ungroupedID: [windows[0]]],
+                       alwaysVisible: true, fullscreen: false, position: .bottom,
+                       itemDisplayMode: .iconAndTitle)
+        sidebar.contentView?.layoutSubtreeIfNeeded()
+        guard sidebar.smokeBottomItemsFit(windowCount: 1, maximumWindowWidth: 188),
+              sidebar.smokeWindowWidthIs(188), sidebar.frame.width < area.width,
+              abs(sidebar.frame.midX - area.midX) < 1 else {
+            sidebar.close()
+            return fail("sidebar bottom compact title layout mismatch: \(sidebar.smokeLayoutDescription)")
+        }
+        let bottomGroups = [WindowGroup(id: GroupStore.ungroupedID, name: "未分组")] + (1...11).map {
+            WindowGroup(id: "bottom-group-\($0)", name: "Bottom Group \($0)")
+        }
+        var bottomWindows: [String: [WindowInfo]] = [:]
+        for (index, window) in windows.enumerated() {
+            bottomWindows[bottomGroups[index % 3].id, default: []].append(window)
+        }
+        for mode in SidebarItemDisplayMode.allCases {
+            sidebar.update(groups: bottomGroups, windowsByGroup: bottomWindows,
+                           alwaysVisible: true, fullscreen: false, position: .bottom,
+                           itemDisplayMode: mode)
+            sidebar.contentView?.layoutSubtreeIfNeeded()
+            let showsTitle = mode == .iconAndTitle
+            let maximumWidth: CGFloat = showsTitle ? 188 : 32
+            guard sidebar.smokePositionLayoutIsValid, sidebar.smokeTitleVisibilityIsValid,
+                  sidebar.smokeWindowItemsAreValid(showsTitle: showsTitle,
+                                                   maximumWidth: maximumWidth),
+                  sidebar.smokeBottomItemsFit(windowCount: windows.count,
+                                              maximumWindowWidth: maximumWidth),
+                  !sidebar.smokeHasOverflow,
+                  abs(sidebar.frame.width - area.width) < 1,
+                  abs(sidebar.frame.midX - area.midX) < 1,
+                  sidebar.frame.minX >= area.minX, sidebar.frame.maxX <= area.maxX,
+                  sidebar.frame.minY >= area.minY, sidebar.frame.maxY <= area.maxY else {
+                sidebar.close()
+                return fail("sidebar bottom \(mode.rawValue) layout mismatch: \(sidebar.smokeLayoutDescription)")
             }
         }
 
@@ -1599,6 +1833,9 @@ enum PanelSmokeCheck {
         switch position {
         case .left: return centered && abs(frame.minX - area.minX) < 1 && abs(frame.width - width) < 1
         case .right: return centered && abs(frame.maxX - area.maxX) < 1 && abs(frame.width - width) < 1
+        case .bottom:
+            return abs(frame.midX - area.midX) < 1 && abs(frame.minY - area.minY) < 1
+                && abs(frame.height - width) < 1
         }
     }
 

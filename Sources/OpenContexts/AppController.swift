@@ -81,6 +81,10 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
             DispatchQueue.main.async { self?.updateSidebars() }
         }
             .store(in: &cancellables)
+        settings.$sidebarItemDisplayMode.dropFirst().sink { [weak self] _ in
+            DispatchQueue.main.async { self?.updateSidebars() }
+        }
+            .store(in: &cancellables)
         NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)
             .sink { [weak self] _ in self?.rebuildPanels() }
             .store(in: &cancellables)
@@ -127,7 +131,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 windowsByGroup: windowsByGroup,
                 alwaysVisible: settings.sidebarMode == .always,
                 fullscreen: windowService.fullscreenScreenIDs.contains(id),
-                position: settings.sidebarPosition
+                position: settings.sidebarPosition,
+                itemDisplayMode: settings.sidebarItemDisplayMode
             )
             panel.updateBadges(windowService.appBadges)
         }

@@ -13,26 +13,40 @@ enum SidebarVisibilityMode: String, CaseIterable, Identifiable {
 enum SidebarPosition: String, CaseIterable, Identifiable {
     case left
     case right
+    case bottom
 
     var id: String { rawValue }
     var title: String {
         switch self {
         case .left: "左"
         case .right: "右"
+        case .bottom: "底部"
         }
     }
+}
+
+enum SidebarItemDisplayMode: String, CaseIterable, Identifiable {
+    case icon
+    case iconAndTitle
+
+    var id: String { rawValue }
+    var title: String { self == .icon ? "仅图标" : "图标和标题" }
 }
 
 @MainActor
 final class AppSettings: ObservableObject {
     @Published private(set) var sidebarMode: SidebarVisibilityMode
     @Published private(set) var sidebarPosition: SidebarPosition
+    @Published private(set) var sidebarItemDisplayMode: SidebarItemDisplayMode
 
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         sidebarMode = SidebarVisibilityMode(rawValue: defaults.string(forKey: "sidebarMode") ?? "") ?? .always
+        sidebarItemDisplayMode = SidebarItemDisplayMode(
+            rawValue: defaults.string(forKey: "sidebarItemDisplayMode") ?? ""
+        ) ?? .iconAndTitle
         let savedPosition = defaults.string(forKey: "sidebarPosition")
         if let savedPosition, let position = SidebarPosition(rawValue: savedPosition) {
             sidebarPosition = position
@@ -52,6 +66,11 @@ final class AppSettings: ObservableObject {
         defaults.set(position.rawValue, forKey: "sidebarPosition")
     }
 
+    func setSidebarItemDisplayMode(_ mode: SidebarItemDisplayMode) {
+        sidebarItemDisplayMode = mode
+        defaults.set(mode.rawValue, forKey: "sidebarItemDisplayMode")
+    }
+
     static func selfCheck() -> Bool {
         let suite = "OpenContexts.self-check.\(UUID().uuidString)"
         guard let defaults = UserDefaults(suiteName: suite) else { return false }
@@ -63,14 +82,17 @@ final class AppSettings: ObservableObject {
         guard migratedTop.sidebarPosition == .right,
               defaults.string(forKey: "sidebarPosition") == SidebarPosition.right.rawValue else { return false }
         defaults.set("bottom", forKey: "sidebarPosition")
-        let migratedBottom = AppSettings(defaults: defaults)
-        guard migratedBottom.sidebarPosition == .right,
-              defaults.string(forKey: "sidebarPosition") == SidebarPosition.right.rawValue else { return false }
+        defaults.set("icon", forKey: "sidebarItemDisplayMode")
+        let bottom = AppSettings(defaults: defaults)
+        guard bottom.sidebarPosition == .bottom,
+              bottom.sidebarItemDisplayMode == .icon,
+              defaults.string(forKey: "sidebarPosition") == SidebarPosition.bottom.rawValue else { return false }
         defaults.set("left", forKey: "sidebarPosition")
         let settings = AppSettings(defaults: defaults)
         return ShortcutController.allWindowsKeyCode == 48
             && ShortcutController.currentAppKeyCode == 50
             && settings.sidebarPosition == .left
+            && settings.sidebarItemDisplayMode == .icon
             && defaults.string(forKey: "sidebarPosition") == SidebarPosition.left.rawValue
     }
 }
@@ -83,7 +105,7 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Picker("侧栏", selection: Binding(
+            Picker("应用栏", selection: Binding(
                 get: { settings.sidebarMode },
                 set: settings.setSidebarMode
             )) {
@@ -93,7 +115,17 @@ struct SettingsView: View {
             }
             .pickerStyle(.segmented)
 
-            Picker("侧栏位置", selection: Binding(
+            Picker("显示内容", selection: Binding(
+                get: { settings.sidebarItemDisplayMode },
+                set: settings.setSidebarItemDisplayMode
+            )) {
+                ForEach(SidebarItemDisplayMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            Picker("应用栏位置", selection: Binding(
                 get: { settings.sidebarPosition },
                 set: settings.setSidebarPosition
             )) {
@@ -132,6 +164,6 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
-        .frame(width: 460, height: 340)
+        .frame(width: 460, height: 390)
     }
 }
