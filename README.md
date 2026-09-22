@@ -33,3 +33,22 @@ open dist/OpenContexts.app
 自动检查与需要权限的实机项目见 [验收记录](docs/implementation-status.md)。已按提供的参考图调整布局；多显示器/跨空间仍需实机验证。
 
 设计依据：[术语](CONTEXT.md)、[技术栈 ADR](docs/adr/0001-native-macos-ui.md)、[窗口粒度 ADR](docs/adr/0002-window-granularity.md)。
+
+## 发布
+
+GitHub Actions 在推送 `v*` 标签时构建 Universal DMG，并把 DMG、`SHA256SUMS.txt` 和对应版本的更新日志发布到 GitHub Releases。发布前同时更新仓库根目录的 `VERSION` 和 `CHANGELOG.md`：`VERSION` 必须是无前导零的三段版本号，例如 `0.2.0`；更新日志标题必须写成 `## [0.2.0] - YYYY-MM-DD`，并至少包含一条非空列表项。可选的 `## [Unreleased]` 不会进入 Release 正文。先在本地验证元数据，并把版本、日志和代码改动提交后，再给该提交打完全对应的标签：
+
+```sh
+python3 -B scripts/test-release-notes.py
+python3 -B scripts/release-notes.py --tag v0.2.0 --output dist/release-notes.md
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+默认发布使用 Developer ID 签名和 Apple 公证。请在 GitHub Actions Secrets 中配置 `APPLE_CERTIFICATE_P12_BASE64`、`APPLE_CERTIFICATE_PASSWORD`、`APPLE_ID`、`APPLE_TEAM_ID`、`APPLE_APP_SPECIFIC_PASSWORD`。证书内容是含私钥的 Developer ID Application `.p12` 文件经 base64 编码后的文本；流水线要求其中恰好有一个 Developer ID Application 身份，缺少凭据时会停止发布，不会降级签名。
+
+确需内部测试包时，可把仓库变量 `RELEASE_SIGNING_MODE` 明确设为 `adhoc`。这种产物未经 Apple 公证，Release 正文会显示 Gatekeeper 提示。删除该变量或设为 `developer-id` 即恢复正式发布。日常本地构建仍使用钥匙串中的 Apple Development 证书。
+
+首次正式发布前需配置上述 Secrets；仅发布内部测试包时，需显式把仓库变量 `RELEASE_SIGNING_MODE` 设为 `adhoc`。流水线使用 GitHub 托管的 Apple Silicon `macos-15` runner；应用声明最低 macOS 13，但较旧系统兼容性仍需实机验证。
+
+发布阶段先创建草稿并上传附件，最后才公开。失败后可直接重新运行同一工作流以恢复已有草稿；已经公开的同版本 Release 不会被覆盖。

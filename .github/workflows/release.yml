@@ -1,0 +1,187 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-15
+    timeout-minutes: 50
+    permissions:
+      contents: write
+    env:
+      SIGNING_MODE: ${{ vars.RELEASE_SIGNING_MODE || 'developer-id' }}
+      RELEASE_TAG: ${{ github.ref_name }}
+      APP_PATH: dist/OpenContexts.app
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Check out release commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate release metadata
+        run: |
+          set -euo pipefail
+          case "$SIGNING_MODE" in
+            developer-id|adhoc) ;;
+            *) echo "RELEASE_SIGNING_MODE must be developer-id or adhoc" >&2; exit 1 ;;
+          esac
+          tag_commit="$(git rev-parse "${RELEASE_TAG}^{commit}")"
+          [[ "$tag_commit" == "$GITHUB_SHA" ]] || {
+            echo "Tag $RELEASE_TAG does not resolve to workflow commit $GITHUB_SHA" >&2
+            exit 1
+          }
+          python3 -B scripts/test-release-notes.py
+          python3 -B scripts/release-notes.py \
+            --tag "$RELEASE_TAG" \
+            --output dist/release-notes.md
+          version="$(tr -d '\r\n' < VERSION)"
+          echo "APP_VERSION=$version" >> "$GITHUB_ENV"
+          cp dist/release-notes.md dist/github-release-notes.md
+          if [[ "$SIGNING_MODE" == adhoc ]]; then
+            cat >> dist/github-release-notes.md <<'NOTES'
+
+          > **安装提示：** 此版本使用 ad-hoc 签名，未经过 Apple 公证，macOS Gatekeeper 可能阻止直接打开。它仅适合内部测试。
+          NOTES
+          fi
+
+      - name: Run tests
+        run: swift test
+
+      - name: Import Developer ID certificate
+        env:
+          APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ "$SIGNING_MODE" == adhoc ]]; then
+            echo "CODE_SIGN_IDENTITY=-" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          : "${APPLE_CERTIFICATE_P12_BASE64:?Missing APPLE_CERTIFICATE_P12_BASE64 secret}"
+          : "${APPLE_CERTIFICATE_PASSWORD:?Missing APPLE_CERTIFICATE_PASSWORD secret}"
+
+          keychain_path="$RUNNER_TEMP/opencontexts-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.keychain-db"
+          certificate_path="$RUNNER_TEMP/opencontexts-certificate.p12"
+          keychain_password="$(openssl rand -base64 32)"
+          printf '%s' "$APPLE_CERTIFICATE_P12_BASE64" | /usr/bin/base64 -D > "$certificate_path"
+          security create-keychain -p "$keychain_password" "$keychain_path"
+          security set-keychain-settings -lut 3600 "$keychain_path"
+          security unlock-keychain -p "$keychain_password" "$keychain_path"
+          security import "$certificate_path" -k "$keychain_path" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$keychain_password" "$keychain_path"
+
+          security list-keychains -d user -s "$keychain_path"
+
+          identity_hashes=( $(security find-identity -v -p codesigning "$keychain_path" \
+            | sed -En 's/^[[:space:]]*[0-9]+\)[[:space:]]+([[:xdigit:]]{40})[[:space:]]+"Developer ID Application:[^"]+".*$/\1/p') )
+          if [[ ${#identity_hashes[@]} -ne 1 ]]; then
+            echo "Expected exactly one Developer ID Application identity in the release certificate" >&2
+            exit 1
+          fi
+          echo "CODE_SIGN_IDENTITY=${identity_hashes[0]}" >> "$GITHUB_ENV"
+
+      - name: Build universal app and DMG
+        run: |
+          set -euo pipefail
+          APP_ARCH=universal \
+          BUILD_NUMBER="$GITHUB_RUN_NUMBER" \
+          SIGNING_MODE="$SIGNING_MODE" \
+          CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
+            ./scripts/build-app.sh release
+          "$APP_PATH/Contents/MacOS/OpenContexts" --self-check
+          ./scripts/build-dmg.sh
+          echo "DMG_PATH=dist/OpenContexts-${APP_VERSION}-universal.dmg" >> "$GITHUB_ENV"
+
+      - name: Sign, notarize, and verify distribution
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: |
+          set -euo pipefail
+          [[ -f "$DMG_PATH" ]] || { echo "Missing DMG: $DMG_PATH" >&2; exit 1; }
+          codesign --verify --strict --verbose=2 "$APP_PATH"
+          if [[ "$SIGNING_MODE" == adhoc ]]; then
+            exit 0
+          fi
+
+          : "${APPLE_ID:?Missing APPLE_ID secret}"
+          : "${APPLE_TEAM_ID:?Missing APPLE_TEAM_ID secret}"
+          : "${APPLE_APP_SPECIFIC_PASSWORD:?Missing APPLE_APP_SPECIFIC_PASSWORD secret}"
+          codesign --force --timestamp --sign "$CODE_SIGN_IDENTITY" "$DMG_PATH"
+          xcrun notarytool submit "$DMG_PATH" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --wait --timeout 20m
+          xcrun stapler staple "$DMG_PATH"
+          xcrun stapler validate "$DMG_PATH"
+          codesign --verify --strict --verbose=2 "$DMG_PATH"
+          spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG_PATH"
+
+      - name: Create checksums
+        run: |
+          set -euo pipefail
+          (
+            cd dist
+            shasum -a 256 "$(basename "$DMG_PATH")" > SHA256SUMS.txt
+          )
+
+      - name: Remove signing material
+        if: always()
+        run: |
+          keychain_path="$RUNNER_TEMP/opencontexts-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.keychain-db"
+          certificate_path="$RUNNER_TEMP/opencontexts-certificate.p12"
+          security delete-keychain "$keychain_path" 2>/dev/null || true
+          rm -f "$certificate_path"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          remote_sha="$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_TAG" --jq '.sha')"
+          [[ "$remote_sha" == "$GITHUB_SHA" ]] || {
+            echo "Remote tag $RELEASE_TAG no longer resolves to workflow commit $GITHUB_SHA" >&2
+            exit 1
+          }
+          release_json="$RUNNER_TEMP/opencontexts-release.json"
+          release_error="$RUNNER_TEMP/opencontexts-release-error.txt"
+          if gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" \
+            > "$release_json" 2> "$release_error"; then
+            [[ "$(jq -r '.draft' "$release_json")" == true ]] || {
+              echo "Release $RELEASE_TAG is already published; refusing to overwrite it" >&2
+              exit 1
+            }
+          else
+            grep -q 'HTTP 404' "$release_error" || {
+              cat "$release_error" >&2
+              exit 1
+            }
+            gh release create "$RELEASE_TAG" \
+              --verify-tag \
+              --draft \
+              --title "OpenContexts $APP_VERSION" \
+              --notes-file dist/github-release-notes.md
+          fi
+
+          gh release upload "$RELEASE_TAG" \
+            "$DMG_PATH" dist/SHA256SUMS.txt --clobber
+          gh release edit "$RELEASE_TAG" \
+            --title "OpenContexts $APP_VERSION" \
+            --notes-file dist/github-release-notes.md \
+            --draft=false
