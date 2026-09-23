@@ -5,7 +5,7 @@ private let rowHoverColor = NSColor(srgbRed: 80 / 255, green: 151 / 255,
                                     blue: 247 / 255, alpha: 1)
 
 @MainActor
-final class SidebarPanel: NSPanel {
+final class SidebarPanel: NSPanel, NSMenuDelegate {
     typealias WindowMove = (_ id: String, _ groupID: String, _ beforeWindowID: String?) -> Void
     typealias GroupMove = (_ id: String, _ beforeGroupID: String?) -> Void
 
@@ -222,6 +222,9 @@ final class SidebarPanel: NSPanel {
                     onClick: { [weak self] in self?.onActivate(window.id) },
                     onDraggingChanged: { [weak self] in self?.sourceDraggingChanged($0) }
                 )
+                let menu = NSMenu(title: String(window.processID))
+                menu.delegate = self
+                row.setContextMenu(menu)
                 stack.addArrangedSubview(row)
                 constrainSidebarItem(row)
                 if icon == nil, iconRetrySchedules[iconKey] == nil {
@@ -247,6 +250,44 @@ final class SidebarPanel: NSPanel {
         }
         layoutPanel(animated: false)
         layoutDocumentView()
+    }
+
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        guard let processID = Int32(menu.title) else { return }
+        menu.removeAllItems()
+        let windows = renderedGroups.flatMap { renderedWindows[$0.id, default: []] }
+            .filter { $0.processID == processID }
+        for window in windows {
+            let item = NSMenuItem(title: window.displayTitle, action: #selector(activateMenuWindow(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = window.id
+            menu.addItem(item)
+        }
+        guard NSRunningApplication(processIdentifier: processID) != nil else { return }
+        if !windows.isEmpty { menu.addItem(.separator()) }
+        for (title, action) in [("隐藏应用", #selector(hideMenuApplication(_:))),
+                                ("退出应用", #selector(terminateMenuApplication(_:)))] {
+            let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+            item.target = self
+            item.representedObject = processID
+            menu.addItem(item)
+        }
+    }
+
+    @objc private func activateMenuWindow(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? String,
+              renderedWindows.values.joined().contains(where: { $0.id == id }) else { return }
+        onActivate(id)
+    }
+
+    @objc private func hideMenuApplication(_ sender: NSMenuItem) {
+        guard let processID = sender.representedObject as? Int32 else { return }
+        NSRunningApplication(processIdentifier: processID)?.hide()
+    }
+
+    @objc private func terminateMenuApplication(_ sender: NSMenuItem) {
+        guard let processID = sender.representedObject as? Int32 else { return }
+        NSRunningApplication(processIdentifier: processID)?.terminate()
     }
 
     func updateBadges(_ badges: [String: String]) {
@@ -712,6 +753,16 @@ final class SidebarPanel: NSPanel {
         return !rows.isEmpty && rows.allSatisfy(\.smokeHeightIsValid)
     }
 
+    fileprivate func smokeWindowMenusAreValid(windowIDs: [String]) -> Bool {
+        let rows = sidebarRows.filter { if case .window = $0.style { return true }; return false }
+        return rows.count == windowIDs.count && rows.allSatisfy { row in
+            guard let menu = row.menu, row.subviews.allSatisfy({ $0.menu === menu }) else { return false }
+            menuNeedsUpdate(menu)
+            return Array(menu.items.prefix(windowIDs.count)).compactMap { $0.representedObject as? String } == windowIDs
+                && menu.items.suffix(2).map(\.title) == ["隐藏应用", "退出应用"]
+        }
+    }
+
     fileprivate var smokeRowHoverAppearanceIsValid: Bool {
         stack.arrangedSubviews.compactMap { $0 as? SidebarItemView }
             .allSatisfy(\.smokeHoverAppearanceIsValid)
@@ -1131,6 +1182,11 @@ private final class SidebarItemView: NSView, NSDraggingSource {
 
     func setIcon(_ icon: NSImage) {
         iconView?.image = icon
+    }
+
+    func setContextMenu(_ menu: NSMenu) {
+        self.menu = menu
+        subviews.forEach { $0.menu = menu }
     }
 
     func setBadge(_ value: String?) {
@@ -1555,6 +1611,12 @@ enum PanelSmokeCheck {
             sidebar.close()
             return fail("sidebar natural heights did not grow: \(measuredHeights)")
         }
+        sidebar.update(groups: groups, windowsByGroup: [GroupStore.ungroupedID: Array(windows.prefix(3))],
+                       alwaysVisible: true, fullscreen: false, position: .right)
+        guard sidebar.smokeWindowMenusAreValid(windowIDs: Array(windows.prefix(3)).map(\.id)) else {
+            sidebar.close()
+            return fail("sidebar window menus mismatch")
+        }
 
         for (value, text, diameter) in [
             ("1" as String?, "1", CGFloat(12)),
@@ -1680,6 +1742,7 @@ enum PanelSmokeCheck {
                        itemDisplayMode: .icon)
         sidebar.contentView?.layoutSubtreeIfNeeded()
         guard sidebar.smokePositionLayoutIsValid, sidebar.smokeTitleVisibilityIsValid,
+              sidebar.smokeWindowMenusAreValid(windowIDs: [windows[0].id]),
               sidebar.smokeWindowItemsAreValid(showsTitle: false, maximumWidth: 32),
               sidebar.smokeBottomItemsFit(windowCount: 1, maximumWindowWidth: 32),
               sidebar.smokeWindowWidthIs(32),
@@ -1695,6 +1758,7 @@ enum PanelSmokeCheck {
                        itemDisplayMode: .iconAndTitle)
         sidebar.contentView?.layoutSubtreeIfNeeded()
         guard sidebar.smokeBottomItemsFit(windowCount: 1, maximumWindowWidth: 188),
+              sidebar.smokeWindowMenusAreValid(windowIDs: [windows[0].id]),
               sidebar.smokeWindowWidthIs(188), sidebar.frame.width < area.width,
               abs(sidebar.frame.midX - area.midX) < 1 else {
             sidebar.close()
