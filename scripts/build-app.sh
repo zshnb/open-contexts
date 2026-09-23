@@ -68,6 +68,10 @@ else
         identity_name_pattern='OpenContexts Release Signing'
         identity_description="OpenContexts Release Signing"
     fi
+    identity_find_args=(-v -p codesigning)
+    if [[ "$signing_mode" == self-signed ]]; then
+        identity_find_args=(-p codesigning)
+    fi
 
     identity_hashes=("")
     identity_names=("")
@@ -78,8 +82,9 @@ else
             identity_hashes+=("$hash")
             identity_names+=("$name")
         fi
-    done < <(security find-identity -v -p codesigning 2>/dev/null \
-        | sed -En "s/^[[:space:]]*[0-9]+\\)[[:space:]]+([[:xdigit:]]{40})[[:space:]]+\"(${identity_name_pattern})\".*$/\\1 \\2/p")
+    done < <(security find-identity "${identity_find_args[@]}" 2>/dev/null \
+        | sed -En "s/^[[:space:]]*[0-9]+\\)[[:space:]]+([[:xdigit:]]{40})[[:space:]]+\"(${identity_name_pattern})\".*$/\\1 \\2/p" \
+        | sort -u)
 
     if [[ -n "$requested_identity" ]]; then
         signing_identity=""

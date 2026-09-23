@@ -94,27 +94,35 @@ jobs:
           certificate_path="$RUNNER_TEMP/opencontexts-certificate.p12"
           keychain_password="$(openssl rand -base64 32)"
           printf '%s' "$certificate_base64" | /usr/bin/base64 -D > "$certificate_path"
+          echo "Creating temporary release keychain"
           security create-keychain -p "$keychain_password" "$keychain_path"
           security set-keychain-settings -lut 3600 "$keychain_path"
           security unlock-keychain -p "$keychain_password" "$keychain_path"
+          echo "Importing release certificate"
           security import "$certificate_path" -k "$keychain_path" \
             -P "$certificate_password" -A -t cert -f pkcs12
-          security set-key-partition-list -S apple-tool:,apple:,codesign: \
-            -s -k "$keychain_password" "$keychain_path"
-
-          if [[ "$SIGNING_MODE" == self-signed ]]; then
-            certificate_pem="$RUNNER_TEMP/opencontexts-release-certificate.pem"
-            security find-certificate -c 'OpenContexts Release Signing' -p "$keychain_path" > "$certificate_pem"
-            [[ -s "$certificate_pem" ]] || { echo "Self-signed release certificate missing after import" >&2; exit 1; }
-            security add-trusted-cert -r trustRoot -p codeSign -k "$keychain_path" "$certificate_pem"
+          if [[ "$SIGNING_MODE" == developer-id ]]; then
+            echo "Configuring Developer ID signing key access"
+            security set-key-partition-list -S apple-tool:,apple:,codesign: \
+              -s -k "$keychain_password" "$keychain_path"
           fi
 
           security list-keychains -d user -s "$keychain_path"
 
-          identity_hashes=( $(security find-identity -v -p codesigning "$keychain_path" \
-            | sed -En "s/^[[:space:]]*[0-9]+\\)[[:space:]]+([[:xdigit:]]{40})[[:space:]]+\"${identity_pattern}\".*$/\\1/p") )
+          identity_find_args=(-v -p codesigning "$keychain_path")
+          if [[ "$SIGNING_MODE" == self-signed ]]; then
+            identity_find_args=(-p codesigning "$keychain_path")
+          fi
+          echo "Resolving $SIGNING_MODE signing identity"
+          identity_hashes=( $(security find-identity "${identity_find_args[@]}" \
+            | sed -En "s/^[[:space:]]*[0-9]+\\)[[:space:]]+([[:xdigit:]]{40})[[:space:]]+\"${identity_pattern}\".*$/\\1/p" \
+            | sort -u) )
           if [[ ${#identity_hashes[@]} -ne 1 ]]; then
             echo "Expected exactly one $SIGNING_MODE identity in the release certificate" >&2
+            exit 1
+          fi
+          if [[ "$SIGNING_MODE" == self-signed && "${identity_hashes[0]}" != B6FFF596E0E552823D7EB4D1F5B61BF51BDE6751 ]]; then
+            echo "Self-signed release certificate changed; refusing to rotate app identity" >&2
             exit 1
           fi
           echo "CODE_SIGN_IDENTITY=${identity_hashes[0]}" >> "$GITHUB_ENV"
@@ -200,12 +208,8 @@ jobs:
         run: |
           keychain_path="$RUNNER_TEMP/opencontexts-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.keychain-db"
           certificate_path="$RUNNER_TEMP/opencontexts-certificate.p12"
-          certificate_pem="$RUNNER_TEMP/opencontexts-release-certificate.pem"
-          if [[ -s "$certificate_pem" ]]; then
-            security remove-trusted-cert "$certificate_pem" 2>/dev/null || true
-          fi
           security delete-keychain "$keychain_path" 2>/dev/null || true
-          rm -f "$certificate_path" "$certificate_pem"
+          rm -f "$certificate_path"
 
       - name: Publish GitHub Release
         env:
