@@ -1,4 +1,4 @@
-<h1 align="center"><img src="assets/AppIcon.png" alt="Open Contexts 图标" width="48" height="48"> Open Contexts</h1>
+<h1 align="center"><img src="assets/AppIcon.png" alt="Open Contexts 图标" width="48" height="48" align="absbottom"> Open Contexts</h1>
 
 Open Contexts 是付费 macOS 窗口管理软件 [Contexts](https://contexts.co/) 的非官方开源复刻版，主要还原其侧栏和窗口切换体验。
 
