@@ -49,12 +49,14 @@ Open Contexts 是付费 macOS 窗口管理软件 [Contexts](https://contexts.co/
 
 系统要求：macOS 13 或更高版本。macOS 13 等较旧版本尚未完成实机验证。
 
-1. 从 [GitHub Releases](https://github.com/zshnb/open-contexts/releases) 下载 DMG。
-2. 打开 DMG，将 `OpenContexts.app` 拖入 `/Applications`。
-3. 启动 Open Contexts。
-4. 从菜单栏打开设置，按照提示前往“系统设置 → 隐私与安全性 → 辅助功能”，授权 Open Contexts。
+1. 从[最新版本](https://github.com/zshnb/open-contexts/releases/latest)下载 Universal DMG。
+2. 打开 DMG，将 `OpenContexts.app` 拖入“应用程序”文件夹，然后从该文件夹启动应用。
+3. Open Contexts 启动后常驻菜单栏，不显示 Dock 图标或主窗口。点击菜单栏中的 Open Contexts 图标，选择“设置…”或“授予辅助功能权限…”。
+4. 按照提示前往“系统设置 → 隐私与安全性 → 辅助功能”，授权 Open Contexts；如果授权后功能没有立即生效，请退出并重新启动应用。
 
 辅助功能权限用于发现和切换窗口，以及接管快捷键。未授权或应用退出时，Open Contexts 不会接管 `⌘Tab`。应用更新后如果权限失效，请在辅助功能列表中移除 Open Contexts，再重新添加并授权。
+
+以后可随时点击菜单栏图标打开“设置…”，或选择“退出 OpenContexts”结束运行。
 
 ### macOS 提示应用无法打开
 
