@@ -33,6 +33,7 @@ public final class GroupStore: ObservableObject {
     private let fileURL: URL
     private var windowsByGroup: [String: [SavedWindow]]
     private var activeWindows: [String: WindowInfo] = [:]
+    private var activeWindowOrder: [String] = []
     private var savedIDByWindowID: [String: String] = [:]
     private var persistenceBlocked = false
 
@@ -93,15 +94,32 @@ public final class GroupStore: ObservableObject {
         }
 
         activeWindows = incoming
+        activeWindowOrder = uniqueWindows.map(\.id)
         changed()
+    }
+
+    public func updateLiveWindows(_ windows: [WindowInfo]) {
+        var incoming: [String: WindowInfo] = [:]
+        var orderedIDs: [String] = []
+        for window in windows where incoming[window.id] == nil {
+            incoming[window.id] = window
+            orderedIDs.append(window.id)
+        }
+        activeWindows = incoming
+        activeWindowOrder = orderedIDs
     }
 
     public func windows(in groupID: String) -> [WindowInfo] {
         guard groups.contains(where: { $0.id == groupID }) else { return [] }
         let windowIDBySavedID = Dictionary(uniqueKeysWithValues: savedIDByWindowID.map { ($0.value, $0.key) })
-        return windowsByGroup[groupID, default: []].compactMap { saved in
+        let savedWindows = windowsByGroup[groupID, default: []].compactMap { saved in
             windowIDBySavedID[saved.id].flatMap { activeWindows[$0] }
         }
+        guard groupID == Self.ungroupedID else { return savedWindows }
+        let unsavedWindows = activeWindowOrder.compactMap { id in
+            savedIDByWindowID[id] == nil ? activeWindows[id] : nil
+        }
+        return savedWindows + unsavedWindows
     }
 
     public func createGroup(name: String) {
@@ -130,10 +148,24 @@ public final class GroupStore: ObservableObject {
     }
 
     public func moveWindow(id: String, to groupID: String, before windowID: String? = nil) {
-        guard groups.contains(where: { $0.id == groupID }),
-              let savedID = savedIDByWindowID[id] else { return }
+        guard groups.contains(where: { $0.id == groupID }) else { return }
+        if savedIDByWindowID[id] == nil {
+            guard let window = activeWindows[id] else { return }
+            let saved = SavedWindow(id: UUID().uuidString, appID: window.appID,
+                                    title: window.title, documentURL: window.documentURL)
+            savedIDByWindowID[id] = saved.id
+            let beforeSavedID = windowID.flatMap { savedIDByWindowID[$0] }
+            let index = beforeSavedID.flatMap { id in
+                windowsByGroup[groupID, default: []].firstIndex(where: { $0.id == id })
+            } ?? windowsByGroup[groupID, default: []].endIndex
+            windowsByGroup[groupID, default: []].insert(saved, at: index)
+            changed()
+            return
+        }
+        guard let savedID = savedIDByWindowID[id] else { return }
         let beforeSavedID = windowID.flatMap { savedIDByWindowID[$0] }
         if beforeSavedID == savedID { return }
+        if let window = activeWindows[id] { updateSavedWindow(id: savedID, from: window) }
 
         var moved: SavedWindow?
         for group in groups {

@@ -21,8 +21,8 @@ if [[ ! "$build_number" =~ ^[1-9][0-9]*$ ]]; then
     echo "BUILD_NUMBER must be a positive integer: $build_number" >&2
     exit 2
 fi
-if [[ "$signing_mode" != development && "$signing_mode" != developer-id && "$signing_mode" != adhoc ]]; then
-    echo "SIGNING_MODE must be development, developer-id, or adhoc: $signing_mode" >&2
+if [[ "$signing_mode" != development && "$signing_mode" != developer-id && "$signing_mode" != self-signed && "$signing_mode" != adhoc ]]; then
+    echo "SIGNING_MODE must be development, developer-id, self-signed, or adhoc: $signing_mode" >&2
     exit 2
 fi
 if [[ ! -f VERSION ]]; then
@@ -37,6 +37,11 @@ fi
 if [[ ! -f assets/AppIcon.icns ]]; then
     echo "App icon is missing: assets/AppIcon.icns" >&2
     exit 1
+fi
+sparkle_public_key="${SPARKLE_PUBLIC_ED_KEY:-$(<config/sparkle-public-key.txt)}"
+if [[ ! "$sparkle_public_key" =~ ^[A-Za-z0-9+/]{43}=$ ]]; then
+    echo "SPARKLE_PUBLIC_ED_KEY must be a base64-encoded Ed25519 public key" >&2
+    exit 2
 fi
 
 if [[ "$signing_mode" == adhoc ]]; then
@@ -54,11 +59,14 @@ elif [[ "$requested_identity" == "-" ]]; then
     signing_identity="-"
 else
     if [[ "$signing_mode" == development ]]; then
-        identity_prefix="Apple Development:"
+        identity_name_pattern='Apple Development:[^"]+'
         identity_description="Apple Development"
-    else
-        identity_prefix="Developer ID Application:"
+    elif [[ "$signing_mode" == developer-id ]]; then
+        identity_name_pattern='Developer ID Application:[^"]+'
         identity_description="Developer ID Application"
+    else
+        identity_name_pattern='OpenContexts Release Signing'
+        identity_description="OpenContexts Release Signing"
     fi
 
     identity_hashes=("")
@@ -71,7 +79,7 @@ else
             identity_names+=("$name")
         fi
     done < <(security find-identity -v -p codesigning 2>/dev/null \
-        | sed -En "s/^[[:space:]]*[0-9]+\\)[[:space:]]+([[:xdigit:]]{40})[[:space:]]+\"(${identity_prefix}[^\"]+)\".*$/\\1 \\2/p")
+        | sed -En "s/^[[:space:]]*[0-9]+\\)[[:space:]]+([[:xdigit:]]{40})[[:space:]]+\"(${identity_name_pattern})\".*$/\\1 \\2/p")
 
     if [[ -n "$requested_identity" ]]; then
         signing_identity=""
@@ -113,20 +121,43 @@ build_binary() {
     printf '%s/OpenContexts\n' "$binary_dir"
 }
 
+strip_nonportable_rpaths() {
+    local binary="$1" build_rpath
+    while IFS= read -r build_rpath; do
+        install_name_tool -delete_rpath "$build_rpath" "$binary"
+    done < <(otool -l "$binary" | awk '
+        $2 == "LC_RPATH" { getline; getline; if ($1 == "path" && $2 ~ /^\// && $2 != "/usr/lib/swift") print $2 }
+    ')
+}
+
 if [[ "$app_arch" == universal ]]; then
     arm64_binary="$(build_binary arm64)"
     arm64_snapshot="$work_dir/OpenContexts-arm64"
     cp "$arm64_binary" "$arm64_snapshot"
+    strip_nonportable_rpaths "$arm64_snapshot"
     x86_64_binary="$(build_binary x86_64)"
-    lipo -create "$arm64_snapshot" "$x86_64_binary" -output "$app/Contents/MacOS/OpenContexts"
+    x86_64_snapshot="$work_dir/OpenContexts-x86_64"
+    cp "$x86_64_binary" "$x86_64_snapshot"
+    strip_nonportable_rpaths "$x86_64_snapshot"
+    lipo -create "$arm64_snapshot" "$x86_64_snapshot" -output "$app/Contents/MacOS/OpenContexts"
 elif [[ "$app_arch" == native ]]; then
     swift build -c "$configuration"
     binary_dir="$(swift build -c "$configuration" --show-bin-path)"
     cp "$binary_dir/OpenContexts" "$app/Contents/MacOS/OpenContexts"
+    strip_nonportable_rpaths "$app/Contents/MacOS/OpenContexts"
 else
     built_binary="$(build_binary "$app_arch")"
     cp "$built_binary" "$app/Contents/MacOS/OpenContexts"
+    strip_nonportable_rpaths "$app/Contents/MacOS/OpenContexts"
 fi
+
+sparkle_framework="$PWD/.build/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework"
+if [[ ! -d "$sparkle_framework" ]]; then
+    echo "Sparkle framework missing from SwiftPM artifacts: $sparkle_framework" >&2
+    exit 1
+fi
+mkdir -p "$app/Contents/Frameworks"
+ditto "$sparkle_framework" "$app/Contents/Frameworks/Sparkle.framework"
 
 cp assets/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
 cat > "$app/Contents/Info.plist" <<PLIST
@@ -141,11 +172,25 @@ cat > "$app/Contents/Info.plist" <<PLIST
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>$version</string>
     <key>CFBundleVersion</key><string>$build_number</string>
+    <key>SUFeedURL</key><string>https://github.com/zshnb/open-contexts/releases/latest/download/appcast.xml</string>
+    <key>SUPublicEDKey</key><string>$sparkle_public_key</string>
+    <key>SUEnableAutomaticChecks</key><false/>
     <key>LSMinimumSystemVersion</key><string>13.0</string>
     <key>LSUIElement</key><true/>
     <key>NSHighResolutionCapable</key><true/>
 </dict></plist>
 PLIST
+
+sparkle_version="$app/Contents/Frameworks/Sparkle.framework/Versions/B"
+sign_args=(--force --sign "$signing_identity")
+if [[ "$signing_mode" == developer-id ]]; then
+    sign_args+=(--options runtime --timestamp)
+fi
+codesign "${sign_args[@]}" "$sparkle_version/XPCServices/Installer.xpc"
+codesign "${sign_args[@]}" --preserve-metadata=entitlements "$sparkle_version/XPCServices/Downloader.xpc"
+codesign "${sign_args[@]}" "$sparkle_version/Autoupdate"
+codesign "${sign_args[@]}" "$sparkle_version/Updater.app"
+codesign "${sign_args[@]}" "$app/Contents/Frameworks/Sparkle.framework"
 
 if [[ "$signing_mode" == developer-id ]]; then
     codesign --force --sign "$signing_identity" --options runtime --timestamp "$app"
@@ -153,6 +198,13 @@ else
     codesign --force --sign "$signing_identity" "$app"
 fi
 codesign --verify --strict "$app"
+if [[ "$signing_mode" == self-signed ]]; then
+    designated_requirement="$(codesign -dr - "$app" 2>&1)"
+    if [[ "$designated_requirement" != *'designated =>'* || "$designated_requirement" == *cdhash* ]]; then
+        echo "Self-signed app must have a stable designated requirement without cdhash: $designated_requirement" >&2
+        exit 1
+    fi
+fi
 
 mkdir -p dist
 rm -rf dist/OpenContexts.app

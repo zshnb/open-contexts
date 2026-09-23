@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import OpenContextsCore
+import Sparkle
 import SwiftUI
 
 @MainActor
@@ -10,6 +11,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let groupStore = GroupStore()
     private let shortcuts = ShortcutController()
     private let settings = AppSettings()
+    private let updaterController = SPUStandardUpdaterController(
+        startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil
+    )
 
     private var sidebars: [CGDirectDisplayID: SidebarPanel] = [:]
     private var switchers: [CGDirectDisplayID: SwitcherPanel] = [:]
@@ -21,6 +25,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var selectedIndex = 0
     private var currentAppOnly: Bool?
     private var currentAppPID: pid_t?
+    private var didRestoreGroups = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -49,7 +54,12 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func observeState() {
         windowService.$windows.sink { [weak self] windows in
             guard let self else { return }
-            self.groupStore.reconcile(windows)
+            if self.windowService.hasCompletedInitialScan && !self.didRestoreGroups {
+                self.didRestoreGroups = true
+                self.groupStore.reconcile(windows)
+            } else {
+                self.groupStore.updateLiveWindows(windows)
+            }
             DispatchQueue.main.async { [weak self] in
                 self?.updateSidebars()
                 self?.refreshVisibleSwitcher()
@@ -198,6 +208,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         item.button?.setAccessibilityLabel("OpenContexts")
         let menu = NSMenu()
         menu.addItem(withTitle: "设置…", action: #selector(showSettings), keyEquivalent: ",").target = self
+        menu.addItem(withTitle: "检查更新…", action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)), keyEquivalent: "")
+            .target = updaterController
         menu.addItem(withTitle: "授予辅助功能权限…", action: #selector(requestAccessibility), keyEquivalent: "")
             .target = self
         menu.addItem(.separator())

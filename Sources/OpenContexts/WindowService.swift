@@ -12,6 +12,7 @@ final class WindowService: ObservableObject {
     @Published private(set) var fullscreenScreenIDs: Set<UInt32> = []
 
     var focusedWindowID: String? { focusedID }
+    private(set) var hasCompletedInitialScan = false
 
     private final class WeakWindow {
         weak var value: NSWindow?
@@ -149,6 +150,7 @@ final class WindowService: ObservableObject {
         fullscreenScreenIDs = result.fullscreenScreenIDs
         badgeState.merge(activeAppIDs: result.activeAppIDs, reads: result.badgeReads)
         if appBadges != badgeState.badges { appBadges = badgeState.badges }
+        hasCompletedInitialScan = true
         publishWindows()
     }
 

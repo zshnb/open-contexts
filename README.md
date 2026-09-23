@@ -41,7 +41,7 @@ Open Contexts 是付费 macOS 窗口管理软件 [Contexts](https://contexts.co/
 
 - 创建、重命名和删除分组，拖动窗口或分组调整顺序。
 - 重启后恢复分组名称和顺序，以及可匹配窗口的分组、顺序和侧栏位置。
-- 使用 Swift、AppKit 和 SwiftUI 原生实现，无第三方依赖。
+- 使用 Swift、AppKit 和 SwiftUI 原生实现窗口管理；应用更新使用 Sparkle。
 
 目前尚未复刻 Contexts 的搜索、Fast Search、触控板手势和按 Space 筛选功能。多显示器、跨 Space 和全屏场景已有相应实现，但仍需在更多真实环境中验证。
 
@@ -57,6 +57,8 @@ Open Contexts 是付费 macOS 窗口管理软件 [Contexts](https://contexts.co/
 辅助功能权限用于发现和切换窗口，以及接管快捷键。未授权或应用退出时，Open Contexts 不会接管 `⌘Tab`。应用更新后如果权限失效，请在辅助功能列表中移除 Open Contexts，再重新添加并授权。
 
 以后可随时点击菜单栏图标打开“设置…”，或选择“退出 OpenContexts”结束运行。
+
+安装了带更新功能的版本后，可从菜单栏选择“检查更新…”并在应用内安装新版本。已发布的 v0.2.1 不含更新器，需手动安装首个带 Sparkle 的 v0.3.0，此后才可在应用内升级。
 
 ### macOS 提示应用无法打开
 
@@ -116,11 +118,13 @@ open dist/OpenContexts.app
 <details>
 <summary>发布与签名</summary>
 
-推送 `v*` 标签后，GitHub Actions 会构建 Universal DMG，并将 DMG 和 `SHA256SUMS.txt` 发布到 GitHub Releases。
+推送 `v*` 标签后，GitHub Actions 会构建 Universal DMG，并将 DMG、`SHA256SUMS.txt` 和含有 DMG EdDSA 签名的 `appcast.xml` 发布到 GitHub Releases。应用通过固定地址 `https://github.com/zshnb/open-contexts/releases/latest/download/appcast.xml` 检查更新。流水线先上传全部产物，再公开发布。
 
-正式发布默认使用 Developer ID 签名与 Apple 公证，需要配置 `APPLE_CERTIFICATE_P12_BASE64`、`APPLE_CERTIFICATE_PASSWORD`、`APPLE_ID`、`APPLE_TEAM_ID` 和 `APPLE_APP_SPECIFIC_PASSWORD`。缺少凭据时流水线会停止，不会自动降级签名。
+Developer ID 模式默认启用签名与 Apple 公证，需要配置 `APPLE_CERTIFICATE_P12_BASE64`、`APPLE_CERTIFICATE_PASSWORD`、`APPLE_ID`、`APPLE_TEAM_ID` 和 `APPLE_APP_SPECIFIC_PASSWORD`。固定自签名模式使用同一份名为 `OpenContexts Release Signing` 的证书签署所有版本：将包含私钥的 P12 文件以 Base64 编码存入 GitHub Actions Secret `OPENCONTEXTS_CERTIFICATE_P12_BASE64`，将导出密码存入 `OPENCONTEXTS_CERTIFICATE_PASSWORD`，并将仓库变量 `RELEASE_SIGNING_MODE` 设为 `self-signed`。本地可用 `SIGNING_MODE=self-signed CODE_SIGN_IDENTITY=<证书 SHA-1> ./scripts/build-app.sh release` 构建。请安全备份这份证书与私钥；更换证书会改变应用代码身份，可能再次要求辅助功能授权。
 
-内部测试包可将仓库变量 `RELEASE_SIGNING_MODE` 显式设为 `adhoc`；这类产物未经 Apple 公证。删除该变量或设为 `developer-id` 可恢复正式发布流程。
+三种模式都必须配置 GitHub Actions Secret `SPARKLE_ED_PRIVATE_KEY`，其私钥须与 `config/sparkle-public-key.txt` 中的公钥配对。当前发布校验只支持 Sparkle `generate_keys` 新格式导出的 Base64 编码 32 字节 seed，不支持旧版 96 字节密钥。缺少所需凭据时流水线会停止，不会自动降级签名。发布前需递增 `VERSION`。
+
+没有 Apple 发布凭据时，可将仓库变量 `RELEASE_SIGNING_MODE` 设为 `self-signed`。此模式仍生成 EdDSA 签名更新，但未经 Apple 公证，Gatekeeper 可能阻止打开；从旧版 ad-hoc 签名切换到固定证书时，辅助功能权限可能需要重新授予一次。后续版本只要继续使用同一证书、应用标识和安装路径，代码身份即可保持稳定。Apple 不建议用自签名证书公开分发应用。设为 `adhoc` 可用于内部测试，但每次更新都可能重新授权；删除变量或设为 `developer-id` 可恢复 Developer ID 发布流程。
 
 </details>
 

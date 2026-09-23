@@ -229,6 +229,40 @@ final class GroupStoreTests: XCTestCase {
         XCTAssertEqual(restarted.windows(in: GroupStore.ungroupedID).map(\.id), ["other-app"])
     }
 
+    func testLiveRefreshKeepsSavedGroupsUntouchedUntilManualMove() throws {
+        let fileURL = temporaryFileURL()
+        let original = GroupStore(fileURL: fileURL)
+        original.reconcile([window("old", title: "Original")])
+        original.createGroup(name: "Work")
+        let work = try XCTUnwrap(original.groups.last?.id)
+        original.moveWindow(id: "old", to: work)
+
+        let restarted = GroupStore(fileURL: fileURL)
+        restarted.reconcile([window("restored", title: "Original")])
+        XCTAssertEqual(restarted.windows(in: work).map(\.id), ["restored"])
+        let persisted = try Data(contentsOf: fileURL)
+        let revision = restarted.revision
+
+        restarted.updateLiveWindows([window("new", title: "New"), window("restored", title: "Renamed")])
+        XCTAssertEqual(restarted.windows(in: work).map(\.id), ["restored"])
+        XCTAssertEqual(restarted.windows(in: work).map(\.title), ["Renamed"])
+        XCTAssertEqual(restarted.windows(in: GroupStore.ungroupedID).map(\.id), ["new"])
+        restarted.updateLiveWindows([])
+        XCTAssertTrue(restarted.windows(in: work).isEmpty)
+        XCTAssertTrue(restarted.windows(in: GroupStore.ungroupedID).isEmpty)
+        restarted.updateLiveWindows([window("restored", title: "Renamed"), window("new", title: "New")])
+        XCTAssertEqual(restarted.windows(in: work).map(\.id), ["restored"])
+        XCTAssertEqual(restarted.revision, revision)
+        XCTAssertEqual(try Data(contentsOf: fileURL), persisted)
+
+        restarted.moveWindow(id: "restored", to: work)
+        XCTAssertEqual(try persistedWindows(at: fileURL, in: work).first?["title"] as? String, "Renamed")
+        restarted.moveWindow(id: "new", to: work)
+        XCTAssertEqual(restarted.windows(in: work).map(\.id), ["restored", "new"])
+        XCTAssertEqual(try persistedWindows(at: fileURL, in: work).count, 2)
+        XCTAssertNotEqual(try Data(contentsOf: fileURL), persisted)
+    }
+
     private func temporaryFileURL() -> URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

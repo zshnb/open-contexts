@@ -34,8 +34,8 @@ jobs:
         run: |
           set -euo pipefail
           case "$SIGNING_MODE" in
-            developer-id|adhoc) ;;
-            *) echo "RELEASE_SIGNING_MODE must be developer-id or adhoc" >&2; exit 1 ;;
+            developer-id|self-signed|adhoc) ;;
+            *) echo "RELEASE_SIGNING_MODE must be developer-id, self-signed, or adhoc" >&2; exit 1 ;;
           esac
           tag_commit="$(git rev-parse "${RELEASE_TAG}^{commit}")"
           [[ "$tag_commit" == "$GITHUB_SHA" ]] || {
@@ -54,42 +54,67 @@ jobs:
 
           > **安装提示：** 此版本使用 ad-hoc 签名，未经过 Apple 公证，macOS Gatekeeper 可能阻止直接打开。它仅适合内部测试。
           NOTES
+          elif [[ "$SIGNING_MODE" == self-signed ]]; then
+            cat >> dist/github-release-notes.md <<'NOTES'
+
+          > **安装提示：** 此版本使用固定的自签名证书，未经过 Apple 公证，macOS Gatekeeper 可能阻止直接打开。从旧版 ad-hoc 签名切换时，辅助功能权限可能需要重新授权一次。
+          NOTES
           fi
 
       - name: Run tests
         run: swift test
 
-      - name: Import Developer ID certificate
+      - name: Import release signing certificate
         env:
           APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          OPENCONTEXTS_CERTIFICATE_P12_BASE64: ${{ secrets.OPENCONTEXTS_CERTIFICATE_P12_BASE64 }}
+          OPENCONTEXTS_CERTIFICATE_PASSWORD: ${{ secrets.OPENCONTEXTS_CERTIFICATE_PASSWORD }}
         run: |
           set -euo pipefail
           if [[ "$SIGNING_MODE" == adhoc ]]; then
             echo "CODE_SIGN_IDENTITY=-" >> "$GITHUB_ENV"
             exit 0
           fi
-          : "${APPLE_CERTIFICATE_P12_BASE64:?Missing APPLE_CERTIFICATE_P12_BASE64 secret}"
-          : "${APPLE_CERTIFICATE_PASSWORD:?Missing APPLE_CERTIFICATE_PASSWORD secret}"
+          if [[ "$SIGNING_MODE" == self-signed ]]; then
+            : "${OPENCONTEXTS_CERTIFICATE_P12_BASE64:?Missing OPENCONTEXTS_CERTIFICATE_P12_BASE64 secret}"
+            : "${OPENCONTEXTS_CERTIFICATE_PASSWORD:?Missing OPENCONTEXTS_CERTIFICATE_PASSWORD secret}"
+            certificate_base64="$OPENCONTEXTS_CERTIFICATE_P12_BASE64"
+            certificate_password="$OPENCONTEXTS_CERTIFICATE_PASSWORD"
+            identity_pattern='OpenContexts Release Signing'
+          else
+            : "${APPLE_CERTIFICATE_P12_BASE64:?Missing APPLE_CERTIFICATE_P12_BASE64 secret}"
+            : "${APPLE_CERTIFICATE_PASSWORD:?Missing APPLE_CERTIFICATE_PASSWORD secret}"
+            certificate_base64="$APPLE_CERTIFICATE_P12_BASE64"
+            certificate_password="$APPLE_CERTIFICATE_PASSWORD"
+            identity_pattern='Developer ID Application:[^"]+'
+          fi
 
           keychain_path="$RUNNER_TEMP/opencontexts-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.keychain-db"
           certificate_path="$RUNNER_TEMP/opencontexts-certificate.p12"
           keychain_password="$(openssl rand -base64 32)"
-          printf '%s' "$APPLE_CERTIFICATE_P12_BASE64" | /usr/bin/base64 -D > "$certificate_path"
+          printf '%s' "$certificate_base64" | /usr/bin/base64 -D > "$certificate_path"
           security create-keychain -p "$keychain_password" "$keychain_path"
           security set-keychain-settings -lut 3600 "$keychain_path"
           security unlock-keychain -p "$keychain_password" "$keychain_path"
           security import "$certificate_path" -k "$keychain_path" \
-            -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12
+            -P "$certificate_password" -A -t cert -f pkcs12
           security set-key-partition-list -S apple-tool:,apple:,codesign: \
             -s -k "$keychain_password" "$keychain_path"
+
+          if [[ "$SIGNING_MODE" == self-signed ]]; then
+            certificate_pem="$RUNNER_TEMP/opencontexts-release-certificate.pem"
+            security find-certificate -c 'OpenContexts Release Signing' -p "$keychain_path" > "$certificate_pem"
+            [[ -s "$certificate_pem" ]] || { echo "Self-signed release certificate missing after import" >&2; exit 1; }
+            security add-trusted-cert -r trustRoot -p codeSign -k "$keychain_path" "$certificate_pem"
+          fi
 
           security list-keychains -d user -s "$keychain_path"
 
           identity_hashes=( $(security find-identity -v -p codesigning "$keychain_path" \
-            | sed -En 's/^[[:space:]]*[0-9]+\)[[:space:]]+([[:xdigit:]]{40})[[:space:]]+"Developer ID Application:[^"]+".*$/\1/p') )
+            | sed -En "s/^[[:space:]]*[0-9]+\\)[[:space:]]+([[:xdigit:]]{40})[[:space:]]+\"${identity_pattern}\".*$/\\1/p") )
           if [[ ${#identity_hashes[@]} -ne 1 ]]; then
-            echo "Expected exactly one Developer ID Application identity in the release certificate" >&2
+            echo "Expected exactly one $SIGNING_MODE identity in the release certificate" >&2
             exit 1
           fi
           echo "CODE_SIGN_IDENTITY=${identity_hashes[0]}" >> "$GITHUB_ENV"
@@ -115,7 +140,7 @@ jobs:
           set -euo pipefail
           [[ -f "$DMG_PATH" ]] || { echo "Missing DMG: $DMG_PATH" >&2; exit 1; }
           codesign --verify --strict --verbose=2 "$APP_PATH"
-          if [[ "$SIGNING_MODE" == adhoc ]]; then
+          if [[ "$SIGNING_MODE" != developer-id ]]; then
             exit 0
           fi
 
@@ -141,13 +166,46 @@ jobs:
             shasum -a 256 "$(basename "$DMG_PATH")" > SHA256SUMS.txt
           )
 
+      - name: Generate signed Sparkle appcast
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          : "${SPARKLE_ED_PRIVATE_KEY:?Missing SPARKLE_ED_PRIVATE_KEY secret}"
+          generate_appcast="$(find -L .build/artifacts -type f -name generate_appcast -print -quit)"
+          [[ -n "$generate_appcast" && -x "$generate_appcast" ]] || {
+            echo "Sparkle generate_appcast not found in SwiftPM artifacts" >&2
+            exit 1
+          }
+          printf '%s' "$SPARKLE_ED_PRIVATE_KEY" | \
+            swift scripts/check-sparkle-key.swift "$APP_PATH"
+          mkdir -p dist/sparkle
+          cp "$DMG_PATH" dist/sparkle/
+          printf '%s' "$SPARKLE_ED_PRIVATE_KEY" | "$generate_appcast" \
+            --ed-key-file - \
+            --download-url-prefix "https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG/" \
+            --link "https://github.com/$GITHUB_REPOSITORY" \
+            dist/sparkle
+          mv dist/sparkle/appcast.xml dist/appcast.xml
+          signature="$(python3 -B scripts/check-appcast.py \
+            dist/appcast.xml "$DMG_PATH" "$GITHUB_REPOSITORY" "$RELEASE_TAG" \
+            "$APP_VERSION" \
+            "$(plutil -extract CFBundleVersion raw -o - "$APP_PATH/Contents/Info.plist")")"
+          printf '%s' "$SPARKLE_ED_PRIVATE_KEY" | \
+            "$(dirname "$generate_appcast")/sign_update" --verify --ed-key-file - \
+            "$DMG_PATH" "$signature"
+
       - name: Remove signing material
         if: always()
         run: |
           keychain_path="$RUNNER_TEMP/opencontexts-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.keychain-db"
           certificate_path="$RUNNER_TEMP/opencontexts-certificate.p12"
+          certificate_pem="$RUNNER_TEMP/opencontexts-release-certificate.pem"
+          if [[ -s "$certificate_pem" ]]; then
+            security remove-trusted-cert "$certificate_pem" 2>/dev/null || true
+          fi
           security delete-keychain "$keychain_path" 2>/dev/null || true
-          rm -f "$certificate_path"
+          rm -f "$certificate_path" "$certificate_pem"
 
       - name: Publish GitHub Release
         env:
@@ -179,9 +237,11 @@ jobs:
               --notes-file dist/github-release-notes.md
           fi
 
+          [[ -s dist/appcast.xml ]] || { echo "Missing appcast.xml" >&2; exit 1; }
           gh release upload "$RELEASE_TAG" \
-            "$DMG_PATH" dist/SHA256SUMS.txt --clobber
+            "$DMG_PATH" dist/SHA256SUMS.txt dist/appcast.xml --clobber
           gh release edit "$RELEASE_TAG" \
             --title "OpenContexts $APP_VERSION" \
             --notes-file dist/github-release-notes.md \
+            --prerelease=false \
             --draft=false
