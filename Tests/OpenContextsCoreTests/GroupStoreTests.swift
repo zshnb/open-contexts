@@ -263,6 +263,100 @@ final class GroupStoreTests: XCTestCase {
         XCTAssertNotEqual(try Data(contentsOf: fileURL), persisted)
     }
 
+    func testLiveRefreshRebindsNewIDsWithoutChangingPersistence() throws {
+        let fileURL = temporaryFileURL()
+        let store = GroupStore(fileURL: fileURL)
+        store.reconcile([window("old-a", title: "A"), window("old-b", title: "B")])
+        store.createGroup(name: "Work")
+        let work = try XCTUnwrap(store.groups.last?.id)
+        store.moveWindow(id: "old-a", to: work)
+        store.moveWindow(id: "old-b", to: work)
+        let persisted = try Data(contentsOf: fileURL)
+        let revision = store.revision
+
+        store.updateLiveWindows([])
+        XCTAssertTrue(store.windows(in: work).isEmpty)
+        store.updateLiveWindows([window("new-b", title: "B"), window("new-a", title: "A")])
+        XCTAssertEqual(store.windows(in: work).map(\.id), ["new-a", "new-b"])
+        XCTAssertEqual(store.revision, revision)
+        XCTAssertEqual(try Data(contentsOf: fileURL), persisted)
+
+        store.updateLiveWindows([window("old-a", title: "Changed"), window("new-a", title: "A"),
+                                 window("new-b", title: "B")])
+        XCTAssertEqual(store.windows(in: work).map(\.id), ["new-a", "new-b"])
+        XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), ["old-a"])
+    }
+
+    func testEmptyInitialReconcileCanRestoreOnLiveRefresh() throws {
+        let fileURL = temporaryFileURL()
+        let original = GroupStore(fileURL: fileURL)
+        original.reconcile([window("old", title: "Draft")])
+        original.createGroup(name: "Work")
+        let work = try XCTUnwrap(original.groups.last?.id)
+        original.moveWindow(id: "old", to: work)
+
+        let restarted = GroupStore(fileURL: fileURL)
+        restarted.reconcile([])
+        let persisted = try Data(contentsOf: fileURL)
+        let revision = restarted.revision
+        restarted.updateLiveWindows([window("new", title: "Draft")])
+        XCTAssertEqual(restarted.windows(in: work).map(\.id), ["new"])
+        XCTAssertEqual(restarted.revision, revision)
+        XCTAssertEqual(try Data(contentsOf: fileURL), persisted)
+    }
+
+    func testSameGroupDuplicateKeysRestoreButCrossGroupDuplicatesDoNot() throws {
+        let fileURL = temporaryFileURL()
+        try writeState([
+            "groups": [
+                ["id": GroupStore.ungroupedID, "name": "未分组"],
+                ["id": "work", "name": "Work"],
+                ["id": "other", "name": "Other"]
+            ],
+            "windowsByGroup": [
+                GroupStore.ungroupedID: [],
+                "work": [savedWindow("work-1", title: "Same"), savedWindow("work-2", title: "Same")],
+                "other": []
+            ]
+        ], to: fileURL)
+
+        let restarted = GroupStore(fileURL: fileURL)
+        restarted.reconcile([window("a", title: "Same"), window("b", title: "Same")])
+        XCTAssertEqual(restarted.windows(in: "work").map(\.id), ["a", "b"])
+        restarted.updateLiveWindows([])
+        let persisted = try Data(contentsOf: fileURL)
+        let revision = restarted.revision
+        restarted.updateLiveWindows([window("c", title: "Same"), window("d", title: "Same")])
+        XCTAssertEqual(restarted.windows(in: "work").map(\.id), ["c", "d"])
+        XCTAssertEqual(restarted.revision, revision)
+        XCTAssertEqual(try Data(contentsOf: fileURL), persisted)
+
+        let tooManyLive = GroupStore(fileURL: fileURL)
+        tooManyLive.updateLiveWindows([window("x", title: "Same"), window("y", title: "Same"),
+                                       window("z", title: "Same")])
+        XCTAssertTrue(tooManyLive.windows(in: "work").isEmpty)
+        XCTAssertEqual(tooManyLive.windows(in: GroupStore.ungroupedID).count, 3)
+
+        let crossGroupURL = temporaryFileURL()
+        try writeState([
+            "groups": [
+                ["id": GroupStore.ungroupedID, "name": "未分组"],
+                ["id": "work", "name": "Work"],
+                ["id": "other", "name": "Other"]
+            ],
+            "windowsByGroup": [
+                GroupStore.ungroupedID: [],
+                "work": [savedWindow("work-1", title: "Same")],
+                "other": [savedWindow("other-1", title: "Same")]
+            ]
+        ], to: crossGroupURL)
+        let ambiguous = GroupStore(fileURL: crossGroupURL)
+        ambiguous.updateLiveWindows([window("live", title: "Same")])
+        XCTAssertTrue(ambiguous.windows(in: "work").isEmpty)
+        XCTAssertTrue(ambiguous.windows(in: "other").isEmpty)
+        XCTAssertEqual(ambiguous.windows(in: GroupStore.ungroupedID).map(\.id), ["live"])
+    }
+
     private func temporaryFileURL() -> URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
