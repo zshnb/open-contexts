@@ -3,6 +3,43 @@ import XCTest
 @testable import OpenContextsCore
 
 final class GroupStoreTests: XCTestCase {
+    func testFocusRecencyDoesNotReorderLiveOrSavedWindows() throws {
+        let fileURL = temporaryFileURL()
+        let store = GroupStore(fileURL: fileURL)
+        let a = window("a", title: "A")
+        let b = window("b", title: "B")
+        let c = window("c", title: "C")
+        store.updateLiveWindows([a, b, c])
+        let revision = store.revision
+        let renamed = window("b", title: "Renamed", documentURL: "file:///b")
+        store.updateLiveWindows([renamed, a, c])
+        XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), ["a", "b", "c"])
+        XCTAssertEqual(store.windows(in: GroupStore.ungroupedID)[1], renamed)
+        XCTAssertEqual(store.revision, revision)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: fileURL.path))
+
+        let d = window("d", title: "D")
+        store.updateLiveWindows([d, c, renamed, a])
+        XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), ["a", "b", "c", "d"])
+        store.updateLiveWindows([d, c, a])
+        XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), ["a", "c", "d"])
+
+        let changedC = window("c", title: "Changed C")
+        store.reconcile([d, changedC, a])
+        XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), ["a", "c", "d"])
+        XCTAssertEqual(try persistedWindows(at: fileURL, in: GroupStore.ungroupedID)
+            .compactMap { $0["title"] as? String }, ["A", "Changed C", "D"])
+        store.createGroup(name: "Work")
+        let work = try XCTUnwrap(store.groups.last?.id)
+        store.moveWindow(id: "d", to: work)
+        store.moveWindow(id: "a", to: work)
+        store.moveWindow(id: "a", to: work, before: "d")
+        let persisted = try Data(contentsOf: fileURL)
+        store.updateLiveWindows([d, changedC, a])
+        XCTAssertEqual(store.windows(in: work).map(\.id), ["a", "d"])
+        XCTAssertEqual(try Data(contentsOf: fileURL), persisted)
+    }
+
     func testGroupAndWindowOrderingAndDeletion() throws {
         let store = GroupStore(fileURL: temporaryFileURL())
         let windows = [window("1", title: "One"), window("2", title: "Two"), window("3", title: "Three")]

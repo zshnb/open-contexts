@@ -52,6 +52,8 @@ public final class GroupStore: ObservableObject {
             uniqueWindows.append(window)
         }
         guard incoming != activeWindows else { return }
+        activeWindowOrder = activeWindowOrder.filter { incoming[$0] != nil }
+        activeWindowOrder.append(contentsOf: uniqueWindows.map(\.id).filter { !activeWindowOrder.contains($0) })
 
         savedIDByWindowID = savedIDByWindowID.filter { incoming[$0.key] != nil }
 
@@ -62,7 +64,7 @@ public final class GroupStore: ObservableObject {
 
         pruneUnrecoverableHistory()
 
-        let newWindows = uniqueWindows.filter { savedIDByWindowID[$0.id] == nil }
+        let newWindows = activeWindowOrder.compactMap { incoming[$0] }.filter { savedIDByWindowID[$0.id] == nil }
         restoreBindings(for: uniqueWindows)
 
         for window in newWindows {
@@ -77,7 +79,6 @@ public final class GroupStore: ObservableObject {
         }
 
         activeWindows = incoming
-        activeWindowOrder = uniqueWindows.map(\.id)
         changed()
     }
 
@@ -90,7 +91,8 @@ public final class GroupStore: ObservableObject {
         }
         restoreBindings(for: uniqueWindows)
         activeWindows = incoming
-        activeWindowOrder = uniqueWindows.map(\.id)
+        activeWindowOrder = activeWindowOrder.filter { incoming[$0] != nil }
+        activeWindowOrder.append(contentsOf: uniqueWindows.map(\.id).filter { !activeWindowOrder.contains($0) })
     }
 
     public func windows(in groupID: String) -> [WindowInfo] {

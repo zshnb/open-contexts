@@ -198,6 +198,7 @@ final class WindowService: ObservableObject {
 
     static func selfCheck() -> Bool {
         _ = NSApplication.shared
+        guard orderingSelfCheck() else { return false }
         let service = WindowService()
         let id = "local:self-check"
         let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: false)
@@ -228,6 +229,37 @@ final class WindowService: ObservableObject {
         FileHandle.standardError.write(Data(
             "Dock badge self-check: mapped=\(reads.count) readable=\(readable) badged=\(badged)\n".utf8
         ))
+        return true
+    }
+
+    static func orderingSelfCheck() -> Bool {
+        _ = NSApplication.shared
+        let service = WindowService()
+        var samples = ["A", "B", "C", "D"].map { id in
+            TrackedWindow(id: id, element: AXUIElementCreateApplication(0),
+                          info: WindowInfo(id: id, appID: "self-check", appName: "Self-check",
+                                           title: id, processID: 0))
+        }
+        for (step, sample) in [
+            ([0, 1, 2], "A", ["A", "B", "C"]),
+            ([1, 0, 2], "B", ["B", "A", "C"]),
+            ([0, 1, 2], "A", ["A", "B", "C"]),
+            ([3, 2, 1, 0], "A", ["A", "B", "C", "D"]),
+            ([3, 2, 0], "C", ["C", "A", "D"])
+        ].enumerated() {
+            let (ids, focus, expected) = sample
+            if step == 1 {
+                samples[1].info = WindowInfo(id: "B", appID: "self-check", appName: "Self-check",
+                                            title: "Updated B", documentURL: "file:///B", processID: 0)
+            }
+            service.apply(ScanResult(windows: ids.map { samples[$0] }, focusedID: focus,
+                                     fullscreenScreenIDs: [], activeAppIDs: [], badgeReads: nil))
+            guard service.tracked.map(\.id) == expected,
+                  service.windows.map(\.id) == expected,
+                  service.focusedWindowID == focus,
+                  service.windows == expected.compactMap({ id in samples.first { $0.id == id }?.info })
+            else { return false }
+        }
         return true
     }
 
