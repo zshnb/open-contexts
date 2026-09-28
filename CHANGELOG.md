@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-09-28
+
+### Fixed
+
+- Restore pinned windows by stable app ID when their titles change, only when the app has one live window and one pinned record across all groups. Preserve existing bindings and avoid conflicting document URL matches.
+- Keep active and pinned records when deduplicating same-name windows, so they do not move to Ungrouped.
+
+### 修复
+
+- 固定窗口标题变化后，改按稳定的应用 ID 恢复；仅在该应用当前只有一个窗口且所有分组中只有一条固定记录时恢复，并保留已有绑定、避开文档 URL 冲突。
+- 同名窗口去重时保留活跃及固定记录，避免窗口被移到未分组。
+
 ## [0.3.3] - 2026-09-28
 
 ### Added
