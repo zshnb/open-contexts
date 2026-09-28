@@ -2,7 +2,7 @@
 
 <h1 align="center"><img src="assets/AppIcon.png" alt="Open Contexts icon" width="48" height="48" align="absbottom"> Open Contexts</h1>
 
-Open Contexts is an unofficial, open-source recreation of [Contexts](https://contexts.co/), a paid macOS window manager. It focuses on recreating the sidebar and window switching experience.
+Open Contexts is an open-source enhanced edition of the paid macOS window manager [Contexts](https://contexts.co/), faithfully recreating its app bar and window switcher experience.
 
 ## Screenshots
 
@@ -35,17 +35,17 @@ The window switcher displays windows in most recently used order. You can contin
 | Keyboard switcher | `⌘Tab` switches among all windows; `Command + backtick` switches among windows of the current app; supports `⇧Tab`, arrow keys, `Esc`, and releasing `⌘` to confirm |
 | Window activation | Attempts to restore minimized or hidden windows when activated |
 | Window information | Displays app icons, window titles, and notification badges readable from the system Dock |
-| Multiple displays and Spaces | Implemented, but still needs verification across more devices and apps |
 
 ### Open Contexts exclusive feature: saved custom window groups
 
 The original Contexts does not support saving custom window groups. Open Contexts adds this feature alongside its recreation of the core experience:
 
 - Create, rename, and delete groups; drag windows or groups to reorder them.
+- Right-click a window and select “Pin” to keep it at its current position in the group during automatic updates; drag it to change that position.
 - Restore group names and order after a restart, along with the group, order, and sidebar position of windows that can be matched.
 - Use native Swift, AppKit, and SwiftUI for window management; use Sparkle for app updates.
 
-Contexts' Search, Fast Search, trackpad gestures, and filtering by Space have not yet been recreated. Multiple displays, cross-Space switching, and full-screen scenarios have corresponding implementations, but still need verification in more real-world environments.
+Contexts' Search, Fast Search, and trackpad gestures have not yet been recreated. Full-screen scenarios have a corresponding implementation, but still need verification in more real-world environments.
 
 ## Installation and first launch
 

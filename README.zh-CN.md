@@ -2,7 +2,7 @@
 
 <h1 align="center"><img src="assets/AppIcon.png" alt="Open Contexts 图标" width="48" height="48" align="absbottom"> Open Contexts</h1>
 
-Open Contexts 是付费 macOS 窗口管理软件 [Contexts](https://contexts.co/) 的非官方开源复刻版，主要还原其侧栏和窗口切换体验。
+Open Contexts 是付费 macOS 窗口管理软件 [Contexts](https://contexts.co/) 的开源升级版，完美还原应用栏和窗口切换体验。
 
 ## 运行截图
 
@@ -35,17 +35,17 @@ Open Contexts 是付费 macOS 窗口管理软件 [Contexts](https://contexts.co/
 | 键盘切换器 | `⌘Tab` 切换所有窗口，`Command + 反引号` 切换当前应用窗口；支持 `⇧Tab`、方向键、`Esc` 与松开 `⌘` 确认 |
 | 窗口激活 | 激活最小化或隐藏的窗口时尝试恢复显示 |
 | 窗口信息 | 显示应用图标、窗口标题与系统可读取的 Dock 通知角标 |
-| 多显示器与跨 Space | 已实现，仍需在更多设备和应用中验证 |
 
 ### Open Contexts 独有功能：保存自定义窗口分组
 
 原版 Contexts 不支持保存自定义窗口分组，Open Contexts 在复刻核心体验之外增加了这项功能：
 
 - 创建、重命名和删除分组，拖动窗口或分组调整顺序。
+- 右键窗口选择“固定”，可将窗口固定在当前分组的位置，自动更新不会改变其位置；手动拖动仍可调整。
 - 重启后恢复分组名称和顺序，以及可匹配窗口的分组、顺序和侧栏位置。
 - 使用 Swift、AppKit 和 SwiftUI 原生实现窗口管理；应用更新使用 Sparkle。
 
-目前尚未复刻 Contexts 的搜索、Fast Search、触控板手势和按 Space 筛选功能。多显示器、跨 Space 和全屏场景已有相应实现，但仍需在更多真实环境中验证。
+目前尚未复刻 Contexts 的搜索、Fast Search 和触控板手势。全屏场景已有相应实现，但仍需在更多真实环境中验证。
 
 ## 安装与首次运行
 
