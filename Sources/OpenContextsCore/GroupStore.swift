@@ -30,6 +30,11 @@ public final class GroupStore: ObservableObject {
         var windowsByGroup: [String: [SavedWindow]]
     }
 
+    private struct WindowKey: Hashable {
+        let appID: String
+        let title: String
+    }
+
     private let fileURL: URL
     private var windowsByGroup: [String: [SavedWindow]]
     private var activeWindows: [String: WindowInfo] = [:]
@@ -57,12 +62,10 @@ public final class GroupStore: ObservableObject {
 
         savedIDByWindowID = savedIDByWindowID.filter { incoming[$0.key] != nil }
 
-        for (windowID, savedID) in savedIDByWindowID {
-            guard let window = incoming[windowID] else { continue }
+        for window in uniqueWindows {
+            guard let savedID = savedIDByWindowID[window.id] else { continue }
             updateSavedWindow(id: savedID, from: window)
         }
-
-        pruneUnrecoverableHistory()
 
         let newWindows = activeWindowOrder.compactMap { incoming[$0] }.filter { savedIDByWindowID[$0.id] == nil }
         restoreBindings(for: uniqueWindows)
@@ -79,7 +82,7 @@ public final class GroupStore: ObservableObject {
         }
 
         activeWindows = incoming
-        changed()
+        changed(preferredSavedIDs: uniqueWindows.compactMap { savedIDByWindowID[$0.id] })
     }
 
     public func updateLiveWindows(_ windows: [WindowInfo]) {
@@ -145,7 +148,7 @@ public final class GroupStore: ObservableObject {
                 windowsByGroup[groupID, default: []].firstIndex(where: { $0.id == id })
             } ?? windowsByGroup[groupID, default: []].endIndex
             windowsByGroup[groupID, default: []].insert(saved, at: index)
-            changed()
+            changed(preferredSavedIDs: [saved.id])
             return
         }
         guard let savedID = savedIDByWindowID[id] else { return }
@@ -164,7 +167,7 @@ public final class GroupStore: ObservableObject {
             windowsByGroup[groupID, default: []].firstIndex(where: { $0.id == id })
         } ?? windowsByGroup[groupID, default: []].endIndex
         windowsByGroup[groupID, default: []].insert(moved, at: index)
-        changed()
+        changed(preferredSavedIDs: [moved.id])
     }
 
     public func moveGroup(id: String, before groupID: String?) {
@@ -185,16 +188,6 @@ public final class GroupStore: ObservableObject {
     }
 
     private func preferredMatchKey(_ window: WindowInfo) -> String? {
-        if let documentURL = window.documentURL, !documentURL.isEmpty {
-            return "document\u{0}\(window.appID)\u{0}\(documentURL)"
-        }
-        guard !window.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            return "application\u{0}\(window.appID)"
-        }
-        return "title\u{0}\(window.appID)\u{0}\(window.title)"
-    }
-
-    private func preferredMatchKey(_ window: SavedWindow) -> String? {
         if let documentURL = window.documentURL, !documentURL.isEmpty {
             return "document\u{0}\(window.appID)\u{0}\(documentURL)"
         }
@@ -231,32 +224,28 @@ public final class GroupStore: ObservableObject {
     private func restoreBindings(for windows: [WindowInfo]) {
         guard Set(windows.map(\.id)) != Set(activeWindows.keys) else { return }
         let liveKeyCounts = Dictionary(grouping: windows.flatMap(matchKeys), by: { $0 }).mapValues(\.count)
-        var savedByKey: [String: [(groupID: String, savedID: String)]] = [:]
+        var savedByKey: [String: [String]] = [:]
         for group in groups {
             for saved in windowsByGroup[group.id, default: []] {
                 for key in matchKeys(saved) {
-                    savedByKey[key, default: []].append((group.id, saved.id))
+                    savedByKey[key, default: []].append(saved.id)
                 }
             }
         }
 
         let liveIDs = Set(windows.map(\.id))
         var usedSavedIDs = Set(savedIDByWindowID.filter { liveIDs.contains($0.key) }.values)
-        for allowSameGroupDuplicates in [false, true] {
-            for window in windows where savedIDByWindowID[window.id] == nil {
-                guard let key = preferredMatchKey(window), let candidates = savedByKey[key] else { continue }
-                let unique = liveKeyCounts[key] == 1 && candidates.count == 1
-                let sameCustomGroup = allowSameGroupDuplicates && candidates.count > 1
-                    && liveKeyCounts[key, default: 0] <= candidates.count
-                    && candidates[0].groupID != Self.ungroupedID
-                    && candidates.allSatisfy { $0.groupID == candidates[0].groupID }
-                guard unique || sameCustomGroup,
-                      let match = candidates.first(where: { !usedSavedIDs.contains($0.savedID) }) else { continue }
-
-                savedIDByWindowID = savedIDByWindowID.filter { $0.value != match.savedID }
-                savedIDByWindowID[window.id] = match.savedID
-                usedSavedIDs.insert(match.savedID)
-            }
+        for window in windows.reversed() where savedIDByWindowID[window.id] == nil {
+            let groupKey = window.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ? "application\u{0}\(window.appID)"
+                : "title\u{0}\(window.appID)\u{0}\(window.title)"
+            let key = liveKeyCounts[groupKey, default: 0] > 1 && savedByKey[groupKey]?.count == 1
+                ? groupKey : preferredMatchKey(window)
+            guard let key, let candidates = savedByKey[key], candidates.count == 1,
+                  let savedID = candidates.first, !usedSavedIDs.contains(savedID) else { continue }
+            savedIDByWindowID = savedIDByWindowID.filter { $0.value != savedID }
+            savedIDByWindowID[window.id] = savedID
+            usedSavedIDs.insert(savedID)
         }
     }
 
@@ -270,33 +259,39 @@ public final class GroupStore: ObservableObject {
         }
     }
 
-    private func changed() {
-        pruneUnrecoverableHistory()
+    private func changed(preferredSavedIDs: [String] = []) {
+        _ = normalizeDuplicateRecords(preferredSavedIDs: preferredSavedIDs)
         save()
         revision += 1
     }
 
     @discardableResult
-    private func pruneUnrecoverableHistory() -> Bool {
-        let activeSavedIDs = Set(savedIDByWindowID.values)
-        let keyCounts = Dictionary(grouping: windowsByGroup.values.flatMap { $0 }.flatMap { saved in
-            matchKeys(saved).map { ($0, saved.id) }
-        }, by: { $0.0 }).mapValues(\.count)
-        var pruned = false
-
+    private func normalizeDuplicateRecords(preferredSavedIDs: [String] = []) -> Bool {
+        let priority = Dictionary(uniqueKeysWithValues: preferredSavedIDs.enumerated().map { ($0.element, $0.offset) })
+        var normalized = false
         for group in groups {
             let oldWindows = windowsByGroup[group.id, default: []]
-            let keptWindows = oldWindows.filter { saved in
-                if activeSavedIDs.contains(saved.id) { return true }
-                guard let key = preferredMatchKey(saved) else { return false }
-                return group.id != Self.ungroupedID || keyCounts[key] == 1
+            var winnerByKey: [WindowKey: Int] = [:]
+            for (index, saved) in oldWindows.enumerated() {
+                let key = WindowKey(appID: saved.appID, title: saved.title)
+                if let previous = winnerByKey[key],
+                   priority[oldWindows[previous].id, default: -1] > priority[saved.id, default: -1] {
+                    continue
+                }
+                winnerByKey[key] = index
+            }
+            let keptWindows = oldWindows.enumerated().compactMap { index, saved -> SavedWindow? in
+                let key = WindowKey(appID: saved.appID, title: saved.title)
+                return winnerByKey[key] == index ? saved : nil
             }
             if keptWindows != oldWindows {
                 windowsByGroup[group.id] = keptWindows
-                pruned = true
+                normalized = true
             }
         }
-        return pruned
+        let retainedIDs = Set(windowsByGroup.values.flatMap { $0.map(\.id) })
+        savedIDByWindowID = savedIDByWindowID.filter { retainedIDs.contains($0.value) }
+        return normalized
     }
 
     private func load() {
@@ -315,7 +310,7 @@ public final class GroupStore: ObservableObject {
             groups = state.groups
             windowsByGroup = state.windowsByGroup
             for id in ids where windowsByGroup[id] == nil { windowsByGroup[id] = [] }
-            cleaned = pruneUnrecoverableHistory()
+            cleaned = normalizeDuplicateRecords()
         } catch {
             persistenceBlocked = true
             persistenceError = "无法读取分组数据：\(error.localizedDescription)"
@@ -329,16 +324,8 @@ public final class GroupStore: ObservableObject {
         do {
             try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(),
                                                     withIntermediateDirectories: true)
-            let allWindows = windowsByGroup.values.flatMap { $0 }
-            let keyCounts = Dictionary(grouping: allWindows.flatMap { saved in
-                matchKeys(saved).map { ($0, saved.id) }
-            }, by: { $0.0 }).mapValues(\.count)
             let persistedWindows = Dictionary(uniqueKeysWithValues: groups.map { group in
-                let windows = windowsByGroup[group.id, default: []].filter { saved in
-                    guard let key = preferredMatchKey(saved) else { return false }
-                    return group.id != Self.ungroupedID || keyCounts[key] == 1
-                }
-                return (group.id, windows)
+                (group.id, windowsByGroup[group.id, default: []])
             })
             let data = try JSONEncoder().encode(State(groups: groups, windowsByGroup: persistedWindows))
             try data.write(to: fileURL, options: .atomic)
