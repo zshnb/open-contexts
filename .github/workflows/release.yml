@@ -48,18 +48,6 @@ jobs:
             --output dist/release-notes.md
           version="$(tr -d '\r\n' < VERSION)"
           echo "APP_VERSION=$version" >> "$GITHUB_ENV"
-          cp dist/release-notes.md dist/github-release-notes.md
-          if [[ "$SIGNING_MODE" == adhoc ]]; then
-            cat >> dist/github-release-notes.md <<'NOTES'
-
-          > **安装提示：** 此版本使用 ad-hoc 签名，未经过 Apple 公证，macOS Gatekeeper 可能阻止直接打开。它仅适合内部测试。
-          NOTES
-          elif [[ "$SIGNING_MODE" == self-signed ]]; then
-            cat >> dist/github-release-notes.md <<'NOTES'
-
-          > **安装提示：** 此版本使用固定的自签名证书，未经过 Apple 公证，macOS Gatekeeper 可能阻止直接打开。从旧版 ad-hoc 签名切换时，辅助功能权限可能需要重新授权一次。
-          NOTES
-          fi
 
       - name: Run tests
         run: swift test
@@ -238,7 +226,7 @@ jobs:
               --verify-tag \
               --draft \
               --title "OpenContexts $APP_VERSION" \
-              --notes-file dist/github-release-notes.md
+              --notes-file dist/release-notes.md
           fi
 
           [[ -s dist/appcast.xml ]] || { echo "Missing appcast.xml" >&2; exit 1; }
@@ -246,6 +234,6 @@ jobs:
             "$DMG_PATH" dist/SHA256SUMS.txt dist/appcast.xml --clobber
           gh release edit "$RELEASE_TAG" \
             --title "OpenContexts $APP_VERSION" \
-            --notes-file dist/github-release-notes.md \
+            --notes-file dist/release-notes.md \
             --prerelease=false \
             --draft=false
