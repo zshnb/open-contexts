@@ -921,12 +921,16 @@ final class SwitcherPanel: NSPanel {
     private let stack = FlippedStackView()
     private let scroll = NSScrollView()
     private let onActivate: (String) -> Void
+    private let onSelect: (String) -> Void
     private var displayScreen: NSScreen
     private weak var selectedRow: SwitcherRow?
+    private var hoverOrigin = NSEvent.mouseLocation
 
-    init(screen: NSScreen, onActivate: @escaping (String) -> Void) {
+    init(screen: NSScreen, onActivate: @escaping (String) -> Void,
+         onSelect: @escaping (String) -> Void) {
         self.displayScreen = screen
         self.onActivate = onActivate
+        self.onSelect = onSelect
         super.init(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel],
                    backing: .buffered, defer: false)
 
@@ -966,19 +970,23 @@ final class SwitcherPanel: NSPanel {
             stack.widthAnchor.constraint(equalTo: scroll.contentView.widthAnchor)
         ])
         contentView = background
+        acceptsMouseMovedEvents = true
     }
 
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 
     func show(windows: [WindowInfo], selectedIndex: Int) {
-        update(windows: windows, selectedIndex: selectedIndex)
+        update(windows: windows, selectedIndex: selectedIndex, resetHover: true)
         orderFrontRegardless()
         layoutDocumentView()
         revealSelectedRow()
     }
 
-    func update(windows: [WindowInfo], selectedIndex: Int) {
+    func update(windows: [WindowInfo], selectedIndex: Int, resetHover: Bool = false) {
+        if resetHover {
+            hoverOrigin = NSEvent.mouseLocation
+        }
         stack.arrangedSubviews.forEach {
             stack.removeArrangedSubview($0)
             $0.removeFromSuperview()
@@ -986,9 +994,14 @@ final class SwitcherPanel: NSPanel {
 
         var selectedRow: SwitcherRow?
         for (index, window) in windows.enumerated() {
-            let row = SwitcherRow(window: window, selected: index == selectedIndex) { [weak self] in
-                self?.onActivate(window.id)
-            }
+            let row = SwitcherRow(
+                window: window, selected: index == selectedIndex,
+                onPointerMove: { [weak self] pointer in
+                    guard self?.canHover(at: pointer) == true else { return }
+                    self?.onSelect(window.id)
+                },
+                action: { [weak self] in self?.onActivate(window.id) }
+            )
             stack.addArrangedSubview(row)
             row.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -16).isActive = true
             if index == selectedIndex { selectedRow = row }
@@ -1014,6 +1027,12 @@ final class SwitcherPanel: NSPanel {
         orderOut(nil)
     }
 
+    private func canHover(at pointer: NSPoint) -> Bool {
+        guard pointer != hoverOrigin else { return false }
+        hoverOrigin = pointer
+        return true
+    }
+
     private func layoutDocumentView() {
         contentView?.layoutSubtreeIfNeeded()
         scroll.layoutSubtreeIfNeeded()
@@ -1034,7 +1053,7 @@ final class SwitcherPanel: NSPanel {
               stack.arrangedSubviews.allSatisfy({ $0.frame.height <= 28.5 }),
               stack.arrangedSubviews.compactMap({ $0 as? SwitcherRow }).allSatisfy({
                   $0.smokeColumnsAreValid && $0.smokeHitRegionsRouteToRow
-                      && $0.smokeHoverAppearanceIsValid
+                      && $0.smokeSelectionAppearanceIsValid
               }),
               let selectedRow else { return false }
         return frame.width <= 600.5
@@ -1048,6 +1067,20 @@ final class SwitcherPanel: NSPanel {
         let rows = stack.arrangedSubviews.compactMap { $0 as? SwitcherRow }
         return "frame=\(frame) stack=\(stack.frame) clip=\(scroll.contentView.bounds) selected=\(selectedRect) columns=\(rows.filter { !$0.smokeColumnsAreValid }.count) hits=\(rows.filter { !$0.smokeHitRegionsRouteToRow }.count) rows=\(stack.arrangedSubviews.map { $0.frame.height })"
     }
+
+    fileprivate func smokeMove(to index: Int, pointer: NSPoint) {
+        let rows = stack.arrangedSubviews.compactMap { $0 as? SwitcherRow }
+        guard rows.indices.contains(index) else { return }
+        rows[index].smokePointerMove(pointer)
+    }
+
+    fileprivate var smokeHighlightedIndices: [Int] {
+        stack.arrangedSubviews.compactMap { $0 as? SwitcherRow }.enumerated().compactMap {
+            $0.element.smokeHighlighted ? $0.offset : nil
+        }
+    }
+
+    fileprivate var smokeHoverOrigin: NSPoint { hoverOrigin }
 }
 
 @MainActor
@@ -1351,10 +1384,13 @@ private final class SwitcherRow: NSButton {
     private let iconView: NSImageView
     private let titleLabel: NSTextField
     private let selected: Bool
+    private let onPointerMove: (NSPoint) -> Void
     private var trackingArea: NSTrackingArea?
 
-    init(window: WindowInfo, selected: Bool, action: @escaping () -> Void) {
+    init(window: WindowInfo, selected: Bool, onPointerMove: @escaping (NSPoint) -> Void,
+         action: @escaping () -> Void) {
         callback = action
+        self.onPointerMove = onPointerMove
         appLabel = NSTextField(labelWithString: window.appName)
         iconView = NSImageView(image: applicationIcon(for: window))
         titleLabel = NSTextField(labelWithString: window.displayTitle)
@@ -1403,16 +1439,22 @@ private final class SwitcherRow: NSButton {
         super.updateTrackingAreas()
         if let trackingArea { removeTrackingArea(trackingArea) }
         let trackingArea = NSTrackingArea(rect: .zero,
-                                          options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+                                          options: [.mouseEnteredAndExited, .mouseMoved, .activeAlways, .inVisibleRect],
                                           owner: self)
         addTrackingArea(trackingArea)
         self.trackingArea = trackingArea
-        let pointer = window.map { convert($0.mouseLocationOutsideOfEventStream, from: nil) }
-        setHovered(pointer.map { visibleRect.contains($0) } ?? false)
     }
 
-    override func mouseEntered(with event: NSEvent) { setHovered(true) }
-    override func mouseExited(with event: NSEvent) { setHovered(false) }
+    override func mouseEntered(with event: NSEvent) { selectUnderPointer(event) }
+    override func mouseMoved(with event: NSEvent) { selectUnderPointer(event) }
+
+    fileprivate var smokeHighlighted: Bool { layer?.backgroundColor == rowHoverColor.cgColor }
+    fileprivate func smokePointerMove(_ pointer: NSPoint) { onPointerMove(pointer) }
+
+    private func selectUnderPointer(_ event: NSEvent) {
+        guard let window, visibleRect.contains(convert(event.locationInWindow, from: nil)) else { return }
+        onPointerMove(window.convertPoint(toScreen: event.locationInWindow))
+    }
 
     override func hitTest(_ point: NSPoint) -> NSView? { super.hitTest(point) == nil ? nil : self }
 
@@ -1428,25 +1470,12 @@ private final class SwitcherRow: NSButton {
         return hitTest(appPoint) === self && hitTest(iconPoint) === self && hitTest(titlePoint) === self
     }
 
-    fileprivate var smokeHoverAppearanceIsValid: Bool {
-        setHovered(true)
-        let entered = layer?.backgroundColor == rowHoverColor.cgColor
-            && appLabel.textColor == .white && titleLabel.textColor == .white
-        setHovered(false)
-        let exited = selected
+    fileprivate var smokeSelectionAppearanceIsValid: Bool {
+        selected
             ? layer?.backgroundColor == rowHoverColor.cgColor
                 && appLabel.textColor == .white && titleLabel.textColor == .white
             : layer?.backgroundColor == NSColor.clear.cgColor
                 && appLabel.textColor == .labelColor && titleLabel.textColor == .labelColor
-        return entered && exited
-    }
-
-    private func setHovered(_ hovered: Bool) {
-        let highlighted = selected || hovered
-        layer?.backgroundColor = highlighted ? rowHoverColor.cgColor : NSColor.clear.cgColor
-        let color: NSColor = highlighted ? .white : .labelColor
-        appLabel.textColor = color
-        titleLabel.textColor = color
     }
 
     @objc private func invoke() { callback() }
@@ -1880,11 +1909,35 @@ enum PanelSmokeCheck {
             return fail("sidebar remained in dragging state after source cancellation")
         }
 
-        let switcher = SwitcherPanel(screen: screen, onActivate: { _ in })
         let switcherWindows = windows
-        switcher.show(windows: switcherWindows, selectedIndex: switcherWindows.count - 1)
+        var selectedIDs: [String] = []
+        let switcher = SwitcherPanel(screen: screen, onActivate: { _ in },
+                                      onSelect: { selectedIDs.append($0) })
+        let initialIndex = switcherWindows.count - 1
+        switcher.show(windows: switcherWindows, selectedIndex: initialIndex)
         switcher.contentView?.layoutSubtreeIfNeeded()
-        let valid = switcher.smokeLayoutIsValid
+        let origin = switcher.smokeHoverOrigin
+        let initial = switcher.smokeLayoutIsValid && switcher.smokeHighlightedIndices == [initialIndex]
+        switcher.smokeMove(to: 0, pointer: origin)
+        let still = selectedIDs.isEmpty && switcher.smokeHighlightedIndices == [initialIndex]
+        switcher.smokeMove(to: 0, pointer: NSPoint(x: origin.x + 1, y: origin.y))
+        let moved = selectedIDs == [switcherWindows[0].id]
+        switcher.update(windows: switcherWindows, selectedIndex: 0)
+        let mouseSelected = switcher.smokeHighlightedIndices == [0]
+        switcher.update(windows: switcherWindows, selectedIndex: 1, resetHover: true)
+        let keyboardSelected = switcher.smokeHighlightedIndices == [1]
+        switcher.smokeMove(to: 0, pointer: switcher.smokeHoverOrigin)
+        let keyboardHeld = selectedIDs.count == 1 && switcher.smokeHighlightedIndices == [1]
+        switcher.smokeMove(to: 2, pointer: NSPoint(x: switcher.smokeHoverOrigin.x + 1,
+                                                   y: switcher.smokeHoverOrigin.y))
+        let movedAgain = selectedIDs == [switcherWindows[0].id, switcherWindows[2].id]
+        switcher.update(windows: switcherWindows, selectedIndex: 2)
+        let mouseSelectedAgain = switcher.smokeHighlightedIndices == [2]
+        switcher.show(windows: switcherWindows, selectedIndex: initialIndex)
+        switcher.smokeMove(to: 0, pointer: switcher.smokeHoverOrigin)
+        let reset = selectedIDs.count == 2 && switcher.smokeHighlightedIndices == [initialIndex]
+        let valid = initial && still && moved && mouseSelected && keyboardSelected
+            && keyboardHeld && movedAgain && mouseSelectedAgain && reset
         switcher.hideSwitcher()
         switcher.close()
         sidebar.close()

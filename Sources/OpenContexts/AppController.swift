@@ -121,9 +121,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 onRenameGroup: { [weak self] id, name in self?.groupStore.renameGroup(id: id, name: name) },
                 onDeleteGroup: { [weak self] in self?.groupStore.deleteGroup(id: $0) }
             )
-            switchers[id] = SwitcherPanel(screen: screen) { [weak self] id in
-                self?.finishSwitcher(activating: id)
-            }
+            switchers[id] = SwitcherPanel(
+                screen: screen,
+                onActivate: { [weak self] id in self?.finishSwitcher(activating: id) },
+                onSelect: { [weak self] id in self?.selectSwitcherWindow(id: id) }
+            )
         }
         updateSidebars()
         if currentAppOnly != nil, !switchingWindows.isEmpty {
@@ -167,7 +169,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
             guard !switchingWindows.isEmpty else { return }
             selectedIndex = (selectedIndex + amount % switchingWindows.count + switchingWindows.count)
                 % switchingWindows.count
-            switchers.values.forEach { $0.update(windows: switchingWindows, selectedIndex: selectedIndex) }
+            switchers.values.forEach { $0.update(windows: switchingWindows, selectedIndex: selectedIndex, resetHover: true) }
         case .commit:
             let id = switchingWindows.indices.contains(selectedIndex) ? switchingWindows[selectedIndex].id : nil
             finishSwitcher(activating: id)
@@ -186,6 +188,14 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
         selectedIndex = selectedID.flatMap { id in switchingWindows.firstIndex(where: { $0.id == id }) }
             ?? min(selectedIndex, switchingWindows.count - 1)
+        switchers.values.forEach { $0.update(windows: switchingWindows, selectedIndex: selectedIndex) }
+    }
+
+    private func selectSwitcherWindow(id: String) {
+        guard currentAppOnly != nil,
+              let index = switchingWindows.firstIndex(where: { $0.id == id }),
+              index != selectedIndex else { return }
+        selectedIndex = index
         switchers.values.forEach { $0.update(windows: switchingWindows, selectedIndex: selectedIndex) }
     }
 
