@@ -172,7 +172,7 @@ final class GroupStoreTests: XCTestCase {
         }
     }
 
-    func testLoadNormalizesLegacyDuplicatesWithoutDroppingUniqueRecords() throws {
+    func testLoadPreservesDistinctSameTitleDocumentsUntilLiveScan() throws {
         let fileURL = temporaryFileURL()
         let customID = "custom"
         try writeState([
@@ -196,7 +196,7 @@ final class GroupStoreTests: XCTestCase {
 
         let store = GroupStore(fileURL: fileURL)
         XCTAssertEqual(try persistedWindows(at: fileURL, in: GroupStore.ungroupedID)
-            .compactMap { $0["id"] as? String }, ["blank", "title-conflict", "doc-2"])
+            .compactMap { $0["id"] as? String }, ["blank", "title-conflict", "doc-1", "doc-2"])
         XCTAssertEqual(try persistedWindows(at: fileURL, in: customID).compactMap { $0["id"] as? String },
                        ["custom-blank", "custom-document"])
 
@@ -206,9 +206,9 @@ final class GroupStoreTests: XCTestCase {
             window("live-2", title: "Same", documentURL: "file:///two")
         ])
         XCTAssertEqual(store.windows(in: customID).map(\.id), ["live-custom"])
-        XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), ["live-2", "live-1"])
+        XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), ["live-1", "live-2"])
         XCTAssertEqual(try persistedWindows(at: fileURL, in: GroupStore.ungroupedID)
-            .compactMap { $0["documentURL"] as? String }, ["file:///two"])
+            .compactMap { $0["documentURL"] as? String }, ["file:///one", "file:///two"])
     }
 
     func testCorruptPersistenceIsReportedAndNeverOverwritten() throws {
@@ -266,6 +266,178 @@ final class GroupStoreTests: XCTestCase {
         ])
         XCTAssertEqual(restarted.windows(in: work).map(\.id), ["new"])
         XCTAssertEqual(restarted.windows(in: GroupStore.ungroupedID).map(\.id), ["other-app"])
+    }
+
+    func testUniquePinnedWindowRebindsAfterDynamicTitleChange() throws {
+        let fileURL = temporaryFileURL()
+        var pinned = savedWindow("pinned", title: "Inbox — 11")
+        pinned["pinnedPosition"] = 0
+        try writeState([
+            "groups": [["id": GroupStore.ungroupedID, "name": "未分组"],
+                       ["id": "work", "name": "Work"]],
+            "windowsByGroup": [
+                GroupStore.ungroupedID: [savedWindow("history", title: "Inbox — 12")],
+                "work": [pinned]
+            ]
+        ], to: fileURL)
+
+        let store = GroupStore(fileURL: fileURL)
+        store.reconcile([window("live", title: "Inbox — 12")])
+        XCTAssertEqual(store.windows(in: "work").map(\.id), ["live"])
+        XCTAssertTrue(store.windows(in: GroupStore.ungroupedID).isEmpty)
+        XCTAssertTrue(store.isPinned(id: "live"))
+        XCTAssertEqual(try persistedWindows(at: fileURL, in: "work").first?["title"] as? String,
+                       "Inbox — 12")
+    }
+
+    func testLiveRefreshRebindsUniquePinnedWindowWithoutDiskWrite() throws {
+        let fileURL = temporaryFileURL()
+        let original = GroupStore(fileURL: fileURL)
+        original.reconcile([window("old", title: "All iCloud — 12 notes")])
+        original.createGroup(name: "Notes")
+        let notes = try XCTUnwrap(original.groups.last?.id)
+        original.moveWindow(id: "old", to: notes)
+        original.togglePin(id: "old")
+        let persisted = try Data(contentsOf: fileURL)
+
+        original.updateLiveWindows([window("new", title: "All iCloud — 10 notes")])
+        XCTAssertEqual(original.windows(in: notes).map(\.id), ["new"])
+        XCTAssertTrue(original.windows(in: GroupStore.ungroupedID).isEmpty)
+        XCTAssertTrue(original.isPinned(id: "new"))
+        XCTAssertEqual(try Data(contentsOf: fileURL), persisted)
+
+        let restarted = GroupStore(fileURL: fileURL)
+        restarted.updateLiveWindows([window("new", title: "All iCloud — 10 notes")])
+        XCTAssertEqual(restarted.windows(in: notes).map(\.id), ["new"])
+        XCTAssertTrue(restarted.windows(in: GroupStore.ungroupedID).isEmpty)
+        XCTAssertTrue(restarted.isPinned(id: "new"))
+        XCTAssertEqual(restarted.revision, 0)
+        XCTAssertEqual(try Data(contentsOf: fileURL), persisted)
+    }
+
+    func testPinnedFallbackRejectsAmbiguousLiveAppsAndConflictingDocuments() throws {
+        let fileURL = temporaryFileURL()
+        var pinned = savedWindow("pinned", title: "Inbox — 10", documentURL: "file:///one")
+        pinned["pinnedPosition"] = 0
+        try writeState([
+            "groups": [["id": GroupStore.ungroupedID, "name": "未分组"],
+                       ["id": "work", "name": "Work"]],
+            "windowsByGroup": [GroupStore.ungroupedID: [], "work": [pinned]]
+        ], to: fileURL)
+
+        let ambiguous = GroupStore(fileURL: fileURL)
+        ambiguous.updateLiveWindows([window("a", title: "Inbox — 11"),
+                                     window("b", title: "Inbox — 12")])
+        XCTAssertTrue(ambiguous.windows(in: "work").isEmpty)
+        XCTAssertEqual(ambiguous.windows(in: GroupStore.ungroupedID).map(\.id), ["a", "b"])
+
+        let conflicting = GroupStore(fileURL: fileURL)
+        conflicting.reconcile([window("different", title: "Inbox — 11", documentURL: "file:///two")])
+        XCTAssertTrue(conflicting.windows(in: "work").isEmpty)
+        XCTAssertEqual(conflicting.windows(in: GroupStore.ungroupedID).map(\.id), ["different"])
+
+        let differentApp = GroupStore(fileURL: fileURL)
+        differentApp.reconcile([window("same-app-name", appID: "com.example.Other",
+                                       title: "Inbox — 11")])
+        XCTAssertTrue(differentApp.windows(in: "work").isEmpty)
+        XCTAssertEqual(differentApp.windows(in: GroupStore.ungroupedID).map(\.id),
+                       ["same-app-name"])
+
+        let exactURLFile = temporaryFileURL()
+        var unknownURLPin = savedWindow("pin", title: "Inbox — 10")
+        unknownURLPin["pinnedPosition"] = 0
+        try writeState([
+            "groups": [["id": GroupStore.ungroupedID, "name": "未分组"],
+                       ["id": "work", "name": "Work"]],
+            "windowsByGroup": [
+                GroupStore.ungroupedID: [savedWindow("document", title: "Inbox — 11",
+                                                      documentURL: "file:///exact")],
+                "work": [unknownURLPin]
+            ]
+        ], to: exactURLFile)
+        let exactURL = GroupStore(fileURL: exactURLFile)
+        exactURL.reconcile([window("known", title: "Inbox — 11", documentURL: "file:///exact")])
+        XCTAssertTrue(exactURL.windows(in: "work").isEmpty)
+        XCTAssertEqual(exactURL.windows(in: GroupStore.ungroupedID).map(\.id), ["known"])
+    }
+
+    func testUniqueAppPinnedFallbackIgnoresTitleChange() throws {
+        let fileURL = temporaryFileURL()
+        var pinned = savedWindow("pinned", title: "Channel 1")
+        pinned["pinnedPosition"] = 0
+        try writeState([
+            "groups": [["id": GroupStore.ungroupedID, "name": "未分组"],
+                       ["id": "work", "name": "Work"]],
+            "windowsByGroup": [GroupStore.ungroupedID: [], "work": [pinned]]
+        ], to: fileURL)
+
+        let store = GroupStore(fileURL: fileURL)
+        store.reconcile([window("new", title: "Other channel 2")])
+        XCTAssertEqual(store.windows(in: "work").map(\.id), ["new"])
+        XCTAssertTrue(store.windows(in: GroupStore.ungroupedID).isEmpty)
+        XCTAssertTrue(store.isPinned(id: "new"))
+    }
+
+    func testPinnedFallbackDoesNotOverwriteExistingUngroupedBinding() throws {
+        let fileURL = temporaryFileURL()
+        var pinned = savedWindow("pinned", title: "Inbox — 10")
+        pinned["pinnedPosition"] = 0
+        try writeState([
+            "groups": [["id": GroupStore.ungroupedID, "name": "未分组"],
+                       ["id": "work", "name": "Work"]],
+            "windowsByGroup": [
+                GroupStore.ungroupedID: [savedWindow("other", title: "Other")],
+                "work": [pinned]
+            ]
+        ], to: fileURL)
+
+        let store = GroupStore(fileURL: fileURL)
+        store.updateLiveWindows([window("live", title: "Other"),
+                                 window("second", title: "Temporary")])
+        XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), ["live", "second"])
+        store.updateLiveWindows([window("live", title: "Inbox — 11"),
+                                 window("different-app", appID: "com.example.Other", title: "Other")])
+        XCTAssertTrue(store.windows(in: "work").isEmpty)
+        XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), ["live", "different-app"])
+    }
+
+    func testTwoGroupedLiveWindowsKeepBindingsWhenTitlesCollide() throws {
+        let fileURL = temporaryFileURL()
+        let store = GroupStore(fileURL: fileURL)
+        store.reconcile([window("a", title: "Before"), window("b", title: "After")])
+        store.createGroup(name: "Work")
+        let work = try XCTUnwrap(store.groups.last?.id)
+        store.moveWindow(id: "a", to: work)
+        store.moveWindow(id: "b", to: work)
+        store.togglePin(id: "a")
+
+        store.reconcile([window("a", title: "After"), window("b", title: "After")])
+        XCTAssertEqual(Set(store.windows(in: work).map(\.id)), Set(["a", "b"]))
+        XCTAssertTrue(store.windows(in: GroupStore.ungroupedID).isEmpty)
+        XCTAssertTrue(store.isPinned(id: "a"))
+        XCTAssertEqual(try persistedWindows(at: fileURL, in: work).count, 2)
+    }
+
+    func testSameTitleDocumentsRestoreSeparatelyAndClosedHistoryIsDeduplicated() throws {
+        let fileURL = temporaryFileURL()
+        let original = GroupStore(fileURL: fileURL)
+        original.reconcile([window("old-a", title: "Same", documentURL: "file:///a"),
+                            window("old-b", title: "Same", documentURL: "file:///b")])
+        original.createGroup(name: "Work")
+        let work = try XCTUnwrap(original.groups.last?.id)
+        original.moveWindow(id: "old-a", to: work)
+        original.moveWindow(id: "old-b", to: work)
+        XCTAssertEqual(try persistedWindows(at: fileURL, in: work).count, 2)
+
+        let restarted = GroupStore(fileURL: fileURL)
+        restarted.reconcile([window("new-b", title: "Same", documentURL: "file:///b"),
+                             window("new-a", title: "Same", documentURL: "file:///a")])
+        XCTAssertEqual(restarted.windows(in: work).map(\.id), ["new-a", "new-b"])
+        XCTAssertTrue(restarted.windows(in: GroupStore.ungroupedID).isEmpty)
+
+        restarted.reconcile([window("new-a", title: "Same", documentURL: "file:///a")])
+        XCTAssertEqual(restarted.windows(in: work).map(\.id), ["new-a"])
+        XCTAssertEqual(try persistedWindows(at: fileURL, in: work).count, 1)
     }
 
     func testLiveRefreshKeepsSavedGroupsUntouchedUntilManualMove() throws {
@@ -344,7 +516,7 @@ final class GroupStoreTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: fileURL), persisted)
     }
 
-    func testLegacyGroupDuplicateKeepsLastRecordAndCrossGroupRemainsSeparate() throws {
+    func testSameTitleRecordsWithDifferentURLsArePreservedAndAmbiguousTitlesStayUngrouped() throws {
         let fileURL = temporaryFileURL()
         try writeState([
             "groups": [
@@ -363,13 +535,12 @@ final class GroupStoreTests: XCTestCase {
         let restarted = GroupStore(fileURL: fileURL)
         XCTAssertNil(restarted.persistenceError)
         XCTAssertEqual(try persistedWindows(at: fileURL, in: "work").compactMap { $0["id"] as? String },
-                       ["work-2"])
+                       ["work-1", "work-2"])
         restarted.reconcile([window("a", title: "Same"), window("b", title: "Same")])
-        XCTAssertEqual(restarted.windows(in: "work").map(\.id), ["b"])
-        XCTAssertFalse(restarted.isPinned(id: "b"))
-        XCTAssertEqual(restarted.windows(in: GroupStore.ungroupedID).map(\.id), ["a"])
+        XCTAssertTrue(restarted.windows(in: "work").isEmpty)
+        XCTAssertEqual(restarted.windows(in: GroupStore.ungroupedID).map(\.id), ["a", "b"])
         XCTAssertEqual(try persistedWindows(at: fileURL, in: "work").count, 1)
-        XCTAssertEqual(try persistedWindows(at: fileURL, in: GroupStore.ungroupedID).count, 1)
+        XCTAssertEqual(try persistedWindows(at: fileURL, in: GroupStore.ungroupedID).count, 2)
 
         let crossGroupURL = temporaryFileURL()
         try writeState([
@@ -395,24 +566,24 @@ final class GroupStoreTests: XCTestCase {
         XCTAssertEqual(ambiguous.windows(in: "other").map(\.id), ["two"])
     }
 
-    func testMovingSameTitleReplacesOldRecordAndBindingEvenBeforeOld() throws {
+    func testMovingSameTitleKeepsBothActiveBindings() throws {
         let fileURL = temporaryFileURL()
         let store = GroupStore(fileURL: fileURL)
         store.reconcile([window("old", title: "Draft", documentURL: "file:///old"),
                          window("blocker", title: "Other"),
                          window("new", title: "Draft", documentURL: "file:///new")])
         XCTAssertEqual(try persistedWindows(at: fileURL, in: GroupStore.ungroupedID)
-            .compactMap { $0["documentURL"] as? String }, ["file:///new"])
+            .compactMap { $0["documentURL"] as? String }, ["file:///old", "file:///new"])
         store.createGroup(name: "Work")
         let work = try XCTUnwrap(store.groups.last?.id)
         store.moveWindow(id: "old", to: work)
         store.moveWindow(id: "blocker", to: work)
         store.moveWindow(id: "new", to: work, before: "old")
 
-        XCTAssertEqual(store.windows(in: work).map(\.id), ["new", "blocker"])
+        XCTAssertEqual(store.windows(in: work).map(\.id), ["new", "old", "blocker"])
         XCTAssertEqual(try persistedWindows(at: fileURL, in: work).compactMap { $0["documentURL"] as? String },
-                       ["file:///new"])
-        XCTAssertEqual(try persistedWindows(at: fileURL, in: work).count, 2)
+                       ["file:///new", "file:///old"])
+        XCTAssertEqual(try persistedWindows(at: fileURL, in: work).count, 3)
         store.moveWindow(id: "old", to: GroupStore.ungroupedID)
         XCTAssertEqual(store.windows(in: work).map(\.id), ["new", "blocker"])
         XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), ["old"])
@@ -422,7 +593,7 @@ final class GroupStoreTests: XCTestCase {
         XCTAssertEqual(try persistedWindows(at: fileURL, in: work).count, 2)
     }
 
-    func testTitleCollisionKeepsLaterLiveWindowBound() throws {
+    func testTitleCollisionKeepsBothLiveWindowsBound() throws {
         let fileURL = temporaryFileURL()
         let store = GroupStore(fileURL: fileURL)
         store.reconcile([window("old", title: "Before"), window("new", title: "After")])
@@ -432,8 +603,8 @@ final class GroupStoreTests: XCTestCase {
         store.moveWindow(id: "new", to: work)
 
         store.reconcile([window("old", title: "After"), window("new", title: "After")])
-        XCTAssertEqual(store.windows(in: work).map(\.id), ["new"])
-        XCTAssertEqual(try persistedWindows(at: fileURL, in: work).count, 1)
+        XCTAssertEqual(store.windows(in: work).map(\.id), ["old", "new"])
+        XCTAssertEqual(try persistedWindows(at: fileURL, in: work).count, 2)
         store.moveWindow(id: "old", to: GroupStore.ungroupedID)
         XCTAssertEqual(store.windows(in: work).map(\.id), ["new"])
     }
@@ -539,7 +710,7 @@ final class GroupStoreTests: XCTestCase {
         XCTAssertEqual(store.pinPosition(id: "d"), 1)
     }
 
-    func testDedupShrinkKeepsAbsolutePinSlotForLaterGrowth() throws {
+    func testTitleCollisionKeepsAbsolutePinSlotForLaterGrowth() throws {
         let fileURL = temporaryFileURL()
         let store = GroupStore(fileURL: fileURL)
         store.reconcile([window("a", title: "A"), window("b", title: "B"),
@@ -550,13 +721,13 @@ final class GroupStoreTests: XCTestCase {
         store.togglePin(id: "d")
         store.reconcile([window("a", title: "A"), window("b", title: "B"),
                          window("c", title: "B"), window("d", title: "D")])
-        XCTAssertEqual(store.windows(in: work).map(\.id), ["a", "c", "d"])
+        XCTAssertEqual(store.windows(in: work).map(\.id), ["a", "b", "c", "d"])
         XCTAssertEqual(store.pinPosition(id: "d"), 3)
         store.reconcile([window("a", title: "A"), window("b", title: "B"),
                          window("c", title: "B"), window("d", title: "D"),
                          window("e", title: "E")])
         store.moveWindow(id: "e", to: work)
-        XCTAssertEqual(store.windows(in: work).map(\.id), ["a", "c", "e", "d"])
+        XCTAssertEqual(store.windows(in: work).map(\.id), ["a", "b", "c", "d", "e"])
         XCTAssertEqual(store.pinPosition(id: "d"), 3)
     }
 
@@ -597,7 +768,7 @@ final class GroupStoreTests: XCTestCase {
         XCTAssertTrue(store.isPinned(id: "c"))
     }
 
-    func testPinnedSlotSurvivesAutomaticReplacementAndOtherWindowDrag() throws {
+    func testPinnedSlotStaysWithOriginalWindowAfterTitleCollision() throws {
         let fileURL = temporaryFileURL()
         let store = GroupStore(fileURL: fileURL)
         store.reconcile([window("a", title: "A"), window("b", title: "B"),
@@ -612,17 +783,17 @@ final class GroupStoreTests: XCTestCase {
 
         store.reconcile([window("a", title: "A"), window("b", title: "B"),
                          window("c", title: "C"), window("d", title: "B")])
-        XCTAssertEqual(store.windows(in: work).map(\.id), ["a", "d", "c"])
-        XCTAssertTrue(store.isPinned(id: "d"))
-        XCTAssertFalse(store.isPinned(id: "b"))
+        XCTAssertEqual(store.windows(in: work).map(\.id), ["a", "b", "d", "c"])
+        XCTAssertFalse(store.isPinned(id: "d"))
+        XCTAssertTrue(store.isPinned(id: "b"))
         XCTAssertEqual(try persistedWindows(at: fileURL, in: work)[1]["pinnedPosition"] as? Int, 1)
 
         store.moveWindow(id: "d", to: work)
-        XCTAssertEqual(store.windows(in: work).map(\.id), ["a", "c", "d"])
+        XCTAssertEqual(store.windows(in: work).map(\.id), ["a", "b", "d", "c"])
         XCTAssertTrue(store.isPinned(id: "d"))
     }
 
-    func testDraggedReplacementInheritsPinAtDragPosition() throws {
+    func testDraggedSameTitleWindowKeepsOriginalPinnedWindow() throws {
         let fileURL = temporaryFileURL()
         let store = GroupStore(fileURL: fileURL)
         store.reconcile([window("old", title: "Same", documentURL: "file:///old"),
@@ -634,7 +805,7 @@ final class GroupStoreTests: XCTestCase {
         store.moveWindow(id: "other", to: work)
         store.togglePin(id: "old")
         store.moveWindow(id: "new", to: work)
-        XCTAssertEqual(store.windows(in: work).map(\.id), ["other", "new"])
+        XCTAssertEqual(store.windows(in: work).map(\.id), ["old", "new", "other"])
         XCTAssertTrue(store.isPinned(id: "new"))
         XCTAssertEqual(try persistedWindows(at: fileURL, in: work).last?["pinnedPosition"] as? Int, 1)
     }

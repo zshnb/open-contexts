@@ -328,8 +328,10 @@ public final class GroupStore: ObservableObject {
         guard Set(windows.map(\.id)) != Set(activeWindows.keys) else { return }
         let liveKeyCounts = Dictionary(grouping: windows.flatMap(matchKeys), by: { $0 }).mapValues(\.count)
         var savedByKey: [String: [String]] = [:]
+        var savedByID: [String: SavedWindow] = [:]
         for group in groups {
             for saved in windowsByGroup[group.id, default: []] {
+                savedByID[saved.id] = saved
                 for key in matchKeys(saved) {
                     savedByKey[key, default: []].append(saved.id)
                 }
@@ -338,6 +340,23 @@ public final class GroupStore: ObservableObject {
 
         let liveIDs = Set(windows.map(\.id))
         var usedSavedIDs = Set(savedIDByWindowID.filter { liveIDs.contains($0.key) }.values)
+        let liveByApp = Dictionary(grouping: windows, by: \.appID)
+        let pinnedByApp = Dictionary(grouping: savedByID.values.filter { $0.pinnedPosition != nil },
+                                     by: \.appID)
+        for (appID, live) in liveByApp where live.count == 1 {
+            guard let window = live.first, let pinned = pinnedByApp[appID], pinned.count == 1,
+                  let saved = pinned.first, savedIDByWindowID[window.id] == nil,
+                  !usedSavedIDs.contains(saved.id) else { continue }
+            let savedURL = saved.documentURL?.isEmpty == false ? saved.documentURL : nil
+            let liveURL = window.documentURL?.isEmpty == false ? window.documentURL : nil
+            guard savedURL == nil || liveURL == nil || savedURL == liveURL else { continue }
+            if let url = liveURL,
+               let matches = savedByKey["document\u{0}\(appID)\u{0}\(url)"],
+               matches.contains(where: { $0 != saved.id }) { continue }
+            savedIDByWindowID = savedIDByWindowID.filter { $0.value != saved.id }
+            savedIDByWindowID[window.id] = saved.id
+            usedSavedIDs.insert(saved.id)
+        }
         for window in windows.reversed() where savedIDByWindowID[window.id] == nil {
             let groupKey = window.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 ? "application\u{0}\(window.appID)"
@@ -442,10 +461,18 @@ public final class GroupStore: ObservableObject {
     private func normalizeDuplicateRecords(preferredSavedIDs: [String] = [],
                                            pinnedSlots: [String: [(WindowKey, Int)]] = [:]) -> Bool {
         let priority = Dictionary(uniqueKeysWithValues: preferredSavedIDs.enumerated().map { ($0.element, $0.offset) })
+        let liveSavedIDs = Set(savedIDByWindowID.compactMap { liveID, savedID in
+            activeWindows[liveID] == nil ? nil : savedID
+        })
         var normalized = false
         for group in groups {
             let oldWindows = windowsByGroup[group.id, default: []]
             let slots = pinnedSlots[group.id] ?? pinnedPositions(in: group.id)
+            let protectedIDs = Set(oldWindows.filter {
+                liveSavedIDs.contains($0.id) || $0.pinnedPosition != nil
+            }.map(\.id))
+            let protectedKeys = Set(oldWindows.filter { protectedIDs.contains($0.id) }
+                .map { WindowKey(appID: $0.appID, title: $0.title) })
             var winnerByKey: [WindowKey: Int] = [:]
             for (index, saved) in oldWindows.enumerated() {
                 let key = WindowKey(appID: saved.appID, title: saved.title)
@@ -459,9 +486,10 @@ public final class GroupStore: ObservableObject {
                 .map { WindowKey(appID: $0.appID, title: $0.title) })
             var keptWindows = oldWindows.enumerated().compactMap { index, saved -> SavedWindow? in
                 let key = WindowKey(appID: saved.appID, title: saved.title)
-                guard winnerByKey[key] == index else { return nil }
+                guard protectedIDs.contains(saved.id)
+                    || (!protectedKeys.contains(key) && winnerByKey[key] == index) else { return nil }
                 var winner = saved
-                if winner.pinnedPosition == nil, pinnedKeys.contains(key) {
+                if winner.pinnedPosition == nil, pinnedKeys.contains(key), !protectedKeys.contains(key) {
                     winner.pinnedPosition = oldWindows.first(where: {
                         $0.appID == key.appID && $0.title == key.title && $0.pinnedPosition != nil
                     })?.pinnedPosition
@@ -490,7 +518,6 @@ public final class GroupStore: ObservableObject {
 
     private func load() {
         guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
-        var cleaned = false
         do {
             let state = try JSONDecoder().decode(State.self, from: Data(contentsOf: fileURL))
             let ids = state.groups.map(\.id)
@@ -507,13 +534,11 @@ public final class GroupStore: ObservableObject {
             groups = state.groups
             windowsByGroup = state.windowsByGroup
             for id in ids where windowsByGroup[id] == nil { windowsByGroup[id] = [] }
-            cleaned = normalizeDuplicateRecords()
         } catch {
             persistenceBlocked = true
             persistenceError = "无法读取分组数据：\(error.localizedDescription)"
             return
         }
-        if cleaned { save() }
     }
 
     private func save() {
