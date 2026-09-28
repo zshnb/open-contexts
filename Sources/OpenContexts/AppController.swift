@@ -111,8 +111,12 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
             sidebars[id] = SidebarPanel(
                 screen: screen,
                 onActivate: { [weak self] in self?.windowService.activate($0) },
-                onMoveWindow: { [weak self] id, groupID, beforeID in
-                    self?.groupStore.moveWindow(id: id, to: groupID, before: beforeID)
+                windowPinPosition: { [weak self] in self?.groupStore.pinPosition(id: $0) },
+                reservedPinPositions: { [weak self] in self?.groupStore.reservedPinPositions(in: $0) ?? [] },
+                onTogglePin: { [weak self] in self?.groupStore.togglePin(id: $0) },
+                onMoveWindow: { [weak self] id, groupID, beforeID, order in
+                    self?.groupStore.moveWindow(id: id, to: groupID, before: beforeID,
+                                                visibleOrderByGroup: order)
                 },
                 onMoveGroup: { [weak self] id, beforeID in
                     self?.groupStore.moveGroup(id: id, before: beforeID)

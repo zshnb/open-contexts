@@ -6,7 +6,8 @@ private let rowHoverColor = NSColor(srgbRed: 80 / 255, green: 151 / 255,
 
 @MainActor
 final class SidebarPanel: NSPanel, NSMenuDelegate {
-    typealias WindowMove = (_ id: String, _ groupID: String, _ beforeWindowID: String?) -> Void
+    typealias WindowMove = (_ id: String, _ groupID: String, _ beforeWindowID: String?,
+                            _ visibleOrderByGroup: [String: [String]]) -> Void
     typealias GroupMove = (_ id: String, _ beforeGroupID: String?) -> Void
 
     private let sidebarWidth: CGFloat = 188
@@ -16,6 +17,9 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
     private let scroll = NSScrollView()
     private let stack = FlippedStackView()
     private let onActivate: (String) -> Void
+    private let windowPinPosition: (String) -> Int?
+    private let reservedPinPositions: (String) -> Set<Int>
+    private let onTogglePin: (String) -> Void
     private let onMoveWindow: WindowMove
     private let onMoveGroup: GroupMove
     private let onCreateGroup: (String) -> Void
@@ -63,12 +67,18 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
     }
 
     init(screen: NSScreen, onActivate: @escaping (String) -> Void,
+         windowPinPosition: @escaping (String) -> Int?,
+         reservedPinPositions: @escaping (String) -> Set<Int>,
+         onTogglePin: @escaping (String) -> Void,
          onMoveWindow: @escaping WindowMove, onMoveGroup: @escaping GroupMove,
          onCreateGroup: @escaping (String) -> Void,
          onRenameGroup: @escaping (String, String) -> Void,
          onDeleteGroup: @escaping (String) -> Void) {
         self.displayScreen = screen
         self.onActivate = onActivate
+        self.windowPinPosition = windowPinPosition
+        self.reservedPinPositions = reservedPinPositions
+        self.onTogglePin = onTogglePin
         self.onMoveWindow = onMoveWindow
         self.onMoveGroup = onMoveGroup
         self.onCreateGroup = onCreateGroup
@@ -222,7 +232,7 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
                     onClick: { [weak self] in self?.onActivate(window.id) },
                     onDraggingChanged: { [weak self] in self?.sourceDraggingChanged($0) }
                 )
-                let menu = NSMenu(title: String(window.processID))
+                let menu = NSMenu(title: window.id)
                 menu.delegate = self
                 row.setContextMenu(menu)
                 stack.addArrangedSubview(row)
@@ -253,8 +263,15 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
-        guard let processID = Int32(menu.title) else { return }
         menu.removeAllItems()
+        guard let target = renderedWindows.values.joined().first(where: { $0.id == menu.title }) else { return }
+        let processID = target.processID
+        let pin = NSMenuItem(title: "固定", action: #selector(togglePinMenuWindow(_:)), keyEquivalent: "")
+        pin.target = self
+        pin.representedObject = target.id
+        pin.state = windowPinPosition(target.id) != nil ? .on : .off
+        menu.addItem(pin)
+        menu.addItem(.separator())
         let windows = renderedGroups.flatMap { renderedWindows[$0.id, default: []] }
             .filter { $0.processID == processID }
         for window in windows {
@@ -272,6 +289,12 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
             item.representedObject = processID
             menu.addItem(item)
         }
+    }
+
+    @objc private func togglePinMenuWindow(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? String,
+              renderedWindows.values.joined().contains(where: { $0.id == id }) else { return }
+        onTogglePin(id)
     }
 
     @objc private func activateMenuWindow(_ sender: NSMenuItem) {
@@ -466,6 +489,7 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
 
     private func performDrop(_ sender: NSDraggingInfo) -> Bool {
         guard let drop = proposedDrop(sender) else { return false }
+        preview(drop)
         commit(drop)
         return true
     }
@@ -473,9 +497,26 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
     private func commit(_ drop: SidebarDrop) {
         switch drop {
         case let .window(id, groupID, beforeWindowID):
-            onMoveWindow(id, groupID, beforeWindowID)
+            let order = Dictionary(uniqueKeysWithValues: renderedGroups.map { group in
+                (group.id, visibleWindowIDs(in: group.id))
+            })
+            onMoveWindow(id, groupID, beforeWindowID, order)
         case let .group(id, beforeGroupID):
             if id != beforeGroupID { onMoveGroup(id, beforeGroupID) }
+        }
+    }
+
+    private func visibleWindowIDs(in groupID: String) -> [String] {
+        guard let header = sidebarRows.firstIndex(where: {
+            if case .group(let id) = $0.style { return id == groupID }
+            return false
+        }) else { return [] }
+        return sidebarRows.dropFirst(header + 1).prefix {
+            if case .window = $0.style { return true }
+            return false
+        }.compactMap { row in
+            if case .window(let id, _) = row.style { return id }
+            return nil
         }
     }
 
@@ -584,6 +625,19 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
                 }) ?? rows.endIndex
             }
             rows.insert(source, at: insertionIndex)
+            let draggedWindow = renderedWindows.values.joined().first(where: { $0.id == id })
+            let replaced = renderedWindows[groupID, default: []].first(where: {
+                $0.id != id && $0.appID == draggedWindow?.appID && $0.title == draggedWindow?.title
+            })
+            let inheritedPin = replaced.flatMap { windowPinPosition($0.id) }
+            if let replaced {
+                rows.removeAll { row in
+                    if case .window(let rowID, _) = row.style { return rowID == replaced.id }
+                    return false
+                }
+            }
+            rows = orderedWindowPreview(rows, dragging: id, destination: groupID,
+                                        inheritedPin: inheritedPin)
         case let .group(id, beforeGroupID):
             guard id != GroupStore.ungroupedID, beforeGroupID != GroupStore.ungroupedID,
                   id != beforeGroupID else { return }
@@ -609,6 +663,46 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
         for (index, row) in rows.enumerated() { stack.insertArrangedSubview(row, at: index) }
         stack.needsLayout = true
         layoutDocumentView()
+    }
+
+    private func orderedWindowPreview(_ rows: [SidebarItemView], dragging id: String,
+                                      destination groupID: String, inheritedPin: Int?) -> [SidebarItemView] {
+        var rows = rows
+        for group in renderedGroups {
+            guard let header = rows.firstIndex(where: {
+                if case .group(let rowID) = $0.style { return rowID == group.id }
+                return false
+            }) else { continue }
+            let start = header + 1
+            let end = rows[start...].firstIndex(where: {
+                if case .window = $0.style { return false }
+                return true
+            }) ?? rows.endIndex
+            let groupRows = Array(rows[start..<end])
+            let ids = groupRows.compactMap { row -> String? in
+                if case .window(let rowID, _) = row.style { return rowID }
+                return nil
+            }
+            var pins = ids.compactMap { rowID -> (String, Int)? in
+                guard rowID != id, let position = windowPinPosition(rowID) else { return nil }
+                return (rowID, position)
+            }
+            if group.id == groupID, let requested = ids.firstIndex(of: id),
+               windowPinPosition(id) != nil || inheritedPin != nil {
+                var occupied = reservedPinPositions(group.id)
+                if renderedWindows[group.id, default: []].contains(where: { $0.id == id }),
+                   let previous = windowPinPosition(id) { occupied.remove(previous) }
+                if let inheritedPin { occupied.remove(inheritedPin) }
+                let position = GroupStore.availablePinnedPosition(
+                    requested, occupied: occupied, count: ids.count
+                )
+                pins.append((id, position))
+            }
+            let rowByID = Dictionary(uniqueKeysWithValues: zip(ids, groupRows))
+            let ordered = GroupStore.arrangedWindowIDs(ids, pinned: pins).compactMap { rowByID[$0] }
+            rows.replaceSubrange(start..<end, with: ordered)
+        }
+        return rows
     }
 
     private func configurePosition() {
@@ -758,7 +852,11 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
         return rows.count == windowIDs.count && rows.allSatisfy { row in
             guard let menu = row.menu, row.subviews.allSatisfy({ $0.menu === menu }) else { return false }
             menuNeedsUpdate(menu)
-            return Array(menu.items.prefix(windowIDs.count)).compactMap { $0.representedObject as? String } == windowIDs
+            return menu.items.first?.title == "固定"
+                && menu.items.first?.representedObject as? String == menu.title
+                && menu.items.first?.state == (windowPinPosition(menu.title) != nil ? .on : .off)
+                && Array(menu.items.dropFirst(2).prefix(windowIDs.count))
+                    .compactMap { $0.representedObject as? String } == windowIDs
                 && menu.items.suffix(2).map(\.title) == ["隐藏应用", "退出应用"]
         }
     }
@@ -1608,7 +1706,10 @@ enum PanelSmokeCheck {
         let sidebar = SidebarPanel(
             screen: screen,
             onActivate: { _ in },
-            onMoveWindow: { windowMoves.append(($0, $1, $2)) },
+            windowPinPosition: { $0 == "smoke-1" ? 1 : nil },
+            reservedPinPositions: { _ in [1] },
+            onTogglePin: { _ in },
+            onMoveWindow: { id, groupID, beforeID, _ in windowMoves.append((id, groupID, beforeID)) },
             onMoveGroup: { groupMoves.append(($0, $1)) },
             onCreateGroup: { _ in },
             onRenameGroup: { _, _ in },
@@ -1908,6 +2009,26 @@ enum PanelSmokeCheck {
             sidebar.close()
             return fail("sidebar remained in dragging state after source cancellation")
         }
+
+        let pinStore = GroupStore(fileURL: FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString).appendingPathComponent("groups.json"))
+        let pinWindows = Array(windows.prefix(4))
+        pinStore.reconcile(pinWindows)
+        pinStore.togglePin(id: windows[1].id)
+        sidebar.update(groups: groups, windowsByGroup: [GroupStore.ungroupedID: pinWindows],
+                       alwaysVisible: true, fullscreen: false, position: .right)
+        sidebar.smokeBeginDrag()
+        sidebar.smokePreviewWindow(windows[3].id, groupID: GroupStore.ungroupedID,
+                                   beforeWindowID: windows[1].id)
+        let pinnedPreviewIDs = sidebar.smokeRowOrder.compactMap { $0.hasPrefix("w:") ? String($0.dropFirst(2)) : nil }
+        pinStore.moveWindow(id: windows[3].id, to: GroupStore.ungroupedID, before: windows[1].id,
+                            visibleOrderByGroup: [GroupStore.ungroupedID: pinnedPreviewIDs])
+        guard pinnedPreviewIDs == pinStore.windows(in: GroupStore.ungroupedID).map(\.id),
+              pinnedPreviewIDs == [windows[0].id, windows[1].id, windows[3].id, windows[2].id] else {
+            sidebar.close()
+            return fail("sidebar pinned preview differs from committed order: \(pinnedPreviewIDs)")
+        }
+        sidebar.smokeEndDrag()
 
         let switcherWindows = windows
         var selectedIDs: [String] = []
