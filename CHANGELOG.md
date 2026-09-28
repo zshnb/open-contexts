@@ -4,73 +4,164 @@
 
 ## [0.3.3] - 2026-09-28
 
-### 新增
+### English
+
+#### Added
+
+- The window context menu now supports pinning and unpinning a window, saving its position in the current group. Manual dragging can still change that position.
+
+#### Fixed
+
+- Within each group, window records are deduplicated by `appID` and `title`; a newer record replaces the older one.
+
+### 中文
+
+#### 新增
 
 - 窗口右键菜单支持「固定」和取消固定，固定后保存窗口在当前分组的位置；手动拖动仍可调整。
 
-### 修复
+#### 修复
 
 - 同一分组内按 `appID` 和 `title` 去重，新窗口记录替换旧记录。
 
 ## [0.3.2] - 2026-09-28
 
-### 修复
+### English
+
+#### Fixed
+
+- Keep the order of windows in the sidebar stable when focus changes, so windows without saved positions do not move with the most recently used order.
+- Keyboard selection and mouse hover in the window switcher now highlight only one window; moving the mouse or continuing to use the shortcut selects the corresponding window.
+
+### 中文
+
+#### 修复
 
 - 切换窗口焦点时保持侧栏窗口顺序稳定，避免未保存位置的窗口随最近使用顺序移动。
 - 窗口切换器中的键盘选择和鼠标悬停只高亮一个窗口；移动鼠标或继续按快捷键时切换到对应选择。
 
 ## [0.3.1] - 2026-09-24
 
-### 修复
+### English
+
+#### Fixed
+
+- Reassociate windows with their groups using saved matching identifiers when runtime window IDs change or the initial scan is empty. Duplicate matching keys within one custom group can be restored, while ambiguous matches across groups remain ungrouped. Refreshes during a run do not write to `groups.json`.
+
+### 中文
+
+#### 修复
 
 - 窗口运行时 ID 变化或首次扫描为空后，按已保存的匹配标识重新关联分组；同一自定义组内的重复匹配键可恢复，跨组歧义仍保持未分组。运行中的刷新不会写入 `groups.json`。
 
 ## [0.3.0] - 2026-09-24
 
-### 新增
+### English
+
+#### Added
+
+- Check for updates from the menu bar, then download and install them in the app. Release packages include a Sparkle appcast with an EdDSA signature for the DMG.
+
+#### Changed
+
+- Restore saved window groups on the first successful scan. Later periodic refreshes only sync live window information and no longer read or rewrite group records.
+
+### 中文
+
+#### 新增
 
 - 菜单栏支持检查更新，并在应用内下载和安装；发布包附带包含 DMG EdDSA 签名的 Sparkle appcast。
 
-### 改进
+#### 改进
 
 - 首次成功扫描时恢复已保存的窗口分组；后续定时刷新只同步实时窗口信息，不再读取或改写分组记录。
 
 ## [0.2.1] - 2026-09-23
 
-### 修复
+### English
+
+#### Fixed
+
+- Restore the context menu for window icons in the sidebar, allowing users to switch among windows of the same app, hide the app, or quit it.
+
+#### Documentation
+
+- Show the app icon and unobstructed screenshots in the README, and add installation and Accessibility permission instructions.
+
+### 中文
+
+#### 修复
 
 - 恢复应用栏窗口图标的右键菜单，可切换同一应用的窗口、隐藏应用或退出应用。
 
-### 文档
+#### 文档
 
 - README 展示软件图标和无遮挡截图，并补充安装与辅助功能授权说明。
 
 ## [0.2.0] - 2026-09-23
 
-### 新增
+### English
+
+#### Added
+
+- Place the sidebar at the bottom of the screen and choose between icons only or icons with window titles. These settings are saved.
+
+#### Changed
+
+- Lay out the bottom bar from left to right, evenly shrinking window items when space is limited while keeping one line without scrolling.
+- Center the bottom bar horizontally by default, and support horizontal drag reordering and hover display.
+
+### 中文
+
+#### 新增
 
 - 应用栏支持放置在屏幕底部，并可选择仅显示图标或同时显示图标和窗口标题；设置会持久保存。
 
-### 改进
+#### 改进
 
 - 底部应用栏从左到右排列，空间不足时均匀缩减窗口项宽度并保持单行无滚动。
 - 底部应用栏默认水平居中，并适配横向拖拽排序与悬浮显示。
 
 ## [0.1.1] - 2026-09-22
 
-### 修复
+### English
+
+#### Fixed
+
+- Save and restore the group and order of windows without titles or document URLs using the app identity, while avoiding ambiguous matches across apps, windows with titles, or multiple windows of the same app.
+- Filter ordinary dialogs that have no title or document URL and are clearly nonmodal, so auxiliary windows from apps such as CapCut are not shown twice.
+- Use the stacked-window template icon in the menu bar at a consistent 18 pt size, and add an Accessibility name.
+
+#### Changed
+
+- Limit title width in the sidebar and window switcher, truncating long titles at the end within the panels.
+
+### 中文
+
+#### 修复
 
 - 按应用身份保存并恢复无标题、无文档窗口的分组与顺序，同时避免跨应用、有标题或同应用多窗口时的歧义匹配。
 - 过滤无标题、无文档且明确非模态的普通对话框，避免 CapCut 等应用的辅助窗口重复显示。
 - 菜单栏改用层叠窗口模板图标，统一为 18pt，并补充辅助功能名称。
 
-### 改进
+#### 改进
 
 - 限制侧栏和窗口切换器中的标题宽度，超长标题在面板范围内从尾部截断。
 
 ## [0.1.0] - 2026-09-22
 
-### 新增
+### English
+
+#### Added
+
+- Provide a compact macOS window sidebar with window grouping, sorting, and saved positions.
+- Use Command-Tab to switch among all windows and Command-backtick to switch among windows of the current app.
+- Support left and right sidebar positions, drag-and-drop window grouping, and live order previews.
+- Display app notification badges from the system Dock.
+
+### 中文
+
+#### 新增
 
 - 提供紧凑的 macOS 窗口侧栏，支持窗口分组、排序与位置保存。
 - 使用 Command-Tab 切换全部窗口，使用 Command-反引号切换当前应用窗口。
