@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-09-29
+
+### Fixed
+
+- Fix the packaged app's startup crash by loading localization resources from the app bundle's `Contents/Resources` directory.
+
+### 修复
+
+- 从应用包的 `Contents/Resources` 目录加载本地化资源，修复打包版本启动时崩溃的问题。
+
 ## [0.3.5] - 2026-09-29
 
 ### Added
