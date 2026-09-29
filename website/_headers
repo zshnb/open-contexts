@@ -1,0 +1,5 @@
+# Keep the default *.pages.dev hostnames out of search results so only
+# https://opencontexts.zshnb.com is indexed. Preview deployments
+# (<hash>.open-contexts.pages.dev) are already noindex by default.
+https://open-contexts.pages.dev/*
+  X-Robots-Tag: noindex
