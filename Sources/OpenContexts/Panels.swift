@@ -25,7 +25,7 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
     private let onCreateGroup: (String) -> Void
     private let onRenameGroup: (String, String) -> Void
     private let onDeleteGroup: (String) -> Void
-    private var displayScreen: NSScreen
+    private let displayScreen: NSScreen
     private var alwaysVisible = false
     private var fullscreen = false
     private var position: SidebarPosition = .right
@@ -130,7 +130,7 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
             scroll.bottomAnchor.constraint(equalTo: effect.bottomAnchor)
         ])
         configurePosition()
-        layoutPanel(animated: false)
+        layoutPanel()
         layoutDocumentView()
         startHoverPolling()
     }
@@ -159,7 +159,7 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
             pendingUpdate = PendingSidebarUpdate(groups: groups, windowsByGroup: windowsByGroup,
                                                  alwaysVisible: alwaysVisible, fullscreen: fullscreen,
                                                  position: position, itemDisplayMode: itemDisplayMode)
-            layoutPanel(animated: false)
+            layoutPanel()
             return
         }
         self.position = position
@@ -175,7 +175,7 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
                 || positionChanged || displayModeChanged else {
             if presentationChanged {
                 if position == .bottom { configureBottomItemWidths() }
-                layoutPanel(animated: false)
+                layoutPanel()
                 layoutDocumentView()
             }
             return
@@ -258,7 +258,7 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
                 $0 + windowsByGroup[$1.id, default: []].count
             })
         }
-        layoutPanel(animated: false)
+        layoutPanel()
         layoutDocumentView()
     }
 
@@ -355,14 +355,7 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
         }
     }
 
-    func move(to screen: NSScreen) {
-        displayScreen = screen
-        if position == .bottom { configureBottomItemWidths() }
-        layoutPanel(animated: false)
-        layoutDocumentView()
-    }
-
-    private func layoutPanel(animated _: Bool) {
+    private func layoutPanel() {
         let frames = sidebarFrames()
         let expanded = hoverState.isExpanded || dragging || (alwaysVisible && !fullscreen)
         let target = expanded ? frames.expanded : frames.edge
@@ -420,7 +413,7 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
         let frames = sidebarFrames()
         if hoverState.update(pointer: pointer, edgeFrame: frames.edge, expandedFrame: frames.expanded,
                              dragging: dragging, now: now) {
-            layoutPanel(animated: false)
+            layoutPanel()
         }
     }
 
@@ -1020,7 +1013,7 @@ final class SwitcherPanel: NSPanel {
     private let scroll = NSScrollView()
     private let onActivate: (String) -> Void
     private let onSelect: (String) -> Void
-    private var displayScreen: NSScreen
+    private let displayScreen: NSScreen
     private weak var selectedRow: SwitcherRow?
     private var hoverOrigin = NSEvent.mouseLocation
 
@@ -1117,10 +1110,6 @@ final class SwitcherPanel: NSPanel {
         }
     }
 
-    func move(to screen: NSScreen) {
-        displayScreen = screen
-    }
-
     func hideSwitcher() {
         orderOut(nil)
     }
@@ -1191,12 +1180,6 @@ private final class SidebarItemView: NSView, NSDraggingSource {
     enum Style {
         case group(id: String)
         case window(id: String, groupID: String)
-
-        var id: String {
-            switch self {
-            case .group(let id), .window(let id, _): id
-            }
-        }
     }
 
     fileprivate let style: Style
