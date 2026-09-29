@@ -85,7 +85,13 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         // objectWillChange fires before the new value is stored, so read settings on the next turn.
         settings.objectWillChange.sink { [weak self] _ in
-            DispatchQueue.main.async { self?.updateSidebars() }
+            DispatchQueue.main.async {
+                self?.updateSidebars()
+                self?.configureMenuBar()
+                if let self {
+                    self.settingsWindow?.title = L10n.text("OpenContexts Settings", language: self.settings.language)
+                }
+            }
         }
             .store(in: &cancellables)
         NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)
@@ -141,7 +147,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 alwaysVisible: settings.sidebarMode == .always,
                 fullscreen: windowService.fullscreenScreenIDs.contains(id),
                 position: settings.sidebarPosition,
-                itemDisplayMode: settings.sidebarItemDisplayMode
+                itemDisplayMode: settings.sidebarItemDisplayMode,
+                language: settings.language
             )
             panel.updateBadges(windowService.appBadges)
         }
@@ -207,20 +214,20 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func configureMenuBar() {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        let item = statusItem ?? NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         let image = NSImage(systemSymbolName: "rectangle.stack", accessibilityDescription: "OpenContexts")
         image?.size = NSSize(width: 18, height: 18)
         image?.isTemplate = true
         item.button?.image = image
         item.button?.setAccessibilityLabel("OpenContexts")
         let menu = NSMenu()
-        menu.addItem(withTitle: "设置…", action: #selector(showSettings), keyEquivalent: ",").target = self
-        menu.addItem(withTitle: "检查更新…", action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: L10n.text("Settings…", language: settings.language), action: #selector(showSettings), keyEquivalent: ",").target = self
+        menu.addItem(withTitle: L10n.text("Check for Updates…", language: settings.language), action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)), keyEquivalent: "")
             .target = updaterController
-        menu.addItem(withTitle: "授予辅助功能权限…", action: #selector(requestAccessibility), keyEquivalent: "")
+        menu.addItem(withTitle: L10n.text("Grant Accessibility Access…", language: settings.language), action: #selector(requestAccessibility), keyEquivalent: "")
             .target = self
         menu.addItem(.separator())
-        menu.addItem(withTitle: "退出 OpenContexts", action: #selector(quit), keyEquivalent: "q").target = self
+        menu.addItem(withTitle: L10n.text("Quit OpenContexts", language: settings.language), action: #selector(quit), keyEquivalent: "q").target = self
         item.menu = menu
         statusItem = item
     }
@@ -234,7 +241,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 shortcuts: shortcuts
             ))
             let window = NSWindow(contentViewController: controller)
-            window.title = "OpenContexts 设置"
+            window.title = L10n.text("OpenContexts Settings", language: settings.language)
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false
             window.delegate = self

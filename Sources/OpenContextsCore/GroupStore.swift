@@ -13,10 +13,13 @@ public struct WindowGroup: Identifiable, Codable, Equatable {
 
 public final class GroupStore: ObservableObject {
     public static let ungroupedID = "ungrouped"
+    public enum PersistenceErrorOperation { case read, write }
 
     @Published public private(set) var groups: [WindowGroup]
     @Published public private(set) var revision = 0
     public private(set) var persistenceError: String?
+    public private(set) var persistenceErrorOperation: PersistenceErrorOperation?
+    public private(set) var persistenceErrorDetail: String?
 
     private struct SavedWindow: Codable, Equatable {
         let id: String
@@ -509,6 +512,8 @@ public final class GroupStore: ObservableObject {
         } catch {
             persistenceBlocked = true
             persistenceError = "无法读取分组数据：\(error.localizedDescription)"
+            persistenceErrorOperation = .read
+            persistenceErrorDetail = error.localizedDescription
             return
         }
     }
@@ -524,8 +529,12 @@ public final class GroupStore: ObservableObject {
             let data = try JSONEncoder().encode(State(groups: groups, windowsByGroup: persistedWindows))
             try data.write(to: fileURL, options: .atomic)
             persistenceError = nil
+            persistenceErrorOperation = nil
+            persistenceErrorDetail = nil
         } catch {
             persistenceError = "无法保存分组数据：\(error.localizedDescription)"
+            persistenceErrorOperation = .write
+            persistenceErrorDetail = error.localizedDescription
         }
     }
 }

@@ -30,6 +30,7 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
     private var fullscreen = false
     private var position: SidebarPosition = .right
     private var itemDisplayMode: SidebarItemDisplayMode = .iconAndTitle
+    private var language: AppLanguage = .system
     private var hoverState = SidebarHoverState()
     private var hoverTimer: Timer?
     private var dragging = false
@@ -40,6 +41,7 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
     private var renderedWindows: [String: [WindowInfo]] = [:]
     private var renderedPosition: SidebarPosition = .right
     private var renderedItemDisplayMode: SidebarItemDisplayMode = .iconAndTitle
+    private var renderedLanguage: AppLanguage = .system
     private var naturalContentHeight: CGFloat = 52
     private var naturalContentWidth: CGFloat = 52
     private var pendingUpdate: PendingSidebarUpdate?
@@ -59,6 +61,7 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
         let fullscreen: Bool
         let position: SidebarPosition
         let itemDisplayMode: SidebarItemDisplayMode
+        let language: AppLanguage
     }
 
     private enum SidebarDrop: Equatable {
@@ -151,28 +154,33 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
 
     func update(groups: [WindowGroup], windowsByGroup: [String: [WindowInfo]],
                 alwaysVisible: Bool, fullscreen: Bool, position: SidebarPosition = .right,
-                itemDisplayMode: SidebarItemDisplayMode = .iconAndTitle) {
+                itemDisplayMode: SidebarItemDisplayMode = .iconAndTitle,
+                language: AppLanguage = .system) {
         let presentationChanged = self.alwaysVisible != alwaysVisible || self.fullscreen != fullscreen
         self.alwaysVisible = alwaysVisible
         self.fullscreen = fullscreen
         guard !dragging else {
             pendingUpdate = PendingSidebarUpdate(groups: groups, windowsByGroup: windowsByGroup,
                                                  alwaysVisible: alwaysVisible, fullscreen: fullscreen,
-                                                 position: position, itemDisplayMode: itemDisplayMode)
+                                                 position: position, itemDisplayMode: itemDisplayMode,
+                                                 language: language)
             layoutPanel()
             return
         }
         self.position = position
         self.itemDisplayMode = itemDisplayMode
+        self.language = language
         let positionChanged = renderedPosition != position
         let displayModeChanged = renderedItemDisplayMode != itemDisplayMode
+        let languageChanged = renderedLanguage != language
         if positionChanged || displayModeChanged {
             renderedPosition = position
             configurePosition()
         }
         if displayModeChanged { renderedItemDisplayMode = itemDisplayMode }
+        if languageChanged { renderedLanguage = language }
         guard groups != renderedGroups || windowsByGroup != renderedWindows
-                || positionChanged || displayModeChanged else {
+                || positionChanged || displayModeChanged || languageChanged else {
             if presentationChanged {
                 if position == .bottom { configureBottomItemWidths() }
                 layoutPanel()
@@ -197,17 +205,18 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
 
         for group in groups {
             let header = SidebarItemView(
-                title: group.name,
+                title: group.id == GroupStore.ungroupedID
+                    ? L10n.text("Ungrouped", language: language) : group.name,
                 style: .group(id: group.id),
                 onClick: nil,
                 onDraggingChanged: { [weak self] in self?.sourceDraggingChanged($0) }
             )
             if group.id != GroupStore.ungroupedID {
                 let menu = NSMenu()
-                let rename = NSMenuItem(title: "重命名", action: #selector(renameGroup(_:)), keyEquivalent: "")
+                let rename = NSMenuItem(title: L10n.text("Rename", language: language), action: #selector(renameGroup(_:)), keyEquivalent: "")
                 rename.target = self
                 rename.representedObject = group.id
-                let delete = NSMenuItem(title: "删除分组", action: #selector(deleteGroup(_:)), keyEquivalent: "")
+                let delete = NSMenuItem(title: L10n.text("Delete Group", language: language), action: #selector(deleteGroup(_:)), keyEquivalent: "")
                 delete.target = self
                 delete.representedObject = group.id
                 menu.items = [rename, delete]
@@ -243,10 +252,10 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
                 }
             }
         }
-        let create = CallbackButton(title: "＋ 新建分组") { [weak self] in self?.createGroup() }
+        let create = CallbackButton(title: L10n.text("＋ New Group", language: language)) { [weak self] in self?.createGroup() }
         stack.addArrangedSubview(create)
         constrainAuxiliaryItem(create)
-        let endDrop = GroupEndDropView()
+        let endDrop = GroupEndDropView(language: language)
         stack.addArrangedSubview(endDrop)
         constrainAuxiliaryItem(endDrop)
         if position == .bottom {
@@ -266,7 +275,7 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
         menu.removeAllItems()
         guard let target = renderedWindows.values.joined().first(where: { $0.id == menu.title }) else { return }
         let processID = target.processID
-        let pin = NSMenuItem(title: "固定", action: #selector(togglePinMenuWindow(_:)), keyEquivalent: "")
+        let pin = NSMenuItem(title: L10n.text("Pin", language: language), action: #selector(togglePinMenuWindow(_:)), keyEquivalent: "")
         pin.target = self
         pin.representedObject = target.id
         pin.state = windowPinPosition(target.id) != nil ? .on : .off
@@ -282,8 +291,8 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
         }
         guard NSRunningApplication(processIdentifier: processID) != nil else { return }
         if !windows.isEmpty { menu.addItem(.separator()) }
-        for (title, action) in [("隐藏应用", #selector(hideMenuApplication(_:))),
-                                ("退出应用", #selector(terminateMenuApplication(_:)))] {
+        for (title, action) in [(L10n.text("Hide App", language: language), #selector(hideMenuApplication(_:))),
+                                (L10n.text("Quit App", language: language), #selector(terminateMenuApplication(_:)))] {
             let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
             item.target = self
             item.representedObject = processID
@@ -442,7 +451,7 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
         let next = pendingUpdate ?? PendingSidebarUpdate(
             groups: renderedGroups, windowsByGroup: renderedWindows,
             alwaysVisible: alwaysVisible, fullscreen: fullscreen, position: position,
-            itemDisplayMode: itemDisplayMode
+            itemDisplayMode: itemDisplayMode, language: language
         )
         self.pendingUpdate = nil
         previewDrop = nil
@@ -451,7 +460,8 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
         renderedWindows = [:]
         update(groups: next.groups, windowsByGroup: next.windowsByGroup,
                alwaysVisible: next.alwaysVisible, fullscreen: next.fullscreen,
-               position: next.position, itemDisplayMode: next.itemDisplayMode)
+               position: next.position, itemDisplayMode: next.itemDisplayMode,
+               language: next.language)
     }
 
     private func restorePreviewOrder() {
@@ -807,13 +817,13 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
     }
 
     private func createGroup() {
-        requestName(title: "新建分组", value: "") { [weak self] name in self?.onCreateGroup(name) }
+        requestName(title: L10n.text("New Group", language: language), value: "") { [weak self] name in self?.onCreateGroup(name) }
     }
 
     @objc private func renameGroup(_ sender: NSMenuItem) {
         guard let id = sender.representedObject as? String else { return }
         let name = renderedGroups.first(where: { $0.id == id })?.name ?? ""
-        requestName(title: "重命名分组", value: name) { [weak self] name in self?.onRenameGroup(id, name) }
+        requestName(title: L10n.text("Rename Group", language: language), value: name) { [weak self] name in self?.onRenameGroup(id, name) }
     }
 
     @objc private func deleteGroup(_ sender: NSMenuItem) {
@@ -827,8 +837,8 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
         let alert = NSAlert()
         alert.messageText = title
         alert.accessoryView = field
-        alert.addButton(withTitle: "确定")
-        alert.addButton(withTitle: "取消")
+        alert.addButton(withTitle: L10n.text("OK", language: language))
+        alert.addButton(withTitle: L10n.text("Cancel", language: language))
         alert.window.initialFirstResponder = field
         field.selectText(nil)
         // The sidebar never activates the app, so the alert would otherwise not receive typing.
@@ -847,12 +857,13 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
         return rows.count == windowIDs.count && rows.allSatisfy { row in
             guard let menu = row.menu, row.subviews.allSatisfy({ $0.menu === menu }) else { return false }
             menuNeedsUpdate(menu)
-            return menu.items.first?.title == "固定"
+            return menu.items.first?.title == L10n.text("Pin", language: language)
                 && menu.items.first?.representedObject as? String == menu.title
                 && menu.items.first?.state == (windowPinPosition(menu.title) != nil ? .on : .off)
                 && Array(menu.items.dropFirst(2).prefix(windowIDs.count))
                     .compactMap { $0.representedObject as? String } == windowIDs
-                && menu.items.suffix(2).map(\.title) == ["隐藏应用", "退出应用"]
+                && menu.items.suffix(2).map(\.title) == [L10n.text("Hide App", language: language),
+                                                        L10n.text("Quit App", language: language)]
         }
     }
 
@@ -1606,11 +1617,11 @@ private final class FlippedStackView: NSStackView {
 
 @MainActor
 private final class GroupEndDropView: NSView {
-    init() {
+    init(language: AppLanguage) {
         super.init(frame: .zero)
         heightAnchor.constraint(equalToConstant: 12).isActive = true
         setAccessibilityRole(.group)
-        setAccessibilityLabel("移动分组到末尾")
+        setAccessibilityLabel(L10n.text("Move group to end", language: language))
     }
 
     required init?(coder: NSCoder) { nil }

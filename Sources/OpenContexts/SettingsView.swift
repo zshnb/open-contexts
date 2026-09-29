@@ -7,7 +7,9 @@ enum SidebarVisibilityMode: String, CaseIterable, Identifiable {
     case hover
 
     var id: String { rawValue }
-    var title: String { self == .always ? "始终显示" : "悬浮显示" }
+    func title(_ language: AppLanguage) -> String {
+        L10n.text(self == .always ? "Always visible" : "Show on hover", language: language)
+    }
 }
 
 enum SidebarPosition: String, CaseIterable, Identifiable {
@@ -16,11 +18,11 @@ enum SidebarPosition: String, CaseIterable, Identifiable {
     case bottom
 
     var id: String { rawValue }
-    var title: String {
+    func title(_ language: AppLanguage) -> String {
         switch self {
-        case .left: "左"
-        case .right: "右"
-        case .bottom: "底部"
+        case .left: L10n.text("Left", language: language)
+        case .right: L10n.text("Right", language: language)
+        case .bottom: L10n.text("Bottom", language: language)
         }
     }
 }
@@ -30,7 +32,9 @@ enum SidebarItemDisplayMode: String, CaseIterable, Identifiable {
     case iconAndTitle
 
     var id: String { rawValue }
-    var title: String { self == .icon ? "仅图标" : "图标和标题" }
+    func title(_ language: AppLanguage) -> String {
+        L10n.text(self == .icon ? "Icons only" : "Icons and titles", language: language)
+    }
 }
 
 @MainActor
@@ -38,11 +42,13 @@ final class AppSettings: ObservableObject {
     @Published private(set) var sidebarMode: SidebarVisibilityMode
     @Published private(set) var sidebarPosition: SidebarPosition
     @Published private(set) var sidebarItemDisplayMode: SidebarItemDisplayMode
+    @Published private(set) var language: AppLanguage
 
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        language = AppLanguage(rawValue: defaults.string(forKey: "language") ?? "") ?? .system
         sidebarMode = SidebarVisibilityMode(rawValue: defaults.string(forKey: "sidebarMode") ?? "") ?? .always
         sidebarItemDisplayMode = SidebarItemDisplayMode(
             rawValue: defaults.string(forKey: "sidebarItemDisplayMode") ?? ""
@@ -71,6 +77,11 @@ final class AppSettings: ObservableObject {
         defaults.set(mode.rawValue, forKey: "sidebarItemDisplayMode")
     }
 
+    func setLanguage(_ language: AppLanguage) {
+        self.language = language
+        defaults.set(language.rawValue, forKey: "language")
+    }
+
     static func selfCheck() -> Bool {
         let suite = "OpenContexts.self-check.\(UUID().uuidString)"
         guard let defaults = UserDefaults(suiteName: suite) else { return false }
@@ -89,6 +100,11 @@ final class AppSettings: ObservableObject {
               defaults.string(forKey: "sidebarPosition") == SidebarPosition.bottom.rawValue else { return false }
         defaults.set("left", forKey: "sidebarPosition")
         let settings = AppSettings(defaults: defaults)
+        settings.setLanguage(.ja)
+        guard AppSettings(defaults: defaults).language == .ja,
+              defaults.string(forKey: "language") == "ja" else { return false }
+        defaults.set("unsupported", forKey: "language")
+        guard AppSettings(defaults: defaults).language == .system else { return false }
         return ShortcutController.allWindowsKeyCode == 48
             && ShortcutController.currentAppKeyCode == 50
             && settings.sidebarPosition == .left
@@ -104,66 +120,78 @@ struct SettingsView: View {
     @ObservedObject var shortcuts: ShortcutController
 
     var body: some View {
+        let language = settings.language
         Form {
-            Picker("应用栏", selection: Binding(
+            Picker(L10n.text("Sidebar", language: language), selection: Binding(
                 get: { settings.sidebarMode },
                 set: settings.setSidebarMode
             )) {
                 ForEach(SidebarVisibilityMode.allCases) { mode in
-                    Text(mode.title).tag(mode)
+                    Text(mode.title(language)).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
 
-            Picker("显示内容", selection: Binding(
+            Picker(L10n.text("Display", language: language), selection: Binding(
                 get: { settings.sidebarItemDisplayMode },
                 set: settings.setSidebarItemDisplayMode
             )) {
                 ForEach(SidebarItemDisplayMode.allCases) { mode in
-                    Text(mode.title).tag(mode)
+                    Text(mode.title(language)).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
 
-            Picker("应用栏位置", selection: Binding(
+            Picker(L10n.text("Sidebar position", language: language), selection: Binding(
                 get: { settings.sidebarPosition },
                 set: settings.setSidebarPosition
             )) {
                 ForEach(SidebarPosition.allCases) { position in
-                    Text(position.title).tag(position)
+                    Text(position.title(language)).tag(position)
                 }
             }
             .pickerStyle(.segmented)
 
-            LabeledContent("所有窗口") {
+            Picker(L10n.text("Language", language: language), selection: Binding(
+                get: { settings.language },
+                set: settings.setLanguage
+            )) {
+                ForEach(AppLanguage.allCases) { option in
+                    Text(option == .system ? L10n.text("System", language: language) : option.name).tag(option)
+                }
+            }
+
+            LabeledContent(L10n.text("All windows", language: language)) {
                 Text("⌘Tab")
             }
-            LabeledContent("当前应用窗口") {
+            LabeledContent(L10n.text("Current app windows", language: language)) {
                 Text("⌘`")
             }
 
-            LabeledContent("辅助功能") {
+            LabeledContent(L10n.text("Accessibility", language: language)) {
                 HStack {
-                    Text(windowService.hasAccessibility ? "已授权" : "未授权")
+                    Text(L10n.text(windowService.hasAccessibility ? "Granted" : "Not granted", language: language))
                     if !windowService.hasAccessibility {
-                        Button("请求授权") { windowService.requestAccessibility() }
+                        Button(L10n.text("Request access", language: language)) { windowService.requestAccessibility() }
                     }
                 }
             }
-            LabeledContent("全局快捷键") {
+            LabeledContent(L10n.text("Global shortcuts", language: language)) {
                 HStack {
-                    Text(shortcuts.isRunning ? "运行中" : "未运行")
+                    Text(L10n.text(shortcuts.isRunning ? "Running" : "Not running", language: language))
                     if windowService.hasAccessibility && !shortcuts.isRunning {
-                        Button("重试") { _ = shortcuts.start() }
+                        Button(L10n.text("Retry", language: language)) { _ = shortcuts.start() }
                     }
                 }
             }
-            if let error = groupStore.persistenceError {
-                Text(error).foregroundStyle(.red)
+            if let detail = groupStore.persistenceErrorDetail,
+               let operation = groupStore.persistenceErrorOperation {
+                Text(L10n.format(operation == .read ? "Could not read group data: %@" : "Could not save group data: %@",
+                                 detail, language: language)).foregroundStyle(.red)
             }
         }
         .formStyle(.grouped)
         .padding()
-        .frame(width: 460, height: 390)
+        .frame(width: 540, height: 440)
     }
 }

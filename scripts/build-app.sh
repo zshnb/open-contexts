@@ -137,6 +137,7 @@ strip_nonportable_rpaths() {
 
 if [[ "$app_arch" == universal ]]; then
     arm64_binary="$(build_binary arm64)"
+    resource_source_dir="$(dirname "$arm64_binary")"
     arm64_snapshot="$work_dir/OpenContexts-arm64"
     cp "$arm64_binary" "$arm64_snapshot"
     strip_nonportable_rpaths "$arm64_snapshot"
@@ -148,13 +149,17 @@ if [[ "$app_arch" == universal ]]; then
 elif [[ "$app_arch" == native ]]; then
     swift build -c "$configuration"
     binary_dir="$(swift build -c "$configuration" --show-bin-path)"
+    resource_source_dir="$binary_dir"
     cp "$binary_dir/OpenContexts" "$app/Contents/MacOS/OpenContexts"
     strip_nonportable_rpaths "$app/Contents/MacOS/OpenContexts"
 else
     built_binary="$(build_binary "$app_arch")"
+    resource_source_dir="$(dirname "$built_binary")"
     cp "$built_binary" "$app/Contents/MacOS/OpenContexts"
     strip_nonportable_rpaths "$app/Contents/MacOS/OpenContexts"
 fi
+ditto "$resource_source_dir/OpenContexts_OpenContexts.bundle" \
+    "$app/Contents/Resources/OpenContexts_OpenContexts.bundle"
 
 sparkle_framework="$PWD/.build/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework"
 if [[ ! -d "$sparkle_framework" ]]; then
@@ -203,6 +208,7 @@ else
     codesign --force --sign "$signing_identity" "$app"
 fi
 codesign --verify --strict "$app"
+"$app/Contents/MacOS/OpenContexts" --self-check
 if [[ "$signing_mode" == self-signed ]]; then
     designated_requirement="$(codesign -dr - "$app" 2>&1)"
     if [[ "$designated_requirement" != *'designated =>'* || "$designated_requirement" == *cdhash* ]]; then

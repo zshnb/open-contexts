@@ -220,6 +220,8 @@ final class GroupStoreTests: XCTestCase {
 
         let store = GroupStore(fileURL: fileURL)
         XCTAssertNotNil(store.persistenceError)
+        XCTAssertEqual(store.persistenceErrorOperation, .read)
+        XCTAssertFalse(store.persistenceErrorDetail?.isEmpty ?? true)
         store.createGroup(name: "In memory")
         XCTAssertEqual(try Data(contentsOf: fileURL), corrupt)
     }
