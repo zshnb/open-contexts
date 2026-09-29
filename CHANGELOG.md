@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-09-29
+
+### Added
+
+- Choose English, Spanish, French, Japanese, or Chinese in Settings, or follow the system language by default. App menus, sidebar, dialogs, and other interface text update with the selected language.
+
+### 新增
+
+- 可在设置中选择英语、西班牙语、法语、日语或中文，默认跟随系统语言。应用菜单、侧栏、弹窗等界面文案会随所选语言更新。
+
 ## [0.3.4] - 2026-09-28
 
 ### Fixed
