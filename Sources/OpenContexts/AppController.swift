@@ -83,15 +83,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         groupStore.$revision.dropFirst().sink { [weak self] _ in self?.updateSidebars() }
             .store(in: &cancellables)
 
-        settings.$sidebarMode.dropFirst().sink { [weak self] _ in
-            DispatchQueue.main.async { self?.updateSidebars() }
-        }
-            .store(in: &cancellables)
-        settings.$sidebarPosition.dropFirst().sink { [weak self] _ in
-            DispatchQueue.main.async { self?.updateSidebars() }
-        }
-            .store(in: &cancellables)
-        settings.$sidebarItemDisplayMode.dropFirst().sink { [weak self] _ in
+        // objectWillChange fires before the new value is stored, so read settings on the next turn.
+        settings.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.updateSidebars() }
         }
             .store(in: &cancellables)
