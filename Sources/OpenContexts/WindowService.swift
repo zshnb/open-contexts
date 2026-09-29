@@ -79,20 +79,12 @@ final class WindowService: ObservableObject {
 
     func requestAccessibility() {
         let key = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
-        hasAccessibility = AXIsProcessTrustedWithOptions([key: true] as CFDictionary)
+        _ = AXIsProcessTrustedWithOptions([key: true] as CFDictionary)
         refresh()
     }
 
     func refresh() {
-        let trusted = AXIsProcessTrusted()
-        hasAccessibility = trusted
-        guard trusted else {
-            tracked = []
-            externalFocusedID = nil
-            fullscreenScreenIDs = []
-            publishWindows()
-            return
-        }
+        guard updateTrust() else { return }
         guard !scanInFlight else { return }
 
         let ownPID = ProcessInfo.processInfo.processIdentifier
@@ -124,16 +116,21 @@ final class WindowService: ObservableObject {
         }
     }
 
+    /// Publishes the current trust state and clears external windows when it is missing.
+    private func updateTrust() -> Bool {
+        let trusted = AXIsProcessTrusted()
+        if hasAccessibility != trusted { hasAccessibility = trusted }
+        guard !trusted else { return true }
+        tracked = []
+        externalFocusedID = nil
+        if !fullscreenScreenIDs.isEmpty { fullscreenScreenIDs = [] }
+        publishWindows()
+        return false
+    }
+
     private func apply(_ result: ScanResult) {
         scanInFlight = false
-        guard AXIsProcessTrusted() else {
-            hasAccessibility = false
-            tracked = []
-            externalFocusedID = nil
-            fullscreenScreenIDs = []
-            publishWindows()
-            return
-        }
+        guard updateTrust() else { return }
 
         let discoveredIDs = Set(result.windows.map(\.id))
         var orderedIDs = tracked.map(\.id).filter(discoveredIDs.contains)
@@ -147,7 +144,7 @@ final class WindowService: ObservableObject {
 
         let byID = Dictionary(uniqueKeysWithValues: result.windows.map { ($0.id, $0) })
         tracked = orderedIDs.compactMap { byID[$0] }
-        fullscreenScreenIDs = result.fullscreenScreenIDs
+        if fullscreenScreenIDs != result.fullscreenScreenIDs { fullscreenScreenIDs = result.fullscreenScreenIDs }
         badgeState.merge(activeAppIDs: result.activeAppIDs, reads: result.badgeReads)
         if appBadges != badgeState.badges { appBadges = badgeState.badges }
         hasCompletedInitialScan = true
@@ -286,7 +283,8 @@ final class WindowService: ObservableObject {
             orderedIDs.remove(at: index)
             orderedIDs.insert(focusedID, at: 0)
         }
-        windows = orderedIDs.compactMap { byID[$0] }
+        let published = orderedIDs.compactMap { byID[$0] }
+        if windows != published { windows = published }
     }
 
     nonisolated private static func scan(

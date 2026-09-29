@@ -24,6 +24,13 @@ public final class GroupStore: ObservableObject {
         var title: String
         var documentURL: String?
         var pinnedPosition: Int? = nil
+
+        init(_ window: WindowInfo) {
+            id = UUID().uuidString
+            appID = window.appID
+            title = window.title
+            documentURL = window.documentURL
+        }
     }
 
     private struct State: Codable {
@@ -51,15 +58,9 @@ public final class GroupStore: ObservableObject {
     }
 
     public func reconcile(_ windows: [WindowInfo]) {
-        var incoming: [String: WindowInfo] = [:]
-        var uniqueWindows: [WindowInfo] = []
-        for window in windows where incoming[window.id] == nil {
-            incoming[window.id] = window
-            uniqueWindows.append(window)
-        }
+        let (incoming, uniqueWindows) = Self.deduplicated(windows)
         guard incoming != activeWindows else { return }
-        activeWindowOrder = activeWindowOrder.filter { incoming[$0] != nil }
-        activeWindowOrder.append(contentsOf: uniqueWindows.map(\.id).filter { !activeWindowOrder.contains($0) })
+        updateActiveWindowOrder(uniqueWindows)
 
         savedIDByWindowID = savedIDByWindowID.filter { incoming[$0.key] != nil }
 
@@ -75,8 +76,7 @@ public final class GroupStore: ObservableObject {
             if let savedID = savedIDByWindowID[window.id] {
                 updateSavedWindow(id: savedID, from: window)
             } else {
-                let saved = SavedWindow(id: UUID().uuidString, appID: window.appID,
-                                        title: window.title, documentURL: window.documentURL)
+                let saved = SavedWindow(window)
                 windowsByGroup[Self.ungroupedID, default: []].append(saved)
                 savedIDByWindowID[window.id] = saved.id
             }
@@ -87,16 +87,27 @@ public final class GroupStore: ObservableObject {
     }
 
     public func updateLiveWindows(_ windows: [WindowInfo]) {
-        var incoming: [String: WindowInfo] = [:]
-        var uniqueWindows: [WindowInfo] = []
-        for window in windows where incoming[window.id] == nil {
-            incoming[window.id] = window
-            uniqueWindows.append(window)
-        }
+        let (incoming, uniqueWindows) = Self.deduplicated(windows)
         restoreBindings(for: uniqueWindows)
         activeWindows = incoming
-        activeWindowOrder = activeWindowOrder.filter { incoming[$0] != nil }
-        activeWindowOrder.append(contentsOf: uniqueWindows.map(\.id).filter { !activeWindowOrder.contains($0) })
+        updateActiveWindowOrder(uniqueWindows)
+    }
+
+    private static func deduplicated(_ windows: [WindowInfo]) -> ([String: WindowInfo], [WindowInfo]) {
+        var incoming: [String: WindowInfo] = [:]
+        let unique = windows.filter { window in
+            guard incoming[window.id] == nil else { return false }
+            incoming[window.id] = window
+            return true
+        }
+        return (incoming, unique)
+    }
+
+    private func updateActiveWindowOrder(_ windows: [WindowInfo]) {
+        let liveIDs = Set(windows.map(\.id))
+        activeWindowOrder = activeWindowOrder.filter(liveIDs.contains)
+        let known = Set(activeWindowOrder)
+        activeWindowOrder += windows.map(\.id).filter { !known.contains($0) }
     }
 
     public func windows(in groupID: String) -> [WindowInfo] {
@@ -120,8 +131,8 @@ public final class GroupStore: ObservableObject {
     }
 
     public func pinPosition(id: String) -> Int? {
-        guard let savedID = savedIDByWindowID[id] else { return nil }
-        return windowsByGroup.values.flatMap { $0 }.first(where: { $0.id == savedID })?.pinnedPosition
+        guard let savedID = savedIDByWindowID[id], let (groupID, index) = location(of: savedID) else { return nil }
+        return windowsByGroup[groupID]?[index].pinnedPosition
     }
 
     public func reservedPinPositions(in groupID: String) -> Set<Int> {
@@ -198,9 +209,7 @@ public final class GroupStore: ObservableObject {
 
     public func togglePin(id: String) {
         guard let window = activeWindows[id] else { return }
-        let groupID = groups.first(where: { group in
-            windowsByGroup[group.id, default: []].contains { $0.id == savedIDByWindowID[id] }
-        })?.id ?? Self.ungroupedID
+        let groupID = savedIDByWindowID[id].flatMap(location(of:))?.groupID ?? Self.ungroupedID
         let position = windows(in: groupID).firstIndex(where: { $0.id == id })
         if savedIDByWindowID[id] == nil {
             // Unsaved windows appear after saved ones. Persist the prefix so pinning keeps this row in place.
@@ -209,22 +218,17 @@ public final class GroupStore: ObservableObject {
                     if liveID == id { break }
                     continue
                 }
-                let saved = SavedWindow(id: UUID().uuidString, appID: live.appID,
-                                        title: live.title, documentURL: live.documentURL)
+                let saved = SavedWindow(live)
                 windowsByGroup[Self.ungroupedID, default: []].append(saved)
                 savedIDByWindowID[liveID] = saved.id
                 if liveID == id { break }
             }
         }
-        guard let savedID = savedIDByWindowID[id] else { return }
+        guard let savedID = savedIDByWindowID[id], let (savedGroupID, index) = location(of: savedID) else { return }
         updateSavedWindow(id: savedID, from: window)
-        let wasPinned = isPinned(id: id)
-        for group in groups {
-            guard let index = windowsByGroup[group.id]?.firstIndex(where: { $0.id == savedID }) else { continue }
-            windowsByGroup[group.id]?[index].pinnedPosition = wasPinned ? nil : position
-            changed(preferredSavedIDs: [savedID])
-            return
-        }
+        let wasPinned = windowsByGroup[savedGroupID]?[index].pinnedPosition != nil
+        windowsByGroup[savedGroupID]?[index].pinnedPosition = wasPinned ? nil : position
+        changed(preferredSavedIDs: [savedID])
     }
 
     public func moveWindow(id: String, to groupID: String, before windowID: String? = nil,
@@ -239,8 +243,7 @@ public final class GroupStore: ObservableObject {
         })
         if savedIDByWindowID[id] == nil {
             guard let window = activeWindows[id] else { return }
-            let saved = SavedWindow(id: UUID().uuidString, appID: window.appID,
-                                    title: window.title, documentURL: window.documentURL)
+            let saved = SavedWindow(window)
             savedIDByWindowID[id] = saved.id
             let beforeSavedID = windowID.flatMap { savedIDByWindowID[$0] }
             let index = beforeSavedID.flatMap { id in
@@ -257,13 +260,8 @@ public final class GroupStore: ObservableObject {
         if beforeSavedID == savedID { return }
         if let window = activeWindows[id] { updateSavedWindow(id: savedID, from: window) }
 
-        var moved: SavedWindow?
-        for group in groups {
-            guard let index = windowsByGroup[group.id]?.firstIndex(where: { $0.id == savedID }) else { continue }
-            moved = windowsByGroup[group.id]?.remove(at: index)
-            break
-        }
-        guard let moved else { return }
+        guard let (sourceGroupID, sourceIndex) = location(of: savedID),
+              let moved = windowsByGroup[sourceGroupID]?.remove(at: sourceIndex) else { return }
         let index = beforeSavedID.flatMap { id in
             windowsByGroup[groupID, default: []].firstIndex(where: { $0.id == id })
         } ?? windowsByGroup[groupID, default: []].endIndex
@@ -290,49 +288,35 @@ public final class GroupStore: ObservableObject {
             .appendingPathComponent("groups.json")
     }
 
-    private func preferredMatchKey(_ window: WindowInfo) -> String? {
-        if let documentURL = window.documentURL, !documentURL.isEmpty {
-            return "document\u{0}\(window.appID)\u{0}\(documentURL)"
-        }
-        guard !window.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            return "application\u{0}\(window.appID)"
-        }
-        return "title\u{0}\(window.appID)\u{0}\(window.title)"
+    /// Title (or app, when untitled) key used to group same-looking windows.
+    private static func titleKey(appID: String, title: String) -> String {
+        title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? "application\u{0}\(appID)"
+            : "title\u{0}\(appID)\u{0}\(title)"
     }
 
-    private func matchKeys(_ window: WindowInfo) -> [String] {
-        var keys = window.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? []
-            : ["title\u{0}\(window.appID)\u{0}\(window.title)"]
-        if let documentURL = window.documentURL, !documentURL.isEmpty {
-            keys.append("document\u{0}\(window.appID)\u{0}\(documentURL)")
-        } else if keys.isEmpty {
-            keys.append("application\u{0}\(window.appID)")
-        }
-        return keys
+    private static func documentKey(appID: String, documentURL: String?) -> String? {
+        guard let documentURL, !documentURL.isEmpty else { return nil }
+        return "document\u{0}\(appID)\u{0}\(documentURL)"
     }
 
-    private func matchKeys(_ window: SavedWindow) -> [String] {
-        var keys = window.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? []
-            : ["title\u{0}\(window.appID)\u{0}\(window.title)"]
-        if let documentURL = window.documentURL, !documentURL.isEmpty {
-            keys.append("document\u{0}\(window.appID)\u{0}\(documentURL)")
-        } else if keys.isEmpty {
-            keys.append("application\u{0}\(window.appID)")
-        }
-        return keys
+    private static func matchKeys(appID: String, title: String, documentURL: String?) -> [String] {
+        let title = titleKey(appID: appID, title: title)
+        guard let document = documentKey(appID: appID, documentURL: documentURL) else { return [title] }
+        return title.hasPrefix("title") ? [title, document] : [document]
     }
 
     private func restoreBindings(for windows: [WindowInfo]) {
         guard Set(windows.map(\.id)) != Set(activeWindows.keys) else { return }
-        let liveKeyCounts = Dictionary(grouping: windows.flatMap(matchKeys), by: { $0 }).mapValues(\.count)
+        let liveKeyCounts = Dictionary(grouping: windows.flatMap {
+            Self.matchKeys(appID: $0.appID, title: $0.title, documentURL: $0.documentURL)
+        }, by: { $0 }).mapValues(\.count)
         var savedByKey: [String: [String]] = [:]
         var savedByID: [String: SavedWindow] = [:]
         for group in groups {
             for saved in windowsByGroup[group.id, default: []] {
                 savedByID[saved.id] = saved
-                for key in matchKeys(saved) {
+                for key in Self.matchKeys(appID: saved.appID, title: saved.title, documentURL: saved.documentURL) {
                     savedByKey[key, default: []].append(saved.id)
                 }
             }
@@ -347,23 +331,15 @@ public final class GroupStore: ObservableObject {
             guard let window = live.first, let pinned = pinnedByApp[appID], pinned.count == 1,
                   let saved = pinned.first, savedIDByWindowID[window.id] == nil,
                   !usedSavedIDs.contains(saved.id) else { continue }
-            let savedURL = saved.documentURL?.isEmpty == false ? saved.documentURL : nil
-            let liveURL = window.documentURL?.isEmpty == false ? window.documentURL : nil
-            guard savedURL == nil || liveURL == nil || savedURL == liveURL else { continue }
-            if let url = liveURL,
-               let matches = savedByKey["document\u{0}\(appID)\u{0}\(url)"],
-               matches.contains(where: { $0 != saved.id }) { continue }
             savedIDByWindowID = savedIDByWindowID.filter { $0.value != saved.id }
             savedIDByWindowID[window.id] = saved.id
             usedSavedIDs.insert(saved.id)
         }
         for window in windows.reversed() where savedIDByWindowID[window.id] == nil {
-            let groupKey = window.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                ? "application\u{0}\(window.appID)"
-                : "title\u{0}\(window.appID)\u{0}\(window.title)"
+            let groupKey = Self.titleKey(appID: window.appID, title: window.title)
             let key = liveKeyCounts[groupKey, default: 0] > 1 && savedByKey[groupKey]?.count == 1
-                ? groupKey : preferredMatchKey(window)
-            guard let key, let candidates = savedByKey[key], candidates.count == 1,
+                ? groupKey : Self.documentKey(appID: window.appID, documentURL: window.documentURL) ?? groupKey
+            guard let candidates = savedByKey[key], candidates.count == 1,
                   let savedID = candidates.first, !usedSavedIDs.contains(savedID) else { continue }
             savedIDByWindowID = savedIDByWindowID.filter { $0.value != savedID }
             savedIDByWindowID[window.id] = savedID
@@ -371,31 +347,34 @@ public final class GroupStore: ObservableObject {
         }
     }
 
-    private func updateSavedWindow(id: String, from window: WindowInfo) {
+    private func location(of savedID: String) -> (groupID: String, index: Int)? {
         for group in groups {
-            guard let index = windowsByGroup[group.id]?.firstIndex(where: { $0.id == id }) else { continue }
-            windowsByGroup[group.id]?[index].appID = window.appID
-            windowsByGroup[group.id]?[index].title = window.title
-            windowsByGroup[group.id]?[index].documentURL = window.documentURL
-            return
+            if let index = windowsByGroup[group.id]?.firstIndex(where: { $0.id == savedID }) {
+                return (group.id, index)
+            }
         }
+        return nil
+    }
+
+    private func updateSavedWindow(id: String, from window: WindowInfo) {
+        guard let (groupID, index) = location(of: id) else { return }
+        windowsByGroup[groupID]?[index].appID = window.appID
+        windowsByGroup[groupID]?[index].title = window.title
+        windowsByGroup[groupID]?[index].documentURL = window.documentURL
     }
 
     private func changed(preferredSavedIDs: [String] = [],
                          pinnedSlots: [String: [(WindowKey, Int)]] = [:],
                          visibleOrderByGroup: [String: [String]]? = nil) {
-        _ = normalizeDuplicateRecords(preferredSavedIDs: preferredSavedIDs, pinnedSlots: pinnedSlots)
+        normalizeDuplicateRecords(preferredSavedIDs: preferredSavedIDs, pinnedSlots: pinnedSlots)
         if let visibleOrderByGroup {
             for (groupID, visibleIDs) in visibleOrderByGroup where groups.contains(where: { $0.id == groupID }) {
                 alignSavedOrder(in: groupID, with: visibleIDs)
             }
             if let movedID = preferredSavedIDs.first,
-               let groupID = groups.first(where: { group in
-                   windowsByGroup[group.id, default: []].contains { $0.id == movedID }
-               })?.id,
+               let (groupID, index) = location(of: movedID),
                let visibleIDs = visibleOrderByGroup[groupID],
                let position = visibleIDs.firstIndex(where: { savedIDByWindowID[$0] == movedID }),
-               let index = windowsByGroup[groupID]?.firstIndex(where: { $0.id == movedID }),
                windowsByGroup[groupID]?[index].pinnedPosition != nil {
                 windowsByGroup[groupID]?[index].pinnedPosition = position
             }
@@ -407,8 +386,7 @@ public final class GroupStore: ObservableObject {
     private func persistUnsavedLiveWindows() {
         for id in activeWindowOrder where savedIDByWindowID[id] == nil {
             guard let window = activeWindows[id] else { continue }
-            let saved = SavedWindow(id: UUID().uuidString, appID: window.appID,
-                                    title: window.title, documentURL: window.documentURL)
+            let saved = SavedWindow(window)
             windowsByGroup[Self.ungroupedID, default: []].append(saved)
             savedIDByWindowID[id] = saved.id
         }
@@ -428,7 +406,6 @@ public final class GroupStore: ObservableObject {
         windowsByGroup[groupID] = records
     }
 
-    @discardableResult
     private func pinnedPositions(in groupID: String) -> [(WindowKey, Int)] {
         windowsByGroup[groupID, default: []].compactMap { saved in
             saved.pinnedPosition.map { (WindowKey(appID: saved.appID, title: saved.title), $0) }
@@ -459,12 +436,11 @@ public final class GroupStore: ObservableObject {
     }
 
     private func normalizeDuplicateRecords(preferredSavedIDs: [String] = [],
-                                           pinnedSlots: [String: [(WindowKey, Int)]] = [:]) -> Bool {
+                                           pinnedSlots: [String: [(WindowKey, Int)]] = [:]) {
         let priority = Dictionary(uniqueKeysWithValues: preferredSavedIDs.enumerated().map { ($0.element, $0.offset) })
         let liveSavedIDs = Set(savedIDByWindowID.compactMap { liveID, savedID in
             activeWindows[liveID] == nil ? nil : savedID
         })
-        var normalized = false
         for group in groups {
             let oldWindows = windowsByGroup[group.id, default: []]
             let slots = pinnedSlots[group.id] ?? pinnedPositions(in: group.id)
@@ -506,14 +482,10 @@ public final class GroupStore: ObservableObject {
                 pinned.pinnedPosition = index
                 keptWindows.insert(pinned, at: min(index, keptWindows.count))
             }
-            if keptWindows != oldWindows {
-                windowsByGroup[group.id] = keptWindows
-                normalized = true
-            }
+            if keptWindows != oldWindows { windowsByGroup[group.id] = keptWindows }
         }
         let retainedIDs = Set(windowsByGroup.values.flatMap { $0.map(\.id) })
         savedIDByWindowID = savedIDByWindowID.filter { retainedIDs.contains($0.value) }
-        return normalized
     }
 
     private func load() {
