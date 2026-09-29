@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://open-contexts.pages.dev/sitemap.xml
+Sitemap: https://opencontexts.zshnb.com/sitemap.xml
