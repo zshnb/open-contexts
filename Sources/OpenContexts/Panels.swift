@@ -831,6 +831,8 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
         alert.addButton(withTitle: "取消")
         alert.window.initialFirstResponder = field
         field.selectText(nil)
+        // The sidebar never activates the app, so the alert would otherwise not receive typing.
+        NSApp.activate(ignoringOtherApps: true)
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         completion(field.stringValue)
     }
