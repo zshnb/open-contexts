@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open Contexts：免费的 Mac 窗口切换器与窗口管理器（macOS 版 Alt-Tab）</title>
+<meta name="description" content="Open Contexts 是一款免费开源的 Mac 窗口切换器和窗口管理器。⌘Tab 按窗口而非应用切换，就像 Windows 上的 Alt-Tab；屏幕边缘的应用栏让每个窗口都一键可达。">
+<link rel="canonical" href="https://open-contexts.pages.dev/zh/">
+<link rel="alternate" hreflang="en" href="https://open-contexts.pages.dev/">
+<link rel="alternate" hreflang="zh-Hans" href="https://open-contexts.pages.dev/zh/">
+<link rel="alternate" hreflang="x-default" href="https://open-contexts.pages.dev/">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0d12" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" href="../assets/icon.png">
+<link rel="apple-touch-icon" href="../assets/icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Open Contexts">
+<meta property="og:title" content="Open Contexts：免费的 Mac 窗口切换器">
+<meta property="og:description" content="按窗口切换，而不是按应用。免费开源的 macOS 窗口切换器与应用栏。">
+<meta property="og:url" content="https://open-contexts.pages.dev/zh/">
+<meta property="og:image" content="https://open-contexts.pages.dev/assets/og.png">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Open Contexts",
+  "alternateName": "OpenContexts",
+  "inLanguage": "zh-Hans",
+  "description": "免费开源的 Mac 窗口切换器和窗口管理器。⌘Tab 按最近使用顺序在单个窗口之间切换，屏幕边缘的应用栏按保存的分组列出所有打开的窗口。",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "macOS 13.0 or later",
+  "softwareVersion": "0.3.5",
+  "url": "https://open-contexts.pages.dev/zh/",
+  "downloadUrl": "https://github.com/zshnb/open-contexts/releases/latest",
+  "image": "https://open-contexts.pages.dev/assets/og.png",
+  "license": "https://www.apache.org/licenses/LICENSE-2.0",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "codeRepository": "https://github.com/zshnb/open-contexts"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "zh-Hans",
+  "mainEntity": [
+    { "@type": "Question", "name": "Open Contexts 免费吗？", "acceptedAnswer": { "@type": "Answer", "text": "是的。Open Contexts 基于 Apache License 2.0 免费开源，包含全部功能，没有试用期、账号或订阅。" } },
+    { "@type": "Question", "name": "Open Contexts 是 Mac 上的 Alt-Tab 吗？", "acceptedAnswer": { "@type": "Answer", "text": "是的。Windows 上的 Alt-Tab 在窗口之间切换，而 macOS 的 ⌘Tab 在应用之间切换。Open Contexts 接管 ⌘Tab，按最近使用顺序列出每一个窗口；⌘` 只列出当前应用的窗口。" } },
+    { "@type": "Question", "name": "Open Contexts 和 Contexts 有什么区别？", "acceptedAnswer": { "@type": "Answer", "text": "Open Contexts 是付费应用 Contexts 中应用栏和窗口切换器的开源复刻，并新增了 Contexts 不支持的自定义分组保存。Contexts 的 Search、Fast Search 和触控板手势暂未复刻。" } },
+    { "@type": "Question", "name": "和 AltTab 等其他窗口切换器相比有什么不同？", "acceptedAnswer": { "@type": "Answer", "text": "Open Contexts 用紧凑的列表显示每个窗口的应用名、图标和标题，而不是缩略图网格；同时搭配常驻的应用栏，可以把窗口整理进保存的分组。" } },
+    { "@type": "Question", "name": "支持哪些 Mac 和 macOS 版本？", "acceptedAnswer": { "@type": "Answer", "text": "需要 macOS 13 Ventura 或更高版本，以 DMG 形式提供。" } },
+    { "@type": "Question", "name": "为什么需要辅助功能权限？", "acceptedAnswer": { "@type": "Answer", "text": "辅助功能权限让 Open Contexts 能够发现和切换窗口，并处理键盘快捷键。未授权或应用未运行时，Open Contexts 不会接管 ⌘Tab。" } },
+    { "@type": "Question", "name": "macOS 提示无法打开应用怎么办？", "acceptedAnswer": { "@type": "Answer", "text": "未经 Developer ID 签名和 Apple 公证的构建可能会被 Gatekeeper 拦截。确认 DMG 来自官方 GitHub 仓库后，运行：xattr -dr com.apple.quarantine /Applications/OpenContexts.app" } },
+    { "@type": "Question", "name": "我的窗口分组保存在哪里？", "acceptedAnswer": { "@type": "Answer", "text": "分组和窗口位置保存在本地的 ~/Library/Application Support/OpenContexts/groups.json，不会上传。" } }
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">跳到正文</a>
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="./" aria-label="Open Contexts 首页"><img src="../assets/icon.png" alt="" width="28" height="28">Open Contexts</a>
+    <nav class="nav-links" aria-label="主导航">
+      <a class="nav-link" href="./" aria-current="page">首页</a>
+      <a class="nav-link" href="#features">功能</a>
+      <a class="nav-link" href="#download">下载</a>
+      <a class="nav-link" href="#faq">常见问题</a>
+      <a class="nav-link" href="https://github.com/zshnb/open-contexts">GitHub</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="theme-switch" type="button" role="switch" aria-checked="false" aria-label="深色模式">
+        <svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2" fill="currentColor"/><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3 3l1.1 1.1M11.9 11.9L13 13M3 13l1.1-1.1M11.9 4.1L13 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 10.2A6 6 0 0 1 5.8 2.5a6 6 0 1 0 7.7 7.7z" fill="currentColor"/></svg>
+      </button>
+      <a class="lang-link" href="../" hreflang="en" lang="en">English</a>
+      <a class="btn btn-primary btn-sm" href="https://github.com/zshnb/open-contexts/releases/latest">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8.5M4.5 7.5L8 11l3.5-3.5M3 13.5h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>下载</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <div class="hero-copy">
+      <h1 class="display-xl">为每一个窗口而生的<br>Mac 窗口切换器。</h1>
+      <p class="lede">Open Contexts 是一款免费、开源的 macOS 窗口管理器。⌘Tab 按最近使用顺序在单个窗口之间跳转，就像 Windows 上的 Alt-Tab；屏幕边缘的应用栏让每个打开的窗口都一键可达。100% 原生 Swift，没有 Electron，无需账号。</p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary btn-lg" href="https://github.com/zshnb/open-contexts/releases/latest"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8.5M4.5 7.5L8 11l3.5-3.5M3 13.5h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>下载 macOS 版</a>
+        <a class="btn btn-secondary btn-lg" href="https://github.com/zshnb/open-contexts">在 GitHub 查看</a>
+      </div>
+      <p class="hero-meta">免费开源 · macOS 13 Ventura+ · Apache 2.0</p>
+    </div>
+
+    <div class="demo" id="demo">
+      <span class="demo-badge">在线演示：直接在浏览器里运行</span>
+      <div class="demo-bezel">
+        <div class="demo-viewport"><div class="screen mac" role="application" aria-label="Open Contexts 交互演示"></div></div>
+      </div>
+      <div class="demo-bar">
+        <p>点击 <kbd>⌘ Tab</kbd>，然后用 <kbd>Tab</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>Return</kbd> <kbd>Esc</kbd> 操作。拖动窗口可在分组间移动。</p>
+        <div class="actions">
+          <button class="btn btn-primary btn-sm" type="button" data-act="cmdtab">⌘ Tab</button>
+          <button class="btn btn-secondary btn-sm" type="button" data-act="settings">设置</button>
+          <button class="btn btn-secondary btn-sm" type="button" data-act="reset">重置</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section band" id="features">
+    <div class="container">
+      <div class="section-head" data-reveal>
+        <h2 class="display">每一个窗口，<br>一个 ⌘Tab。</h2>
+        <p class="lede">系统自带的 ⌘Tab 每个应用只显示一个图标。Open Contexts 显示每一个窗口，两个 Chrome 窗口就是两个选项。列表按最近使用排序，刚刚用过的窗口永远只差一次按键。</p>
+      </div>
+      <div data-reveal data-mock="switcher"></div>
+      <div class="shortcut-row" data-reveal>
+        <span><kbd>⌘</kbd><kbd>Tab</kbd> 所有窗口</span>
+        <span><kbd>⌘</kbd><kbd>`</kbd> 当前应用的窗口</span>
+        <span><kbd>⇧</kbd><kbd>Tab</kbd> 或 <kbd>↑</kbd> 后退</span>
+        <span><kbd>Esc</kbd> 取消</span>
+        <span>松开 <kbd>⌘</kbd> 即切换</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head" data-reveal>
+        <h2 class="display">所有打开的窗口，<br>始终一目了然。</h2>
+        <p class="lede">应用栏停靠在屏幕边缘，按标题列出每个窗口，并显示应用图标和 Dock 角标。点击任意一行即可把窗口调到最前，即使它已最小化或隐藏。</p>
+      </div>
+      <div class="mock-stage" data-reveal>
+        <div class="mock-wall" data-mock="appbar"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section band">
+    <div class="container split">
+      <div class="split-copy" data-reveal>
+        <h2 class="display">会记住的<br>窗口分组。</h2>
+        <p class="lede">Contexts 从未支持保存分组，Open Contexts 支持。把窗口按代码、聊天或资料分组，重启之后依然各归其位。</p>
+        <ul class="checks">
+          <li>直接在应用栏中新建、重命名和删除分组</li>
+          <li>拖动窗口或整个分组来调整顺序</li>
+          <li>固定窗口，让它在列表更新时保持原位</li>
+          <li>重启后自动恢复窗口在分组中的位置</li>
+        </ul>
+      </div>
+      <div class="mock-stage" data-reveal>
+        <div class="mock-card" data-mock="groups"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="customize">
+    <div class="container split split-reverse">
+      <div class="split-copy" data-reveal>
+        <h2 class="display">把应用栏放在<br>最顺手的位置。</h2>
+        <p class="lede">左侧、右侧或底部，由你决定。可以常驻显示，也可以在指针碰到屏幕边缘时再出现。可以只显示图标，也可以同时显示图标和窗口标题。</p>
+        <ul class="checks">
+          <li>左、右或底部边缘，在每块屏幕上居中</li>
+          <li>始终显示，或悬浮显示</li>
+          <li>仅图标，或图标和窗口标题</li>
+          <li>底部栏会均匀收缩条目，所有窗口都放在一行</li>
+          <li>支持英语、西班牙语、法语、日语和中文界面</li>
+        </ul>
+      </div>
+      <div class="mock-stage" data-reveal>
+        <div class="mock-wall" data-mock="settings"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section band">
+    <div class="container split split-reverse">
+      <div class="split-copy" data-reveal>
+        <h2 class="display">真正的 Mac 应用，<br>而不是网页。</h2>
+        <p class="lede">Open Contexts 使用 Swift、AppKit 和 SwiftUI 编写。它常驻菜单栏，没有 Dock 图标，也没有主窗口。</p>
+      </div>
+      <div class="stat-grid" data-reveal>
+        <div class="stat"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M11 2L4 11h5l-1 7 7-9h-5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><b>原生</b><span>Swift、AppKit 与 SwiftUI</span></div>
+        <div class="stat"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 17h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><b>免费</b><span>基于 Apache 2.0 开源</span></div>
+        <div class="stat"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 5v10h14V5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M13 3v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><b>菜单栏</b><span>无 Dock 图标，界面清爽</span></div>
+        <div class="stat"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 10a6 6 0 1 1-2-4.5M16 3v3.5h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><b>5 种语言</b><span>英语、西班牙语、法语、日语、中文</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head" data-reveal>
+        <h2 class="display">你的窗口数据只留在你的 Mac 上。</h2>
+        <p class="lede">无需账号，没有云端，只有一个 JSON 文件。</p>
+      </div>
+      <div class="feature-grid" data-reveal>
+        <div class="feature"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 17h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><h3>本地优先</h3><p>分组保存在 Mac 上 Application Support 里的单个 <code>groups.json</code> 中。</p></div>
+        <div class="feature"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 10l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><h3>只需一项权限</h3><p>只需要辅助功能权限。未授权时不会接管 ⌘Tab。</p></div>
+        <div class="feature"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 6l-4 4 4 4M13 6l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><h3>开源</h3><p>全部代码以 Apache 2.0 许可发布在 GitHub 上，可以阅读、构建和分叉。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section band" id="download">
+    <div class="container pricing">
+      <div data-reveal>
+        <h2 class="display">免费、开源，<br>没有订阅。</h2>
+        <p class="lede" style="margin-top:20px">下载、使用，随意修改。</p>
+      </div>
+      <div class="price-card" data-reveal>
+        <div class="price">免费<small>永久</small></div>
+        <p>Apache License 2.0 · 包含全部功能</p>
+        <a class="btn btn-primary btn-lg btn-block" href="https://github.com/zshnb/open-contexts/releases/latest">下载 DMG</a>
+        <a class="btn btn-secondary btn-lg btn-block" href="https://github.com/zshnb/open-contexts">在 GitHub 上 Star</a>
+        <div class="fine"><span>✓ 适用于 macOS 13 及以上的 DMG</span><span>✓ 也可以用 <code style="font-family:var(--font-mono)">swift build</code> 从源码构建</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="faq">
+    <div class="container-prose">
+      <h2 class="display center">常见问题</h2>
+      <div class="faq">
+        <details><summary>Open Contexts 免费吗？</summary><p>是的。Open Contexts 基于 Apache License 2.0 免费开源，包含全部功能，没有试用期、账号或订阅。</p></details>
+        <details><summary>Open Contexts 是 Mac 上的 Alt-Tab 吗？</summary><p>是的。Windows 上的 Alt-Tab 在窗口之间切换，而 macOS 的 ⌘Tab 在应用之间切换。Open Contexts 接管 ⌘Tab，按最近使用顺序列出每一个窗口；<code>⌘`</code> 只列出当前应用的窗口。</p></details>
+        <details><summary>Open Contexts 和 Contexts 有什么区别？</summary><p>Open Contexts 是付费应用 Contexts 中应用栏和窗口切换器的开源复刻，并新增了 Contexts 不支持的自定义分组保存。Contexts 的 Search、Fast Search 和触控板手势暂未复刻。</p></details>
+        <details><summary>和 AltTab 等其他窗口切换器相比有什么不同？</summary><p>Open Contexts 用紧凑的列表显示每个窗口的应用名、图标和标题，而不是缩略图网格；同时搭配常驻的应用栏，可以把窗口整理进保存的分组。</p></details>
+        <details><summary>支持哪些 Mac 和 macOS 版本？</summary><p>需要 macOS 13 Ventura 或更高版本，以 DMG 形式提供。</p></details>
+        <details><summary>为什么需要辅助功能权限？</summary><p>辅助功能权限让 Open Contexts 能够发现和切换窗口，并处理键盘快捷键。未授权或应用未运行时，Open Contexts 不会接管 ⌘Tab。</p></details>
+        <details><summary>macOS 提示无法打开应用怎么办？</summary><p>未经 Developer ID 签名和 Apple 公证的构建可能会被 Gatekeeper 拦截。确认 DMG 来自官方 GitHub 仓库后，运行 <code>xattr -dr com.apple.quarantine /Applications/OpenContexts.app</code></p></details>
+        <details><summary>我的窗口分组保存在哪里？</summary><p>分组和窗口位置保存在本地的 <code>~/Library/Application Support/OpenContexts/groups.json</code>，不会上传。</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="section band">
+    <div class="container">
+      <div class="cta-card" data-reveal>
+        <h2 class="display">给你的 Mac 一个配得上它的窗口切换器。</h2>
+        <p class="lede">免费下载 Open Contexts，或从源码构建。</p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary btn-lg" href="https://github.com/zshnb/open-contexts/releases/latest">下载 macOS 版</a>
+          <a class="btn btn-secondary btn-lg" href="https://github.com/zshnb/open-contexts">在 GitHub 查看</a>
+        </div>
+        <p class="hero-meta">macOS 13+ · 免费开源</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer band">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a class="logo" href="./"><img src="../assets/icon.png" alt="" width="28" height="28">Open Contexts</a>
+        <p>免费开源的 macOS 窗口切换器与应用栏。</p>
+      </div>
+      <div class="footer-cols">
+        <div><h2>产品</h2><ul><li><a href="#features">功能</a></li><li><a href="#download">下载</a></li><li><a href="https://github.com/zshnb/open-contexts/blob/main/CHANGELOG.md">更新日志</a></li></ul></div>
+        <div><h2>支持</h2><ul><li><a href="#faq">常见问题</a></li><li><a href="https://github.com/zshnb/open-contexts/issues">反馈问题</a></li><li><a href="https://github.com/zshnb/open-contexts">GitHub</a></li></ul></div>
+        <div><h2>法律</h2><ul><li><a href="https://github.com/zshnb/open-contexts/blob/main/LICENSE">Apache 2.0</a></li></ul></div>
+      </div>
+    </div>
+    <p class="footer-legal">© 2026 Open Contexts 贡献者。Open Contexts 是独立项目，与 Contexts 无关联。</p>
+  </div>
+</footer>
+<script src="../assets/site.js" defer></script>
+</body>
+</html>

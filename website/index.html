@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open Contexts: Free Mac Window Switcher &amp; Window Manager (Alt-Tab for macOS)</title>
+<meta name="description" content="Open Contexts is a free, open-source Mac window switcher and window manager. ⌘Tab switches between individual windows instead of apps, like Alt-Tab on Windows, and an app bar keeps every window one click away.">
+<link rel="canonical" href="https://open-contexts.pages.dev/">
+<link rel="alternate" hreflang="en" href="https://open-contexts.pages.dev/">
+<link rel="alternate" hreflang="zh-Hans" href="https://open-contexts.pages.dev/zh/">
+<link rel="alternate" hreflang="x-default" href="https://open-contexts.pages.dev/">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0d12" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" href="assets/icon.png">
+<link rel="apple-touch-icon" href="assets/icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Open Contexts">
+<meta property="og:title" content="Open Contexts: the free Mac window switcher">
+<meta property="og:description" content="Switch windows, not apps. A free, open-source window switcher and app bar for macOS.">
+<meta property="og:url" content="https://open-contexts.pages.dev/">
+<meta property="og:image" content="https://open-contexts.pages.dev/assets/og.png">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="zh_CN">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Open Contexts",
+  "alternateName": "OpenContexts",
+  "description": "A free, open-source Mac window switcher and window manager. ⌘Tab switches between individual windows in most-recently-used order, and an app bar on the screen edge lists every open window in saved groups.",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "macOS 13.0 or later",
+  "softwareVersion": "0.3.5",
+  "url": "https://open-contexts.pages.dev/",
+  "downloadUrl": "https://github.com/zshnb/open-contexts/releases/latest",
+  "image": "https://open-contexts.pages.dev/assets/og.png",
+  "license": "https://www.apache.org/licenses/LICENSE-2.0",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "codeRepository": "https://github.com/zshnb/open-contexts"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "Is Open Contexts free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Open Contexts is free and open source under the Apache License 2.0. Every feature is included, with no trial, account, or subscription." } },
+    { "@type": "Question", "name": "Is Open Contexts an Alt-Tab for Mac?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. On Windows, Alt-Tab switches between windows. The macOS ⌘Tab switches between apps. Open Contexts takes over ⌘Tab and lists every individual window in most-recently-used order, and ⌘` limits the list to the current app's windows." } },
+    { "@type": "Question", "name": "How is Open Contexts different from Contexts?", "acceptedAnswer": { "@type": "Answer", "text": "Open Contexts is an open-source recreation of the app bar and window switcher from the paid app Contexts. It adds saved custom window groups, which Contexts does not have. Contexts' Search, Fast Search, and trackpad gestures have not been recreated yet." } },
+    { "@type": "Question", "name": "How is it different from other window switchers such as AltTab?", "acceptedAnswer": { "@type": "Answer", "text": "Open Contexts shows a compact list with each window's app, icon, and title instead of a grid of thumbnails, and pairs the switcher with a persistent app bar where you can organize windows into saved groups." } },
+    { "@type": "Question", "name": "Which Macs and macOS versions are supported?", "acceptedAnswer": { "@type": "Answer", "text": "Open Contexts requires macOS 13 Ventura or later and ships as a DMG." } },
+    { "@type": "Question", "name": "Why does Open Contexts need Accessibility permission?", "acceptedAnswer": { "@type": "Answer", "text": "Accessibility permission lets Open Contexts find windows, switch to them, and handle keyboard shortcuts. Without it, or while the app is closed, Open Contexts does not take over ⌘Tab." } },
+    { "@type": "Question", "name": "macOS says the app can't be opened. What should I do?", "acceptedAnswer": { "@type": "Answer", "text": "Builds without a Developer ID signature and Apple notarization may be blocked by Gatekeeper. After confirming the DMG came from the official GitHub repository, run: xattr -dr com.apple.quarantine /Applications/OpenContexts.app" } },
+    { "@type": "Question", "name": "Where are my window groups stored?", "acceptedAnswer": { "@type": "Answer", "text": "Groups and window positions are saved locally in ~/Library/Application Support/OpenContexts/groups.json. Nothing is uploaded." } }
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="./" aria-label="Open Contexts home"><img src="assets/icon.png" alt="" width="28" height="28">Open Contexts</a>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="nav-link" href="./" aria-current="page">Home</a>
+      <a class="nav-link" href="#features">Features</a>
+      <a class="nav-link" href="#download">Download</a>
+      <a class="nav-link" href="#faq">FAQ</a>
+      <a class="nav-link" href="https://github.com/zshnb/open-contexts">GitHub</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="theme-switch" type="button" role="switch" aria-checked="false" aria-label="Dark mode">
+        <svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2" fill="currentColor"/><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3 3l1.1 1.1M11.9 11.9L13 13M3 13l1.1-1.1M11.9 4.1L13 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 10.2A6 6 0 0 1 5.8 2.5a6 6 0 1 0 7.7 7.7z" fill="currentColor"/></svg>
+      </button>
+      <a class="lang-link" href="zh/" hreflang="zh-Hans" lang="zh-Hans">中文</a>
+      <a class="btn btn-primary btn-sm" href="https://github.com/zshnb/open-contexts/releases/latest">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8.5M4.5 7.5L8 11l3.5-3.5M3 13.5h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Download</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <div class="hero-copy">
+      <h1 class="display-xl">The Mac window switcher<br>built for every window.</h1>
+      <p class="lede">Open Contexts is a free, open-source window manager for macOS. ⌘Tab jumps between individual windows in most-recently-used order, just like Alt-Tab on Windows, and an app bar on the edge of your screen keeps every open window one click away. 100% native Swift. No Electron, no account.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary btn-lg" href="https://github.com/zshnb/open-contexts/releases/latest"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8.5M4.5 7.5L8 11l3.5-3.5M3 13.5h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Download for macOS</a>
+        <a class="btn btn-secondary btn-lg" href="https://github.com/zshnb/open-contexts">View on GitHub</a>
+      </div>
+      <p class="hero-meta">Free and open source · macOS 13 Ventura+ · Apache 2.0</p>
+    </div>
+
+    <div class="demo" id="demo">
+      <span class="demo-badge">Live demo: runs in your browser</span>
+      <div class="demo-bezel">
+        <div class="demo-viewport"><div class="screen mac" role="application" aria-label="Interactive Open Contexts demo"></div></div>
+      </div>
+      <div class="demo-bar">
+        <p>Click <kbd>⌘ Tab</kbd>, then use <kbd>Tab</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>Return</kbd> <kbd>Esc</kbd>. Drag windows between groups.</p>
+        <div class="actions">
+          <button class="btn btn-primary btn-sm" type="button" data-act="cmdtab">⌘ Tab</button>
+          <button class="btn btn-secondary btn-sm" type="button" data-act="settings">Settings</button>
+          <button class="btn btn-secondary btn-sm" type="button" data-act="reset">Reset</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section band" id="features">
+    <div class="container">
+      <div class="section-head" data-reveal>
+        <h2 class="display">Every window,<br>one ⌘Tab.</h2>
+        <p class="lede">The built-in ⌘Tab shows one icon per app. Open Contexts shows every window, so two Chrome windows are two choices. The list is in most-recently-used order, and the window you were just in is always one keystroke away.</p>
+      </div>
+      <div data-reveal data-mock="switcher"></div>
+      <div class="shortcut-row" data-reveal>
+        <span><kbd>⌘</kbd><kbd>Tab</kbd> All windows</span>
+        <span><kbd>⌘</kbd><kbd>`</kbd> Current app's windows</span>
+        <span><kbd>⇧</kbd><kbd>Tab</kbd> or <kbd>↑</kbd> Back</span>
+        <span><kbd>Esc</kbd> Cancel</span>
+        <span>Release <kbd>⌘</kbd> to switch</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head" data-reveal>
+        <h2 class="display">Every open window,<br>always in view.</h2>
+        <p class="lede">The app bar sits on the edge of your screen and lists each window by its title, next to its app icon and Dock badge. Click a row to bring that window forward, even if it's minimized or hidden.</p>
+      </div>
+      <div class="mock-stage" data-reveal>
+        <div class="mock-wall" data-mock="appbar"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section band">
+    <div class="container split">
+      <div class="split-copy" data-reveal>
+        <h2 class="display">Window groups<br>that remember.</h2>
+        <p class="lede">Contexts never had saved groups. Open Contexts does. Sort windows into groups for code, chat, or research, and they come back in the same place after a restart.</p>
+        <ul class="checks">
+          <li>Create, rename, and delete groups right from the app bar</li>
+          <li>Drag windows or whole groups to reorder them</li>
+          <li>Pin a window to keep its place while the list updates</li>
+          <li>Windows return to their place in groups after a restart</li>
+        </ul>
+      </div>
+      <div class="mock-stage" data-reveal>
+        <div class="mock-card" data-mock="groups"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="customize">
+    <div class="container split split-reverse">
+      <div class="split-copy" data-reveal>
+        <h2 class="display">Put the bar where<br>it works for you.</h2>
+        <p class="lede">Put it on the left, on the right, or along the bottom. Keep it visible or have it appear when your pointer reaches the edge. Show icons only, or icons with window titles.</p>
+        <ul class="checks">
+          <li>Left, right, or bottom edge, centered on every display</li>
+          <li>Always visible, or shown on hover</li>
+          <li>Icons only, or icons and window titles</li>
+          <li>The bottom bar shrinks items evenly so all windows fit on one line</li>
+          <li>Available in English, Spanish, French, Japanese, and Chinese</li>
+        </ul>
+      </div>
+      <div class="mock-stage" data-reveal>
+        <div class="mock-wall" data-mock="settings"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section band">
+    <div class="container split split-reverse">
+      <div class="split-copy" data-reveal>
+        <h2 class="display">A Mac app,<br>not a web page.</h2>
+        <p class="lede">Open Contexts is written in Swift with AppKit and SwiftUI. It lives in your menu bar with no Dock icon and no main window.</p>
+      </div>
+      <div class="stat-grid" data-reveal>
+        <div class="stat"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M11 2L4 11h5l-1 7 7-9h-5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><b>Native</b><span>Swift, AppKit &amp; SwiftUI</span></div>
+        <div class="stat"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 17h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><b>Free</b><span>Open source under Apache 2.0</span></div>
+        <div class="stat"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 5v10h14V5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M13 3v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><b>Menu bar</b><span>No Dock icon, no clutter</span></div>
+        <div class="stat"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 10a6 6 0 1 1-2-4.5M16 3v3.5h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><b>5 languages</b><span>English, Spanish, French, Japanese, Chinese</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head" data-reveal>
+        <h2 class="display">Your windows stay on your Mac.</h2>
+        <p class="lede">No account. No cloud. Just one JSON file.</p>
+      </div>
+      <div class="feature-grid" data-reveal>
+        <div class="feature"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 17h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><h3>Local-first</h3><p>Groups are saved to a single <code>groups.json</code> in Application Support on your Mac.</p></div>
+        <div class="feature"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 10l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><h3>One permission</h3><p>It needs only Accessibility access. Without it, ⌘Tab is left untouched.</p></div>
+        <div class="feature"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 6l-4 4 4 4M13 6l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><h3>Open source</h3><p>Every line is on GitHub under Apache 2.0. Read it, build it, fork it.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section band" id="download">
+    <div class="container pricing">
+      <div data-reveal>
+        <h2 class="display">Free. Open source.<br>No subscription.</h2>
+        <p class="lede" style="margin-top:20px">Download it, use it, and change it however you like.</p>
+      </div>
+      <div class="price-card" data-reveal>
+        <div class="price">$0<small>forever</small></div>
+        <p>Apache License 2.0 · every feature included</p>
+        <a class="btn btn-primary btn-lg btn-block" href="https://github.com/zshnb/open-contexts/releases/latest">Download the DMG</a>
+        <a class="btn btn-secondary btn-lg btn-block" href="https://github.com/zshnb/open-contexts">Star on GitHub</a>
+        <div class="fine"><span>✓ DMG for macOS 13 or later</span><span>✓ Or build from source with <code style="font-family:var(--font-mono)">swift build</code></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="faq">
+    <div class="container-prose">
+      <h2 class="display center">Frequently Asked Questions</h2>
+      <div class="faq">
+        <details><summary>Is Open Contexts free?</summary><p>Yes. Open Contexts is free and open source under the Apache License 2.0. Every feature is included, with no trial, account, or subscription.</p></details>
+        <details><summary>Is Open Contexts an Alt-Tab for Mac?</summary><p>Yes. On Windows, Alt-Tab switches between windows. The macOS ⌘Tab switches between apps. Open Contexts takes over ⌘Tab and lists every individual window in most-recently-used order, and <code>⌘`</code> limits the list to the current app's windows.</p></details>
+        <details><summary>How is Open Contexts different from Contexts?</summary><p>Open Contexts is an open-source recreation of the app bar and window switcher from the paid app Contexts. It adds saved custom window groups, which Contexts does not have. Contexts' Search, Fast Search, and trackpad gestures have not been recreated yet.</p></details>
+        <details><summary>How is it different from other window switchers such as AltTab?</summary><p>Open Contexts shows a compact list with each window's app, icon, and title instead of a grid of thumbnails, and pairs the switcher with a persistent app bar where you can organize windows into saved groups.</p></details>
+        <details><summary>Which Macs and macOS versions are supported?</summary><p>Open Contexts requires macOS 13 Ventura or later and ships as a DMG.</p></details>
+        <details><summary>Why does Open Contexts need Accessibility permission?</summary><p>Accessibility permission lets Open Contexts find windows, switch to them, and handle keyboard shortcuts. Without it, or while the app is closed, Open Contexts does not take over ⌘Tab.</p></details>
+        <details><summary>macOS says the app can't be opened. What should I do?</summary><p>Builds without a Developer ID signature and Apple notarization may be blocked by Gatekeeper. After confirming the DMG came from the official GitHub repository, run <code>xattr -dr com.apple.quarantine /Applications/OpenContexts.app</code></p></details>
+        <details><summary>Where are my window groups stored?</summary><p>Groups and window positions are saved locally in <code>~/Library/Application Support/OpenContexts/groups.json</code>. Nothing is uploaded.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="section band">
+    <div class="container">
+      <div class="cta-card" data-reveal>
+        <h2 class="display">Give your Mac the window switcher it deserves.</h2>
+        <p class="lede">Download Open Contexts for free, or build it from source.</p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary btn-lg" href="https://github.com/zshnb/open-contexts/releases/latest">Download for macOS</a>
+          <a class="btn btn-secondary btn-lg" href="https://github.com/zshnb/open-contexts">View on GitHub</a>
+        </div>
+        <p class="hero-meta">macOS 13+ · Free and open source</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer band">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a class="logo" href="./"><img src="assets/icon.png" alt="" width="28" height="28">Open Contexts</a>
+        <p>A free, open-source window switcher and app bar for macOS.</p>
+      </div>
+      <div class="footer-cols">
+        <div><h2>Product</h2><ul><li><a href="#features">Features</a></li><li><a href="#download">Download</a></li><li><a href="https://github.com/zshnb/open-contexts/blob/main/CHANGELOG.md">Changelog</a></li></ul></div>
+        <div><h2>Support</h2><ul><li><a href="#faq">FAQ</a></li><li><a href="https://github.com/zshnb/open-contexts/issues">Report an issue</a></li><li><a href="https://github.com/zshnb/open-contexts">GitHub</a></li></ul></div>
+        <div><h2>Legal</h2><ul><li><a href="https://github.com/zshnb/open-contexts/blob/main/LICENSE">Apache 2.0</a></li></ul></div>
+      </div>
+    </div>
+    <p class="footer-legal">© 2026 Open Contexts contributors. Open Contexts is an independent project and is not affiliated with Contexts.</p>
+  </div>
+</footer>
+<script src="assets/site.js" defer></script>
+</body>
+</html>
