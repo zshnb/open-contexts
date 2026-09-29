@@ -347,12 +347,6 @@ public final class GroupStore: ObservableObject {
             guard let window = live.first, let pinned = pinnedByApp[appID], pinned.count == 1,
                   let saved = pinned.first, savedIDByWindowID[window.id] == nil,
                   !usedSavedIDs.contains(saved.id) else { continue }
-            let savedURL = saved.documentURL?.isEmpty == false ? saved.documentURL : nil
-            let liveURL = window.documentURL?.isEmpty == false ? window.documentURL : nil
-            guard savedURL == nil || liveURL == nil || savedURL == liveURL else { continue }
-            if let url = liveURL,
-               let matches = savedByKey["document\u{0}\(appID)\u{0}\(url)"],
-               matches.contains(where: { $0 != saved.id }) { continue }
             savedIDByWindowID = savedIDByWindowID.filter { $0.value != saved.id }
             savedIDByWindowID[window.id] = saved.id
             usedSavedIDs.insert(saved.id)
