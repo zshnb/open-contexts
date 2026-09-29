@@ -44,8 +44,13 @@ final class ShortcutController: ObservableObject {
     private var state = ShortcutState()
 
     func start() -> Bool {
-        if eventTap != nil { return isRunning }
         guard AXIsProcessTrusted() else { return false }
+        if let eventTap {
+            // The tap survives transient trust loss or session switches; re-enable it instead of no-op.
+            CGEvent.tapEnable(tap: eventTap, enable: true)
+            isRunning = true
+            return true
+        }
 
         let mask = CGEventMask(1 << CGEventType.keyDown.rawValue)
             | CGEventMask(1 << CGEventType.flagsChanged.rawValue)
@@ -73,7 +78,10 @@ final class ShortcutController: ObservableObject {
         if let source = runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
         }
-        if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
+        if let tap = eventTap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+            CFMachPortInvalidate(tap)
+        }
         workspaceObservers.forEach(NSWorkspace.shared.notificationCenter.removeObserver)
         workspaceObservers = []
         runLoopSource = nil
