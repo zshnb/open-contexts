@@ -56,7 +56,6 @@
     { "@type": "Question", "name": "How is it different from other window switchers such as AltTab?", "acceptedAnswer": { "@type": "Answer", "text": "Open Contexts shows a compact list with each window's app, icon, and title instead of a grid of thumbnails, and pairs the switcher with a persistent app bar where you can organize windows into saved groups." } },
     { "@type": "Question", "name": "Which Macs and macOS versions are supported?", "acceptedAnswer": { "@type": "Answer", "text": "Open Contexts requires macOS 13 Ventura or later and ships as a DMG." } },
     { "@type": "Question", "name": "Why does Open Contexts need Accessibility permission?", "acceptedAnswer": { "@type": "Answer", "text": "Accessibility permission lets Open Contexts find windows, switch to them, and handle keyboard shortcuts. Without it, or while the app is closed, Open Contexts does not take over ⌘Tab." } },
-    { "@type": "Question", "name": "macOS says the app can't be opened. What should I do?", "acceptedAnswer": { "@type": "Answer", "text": "Builds without a Developer ID signature and Apple notarization may be blocked by Gatekeeper. After confirming the DMG came from the official GitHub repository, run: xattr -dr com.apple.quarantine /Applications/OpenContexts.app" } },
     { "@type": "Question", "name": "Where are my window groups stored?", "acceptedAnswer": { "@type": "Answer", "text": "Groups and window positions are saved locally in ~/Library/Application Support/OpenContexts/groups.json. Nothing is uploaded." } }
   ]
 }
@@ -237,7 +236,6 @@
         <details><summary>How is it different from other window switchers such as AltTab?</summary><p>Open Contexts shows a compact list with each window's app, icon, and title instead of a grid of thumbnails, and pairs the switcher with a persistent app bar where you can organize windows into saved groups. <a class="text-link" href="compare/">Compare Open Contexts with AltTab, Contexts, and macOS ⌘Tab →</a></p></details>
         <details><summary>Which Macs and macOS versions are supported?</summary><p>Open Contexts requires macOS 13 Ventura or later and ships as a DMG.</p></details>
         <details><summary>Why does Open Contexts need Accessibility permission?</summary><p>Accessibility permission lets Open Contexts find windows, switch to them, and handle keyboard shortcuts. Without it, or while the app is closed, Open Contexts does not take over ⌘Tab.</p></details>
-        <details><summary>macOS says the app can't be opened. What should I do?</summary><p>Builds without a Developer ID signature and Apple notarization may be blocked by Gatekeeper. After confirming the DMG came from the official GitHub repository, run <code>xattr -dr com.apple.quarantine /Applications/OpenContexts.app</code></p></details>
         <details><summary>Where are my window groups stored?</summary><p>Groups and window positions are saved locally in <code>~/Library/Application Support/OpenContexts/groups.json</code>. Nothing is uploaded.</p></details>
       </div>
     </div>
