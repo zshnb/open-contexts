@@ -1,8 +1,16 @@
 [English](README.md) | **简体中文**
 
-<h1 align="center"><img src="assets/AppIcon.png" alt="Open Contexts 图标" width="48" height="48" align="absbottom"> Open Contexts</h1>
+<h1 align="center"><img src="assets/AppIcon.png" alt="Open Contexts 图标" width="48" height="48" align="absbottom"> Open Contexts — 免费开源的 Mac 窗口切换器</h1>
 
-Open Contexts 是付费 macOS 窗口管理软件 [Contexts](https://contexts.co/) 的开源升级版，完美还原应用栏和窗口切换体验。
+Open Contexts 是**免费开源的 macOS 窗口切换器**，提供常驻应用栏和可保存的窗口分组。用 `⌘Tab` 在单个窗口之间切换，在侧边栏按任务整理窗口，并自定义键盘快捷键。全部功能免费，无需账户或订阅。
+
+[下载 macOS 版本](https://github.com/zshnb/open-contexts/releases/latest) · [官方网站](https://opencontexts.zshnb.com/zh/) · [如何在 Mac 上切换窗口](https://opencontexts.zshnb.com/zh/guides/switch-between-windows-on-mac/) · [Mac 窗口切换器对比](https://opencontexts.zshnb.com/zh/compare/)
+
+## 在 Mac 上切换与整理窗口
+
+- **直接选择窗口。** macOS 原生 `⌘Tab` 在应用之间切换；Open Contexts 按最近使用顺序列出单个窗口，包括同一应用的多个窗口。
+- **随时访问窗口。** 将应用栏放在屏幕左侧、右侧或底部，选择始终显示或鼠标到达边缘时显示。
+- **按任务整理窗口。** 为代码、研究或聊天创建分组，拖动窗口归组、固定排列顺序，并在重启应用后保留分组。
 
 ## 运行截图
 
@@ -10,44 +18,50 @@ Open Contexts 是付费 macOS 窗口管理软件 [Contexts](https://contexts.co/
 
 ### 左侧应用栏
 
-<img src="docs/screenshots/sidebar-left.png" alt="左侧应用栏" width="188">
+<img src="docs/screenshots/sidebar-left.png" alt="Open Contexts 侧边栏按自定义分组列出 Mac 窗口" width="188">
 
 左侧和右侧应用栏沿屏幕边缘居中排列。
 
 ### 底部应用栏
 
-![底部应用栏](docs/screenshots/sidebar-bottom.png)
+![Open Contexts 底部应用栏显示窗口图标与标题](docs/screenshots/sidebar-bottom.png)
 
 底部应用栏从左向右排列并整体居中。空间不足时，每个窗口项会平均缩小，以便在一行内显示全部窗口。
 
 ### 窗口切换器
 
-<img src="docs/screenshots/window-switcher.png" alt="窗口切换器" width="600">
+<img src="docs/screenshots/window-switcher.png" alt="Open Contexts 键盘窗口切换器列出单个 Mac 窗口" width="600">
 
 窗口切换器按最近使用顺序展示窗口，可用键盘继续选择并切换。
 
-## 核心功能
+## Mac 窗口切换器功能
 
-| Contexts 功能 | Open Contexts 实现 |
+| 功能 | 使用方式 |
 | --- | --- |
 | 窗口级切换 | 以窗口而不是应用为单位展示和切换，并跟踪最近使用顺序（MRU） |
 | 屏幕边缘应用栏 | 支持左侧、右侧或底部，始终显示或移到屏幕边缘时唤出；可选择仅显示图标或同时显示标题 |
 | 键盘切换器 | 默认 `⌘Tab` 切换所有窗口，`Command + 反引号` 切换当前应用窗口，可在设置中自定义；支持 Shift 反向切换、方向键、`Esc` 与松开快捷键修饰键确认 |
 | 窗口激活 | 激活最小化或隐藏的窗口时尝试恢复显示 |
 | 窗口信息 | 显示应用图标、窗口标题与系统可读取的 Dock 通知角标 |
+| macOS 原生应用 | 使用 Swift、AppKit 和 SwiftUI 构建；应用更新使用 Sparkle |
 
-### Open Contexts 独有功能：保存自定义窗口分组
+### 保存自定义窗口分组
 
-原版 Contexts 不支持保存自定义窗口分组，Open Contexts 在复刻核心体验之外增加了这项功能：
+在侧边栏中将相关窗口放在一起，即使它们来自不同应用：
 
 - 创建、重命名和删除分组，拖动窗口或分组调整顺序。
 - 右键窗口选择“固定”，可将窗口固定在当前分组的位置，自动更新不会改变其位置；手动拖动仍可调整。
 - 重启后恢复分组名称和顺序，以及可匹配窗口的分组、顺序和侧栏位置。
-- 使用 Swift、AppKit 和 SwiftUI 原生实现窗口管理；应用更新使用 Sparkle。
 
-目前尚未复刻 Contexts 的搜索、Fast Search 和触控板手势。全屏场景已有相应实现，但仍需在更多真实环境中验证。
+保存分组用于整理窗口列表，不会重新打开应用，也不会恢复桌面窗口的尺寸和位置。
 
-## 安装与首次运行
+### 寻找 Contexts 或 AltTab 的替代工具？
+
+Open Contexts 复刻了 [Contexts](https://contexts.co/) 的应用栏和窗口切换体验，并加入可保存的自定义窗口分组。如果你需要免费开源的工具、紧凑的窗口标题列表和常驻侧边栏，可以考虑使用它。
+
+Open Contexts 目前不支持窗口搜索和触控板切换手势。全屏行为仍需在更多真实环境中验证。可阅读 [Mac 窗口切换器对比](https://opencontexts.zshnb.com/zh/compare/)，按自己的工作方式选择工具。
+
+## 在 macOS 上下载与安装
 
 系统要求：macOS 13 或更高版本。macOS 13 等较旧版本尚未完成实机验证。
 

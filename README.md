@@ -1,53 +1,67 @@
 **English** | [简体中文](README.zh-CN.md)
 
-<h1 align="center"><img src="assets/AppIcon.png" alt="Open Contexts icon" width="48" height="48" align="absbottom"> Open Contexts</h1>
+<h1 align="center"><img src="assets/AppIcon.png" alt="Open Contexts icon" width="48" height="48" align="absbottom"> Open Contexts — Free, open-source Mac window switcher</h1>
 
-Open Contexts is an open-source enhanced edition of the paid macOS window manager [Contexts](https://contexts.co/), faithfully recreating its app bar and window switcher experience.
+Open Contexts is a **free, open-source window switcher for macOS** with a persistent app bar and saved window groups. Use `⌘Tab` to switch between individual windows, organize them by task in the sidebar, and customize your keyboard shortcuts. All features are included, with no account or subscription.
+
+[Download for macOS](https://github.com/zshnb/open-contexts/releases/latest) · [Official website](https://opencontexts.zshnb.com/) · [How to switch between windows on Mac](https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/) · [Compare Mac window switchers](https://opencontexts.zshnb.com/compare/)
+
+## Switch between windows on Mac
+
+- **Select a window directly.** macOS `⌘Tab` switches between apps; Open Contexts lists individual windows in most recently used order, including multiple windows from the same app.
+- **Keep windows within reach.** Place the app bar on the left, right, or bottom edge of the screen, always visible or revealed when the pointer reaches the edge.
+- **Organize windows by task.** Create groups for coding, research, or chat. Drag windows into groups, pin their order, and retain your groups after restarting the app.
 
 ## Screenshots
 
-These are screenshots of the app running.
+Actual screenshots of the macOS app.
 
 ### Left sidebar
 
-<img src="docs/screenshots/sidebar-left.png" alt="Left sidebar" width="188">
+<img src="docs/screenshots/sidebar-left.png" alt="Open Contexts sidebar listing Mac windows in custom groups" width="188">
 
 The left and right sidebars are centered along the edge of the screen.
 
 ### Bottom bar
 
-![Bottom bar](docs/screenshots/sidebar-bottom.png)
+![Open Contexts bottom app bar with window icons and titles](docs/screenshots/sidebar-bottom.png)
 
 The bottom bar lays out windows from left to right and is centered as a whole. When space is limited, each window item shrinks evenly so all windows fit on one line.
 
 ### Window switcher
 
-<img src="docs/screenshots/window-switcher.png" alt="Window switcher" width="600">
+<img src="docs/screenshots/window-switcher.png" alt="Open Contexts keyboard window switcher showing individual Mac windows" width="600">
 
 The window switcher displays windows in most recently used order. You can continue selecting and switching with the keyboard.
 
-## Core features
+## Mac window switcher features
 
-| Contexts feature | Open Contexts implementation |
+| Feature | How it works |
 | --- | --- |
 | Window switching | Displays and switches individual windows rather than apps, and tracks most recently used (MRU) order |
 | Screen edge sidebar | Supports the left, right, or bottom edge; always visible or shown when the pointer reaches the screen edge; optionally shows icons alone or icons with titles |
 | Keyboard switcher | Defaults to `⌘Tab` for all windows and `Command + backtick` for the current app; both shortcuts are customizable in Settings; supports Shift for reverse switching, arrow keys, `Esc`, and releasing a shortcut modifier to confirm |
 | Window activation | Attempts to restore minimized or hidden windows when activated |
 | Window information | Displays app icons, window titles, and notification badges readable from the system Dock |
+| Native macOS app | Built with Swift, AppKit, and SwiftUI; app updates use Sparkle |
 
-### Open Contexts exclusive feature: saved custom window groups
+### Saved window groups
 
-The original Contexts does not support saving custom window groups. Open Contexts adds this feature alongside its recreation of the core experience:
+Keep related windows together in the sidebar, even when they belong to different apps:
 
 - Create, rename, and delete groups; drag windows or groups to reorder them.
 - Right-click a window and select “Pin” to keep it at its current position in the group during automatic updates; drag it to change that position.
 - Restore group names and order after a restart, along with the group, order, and sidebar position of windows that can be matched.
-- Use native Swift, AppKit, and SwiftUI for window management; use Sparkle for app updates.
 
-Contexts' Search, Fast Search, and trackpad gestures have not yet been recreated. Full-screen scenarios have a corresponding implementation, but still need verification in more real-world environments.
+Saved groups organize the window list; they do not reopen apps or restore desktop window sizes and positions.
 
-## Installation and first launch
+### Looking for a Contexts or AltTab alternative?
+
+Open Contexts recreates the app bar and window switcher experience of [Contexts](https://contexts.co/) and adds saved custom window groups. It is worth considering if you want a free, open-source tool with a compact window title list and a persistent sidebar.
+
+Open Contexts currently does not support window search or trackpad switching gestures. Full-screen behavior still needs verification in more real-world environments. See the [Mac window switcher comparison](https://opencontexts.zshnb.com/compare/) to choose a tool that fits your workflow.
+
+## Download and install on macOS
 
 Requirements: macOS 13 or later. macOS 13 has not yet been verified on physical devices.
 
