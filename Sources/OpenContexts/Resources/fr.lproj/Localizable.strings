@@ -39,3 +39,8 @@
 "OK" = "OK";
 "Cancel" = "Annuler";
 "Move group to end" = "Déplacer le groupe à la fin";
+"Press shortcut…" = "Appuyez sur le raccourci…";
+"Restore defaults" = "Valeurs par défaut";
+"Click a shortcut to record. Esc cancels; Shift switches backward." = "Cliquez pour enregistrer. Échap annule ; Maj inverse le sens.";
+"The two shortcuts must be different." = "Les deux raccourcis doivent être différents.";
+"Use Command, Option or Control with a key; Shift is reserved for reverse switching." = "Utilisez Commande, Option ou Contrôle avec une touche ; Maj est réservé au sens inverse.";

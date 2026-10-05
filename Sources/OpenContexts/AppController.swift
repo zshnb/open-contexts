@@ -45,6 +45,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func configureShortcuts() {
+        shortcuts.configure(allWindows: settings.allWindowsShortcut, currentApp: settings.currentAppShortcut)
         shortcuts.canBegin = { [weak self] currentAppOnly in
             self?.availableWindows(currentAppOnly: currentAppOnly).isEmpty == false
         }
@@ -89,6 +90,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 self?.updateSidebars()
                 self?.configureMenuBar()
                 if let self {
+                    self.shortcuts.configure(allWindows: self.settings.allWindowsShortcut,
+                                             currentApp: self.settings.currentAppShortcut)
                     self.settingsWindow?.title = L10n.text("OpenContexts Settings", language: self.settings.language)
                 }
             }
@@ -265,7 +268,13 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         guard let window = notification.object as? NSWindow, window === settingsWindow else { return }
+        shortcuts.cancelRecording()
         windowService.unregisterLocalWindow(id: Self.settingsWindowID)
+    }
+
+    func windowDidResignKey(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow, window === settingsWindow else { return }
+        shortcuts.cancelRecording()
     }
 
     func windowDidBecomeKey(_ notification: Notification) {

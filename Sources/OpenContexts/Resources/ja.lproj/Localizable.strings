@@ -39,3 +39,8 @@
 "OK" = "OK";
 "Cancel" = "キャンセル";
 "Move group to end" = "グループを最後に移動";
+"Press shortcut…" = "ショートカットを押す…";
+"Restore defaults" = "デフォルトに戻す";
+"Click a shortcut to record. Esc cancels; Shift switches backward." = "クリックして入力。Esc で取消、Shift で逆方向に切替。";
+"The two shortcuts must be different." = "2 つのショートカットは異なる必要があります。";
+"Use Command, Option or Control with a key; Shift is reserved for reverse switching." = "Command、Option、Control とキーを組み合わせてください。Shift は逆方向の切替用です。";

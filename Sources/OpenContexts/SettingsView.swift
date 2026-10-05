@@ -43,11 +43,24 @@ final class AppSettings: ObservableObject {
     @Published private(set) var sidebarPosition: SidebarPosition
     @Published private(set) var sidebarItemDisplayMode: SidebarItemDisplayMode
     @Published private(set) var language: AppLanguage
+    @Published private(set) var allWindowsShortcut: KeyboardShortcut
+    @Published private(set) var currentAppShortcut: KeyboardShortcut
 
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        func loadShortcut(_ key: String, fallback: KeyboardShortcut) -> KeyboardShortcut {
+            guard let data = defaults.data(forKey: key),
+                  let shortcut = try? JSONDecoder().decode(KeyboardShortcut.self, from: data),
+                  shortcut.isValid else { return fallback }
+            return shortcut
+        }
+        let allWindows = loadShortcut("allWindowsShortcut", fallback: .allWindows)
+        let currentApp = loadShortcut("currentAppShortcut", fallback: .currentApp)
+        let conflict = allWindows.conflicts(with: currentApp)
+        allWindowsShortcut = conflict ? .allWindows : allWindows
+        currentAppShortcut = conflict ? .currentApp : currentApp
         language = AppLanguage(rawValue: defaults.string(forKey: "language") ?? "") ?? .system
         sidebarMode = SidebarVisibilityMode(rawValue: defaults.string(forKey: "sidebarMode") ?? "") ?? .always
         sidebarItemDisplayMode = SidebarItemDisplayMode(
@@ -82,6 +95,27 @@ final class AppSettings: ObservableObject {
         defaults.set(language.rawValue, forKey: "language")
     }
 
+    @discardableResult
+    func setShortcut(_ shortcut: KeyboardShortcut, currentAppOnly: Bool) -> Bool {
+        let other = currentAppOnly ? allWindowsShortcut : currentAppShortcut
+        guard shortcut.isValid, !shortcut.conflicts(with: other),
+              let data = try? JSONEncoder().encode(shortcut) else { return false }
+        if currentAppOnly {
+            currentAppShortcut = shortcut
+        } else {
+            allWindowsShortcut = shortcut
+        }
+        defaults.set(data, forKey: currentAppOnly ? "currentAppShortcut" : "allWindowsShortcut")
+        return true
+    }
+
+    func resetShortcuts() {
+        allWindowsShortcut = .allWindows
+        currentAppShortcut = .currentApp
+        defaults.removeObject(forKey: "allWindowsShortcut")
+        defaults.removeObject(forKey: "currentAppShortcut")
+    }
+
     static func selfCheck() -> Bool {
         let suite = "OpenContexts.self-check.\(UUID().uuidString)"
         guard let defaults = UserDefaults(suiteName: suite) else { return false }
@@ -105,8 +139,24 @@ final class AppSettings: ObservableObject {
               defaults.string(forKey: "language") == "ja" else { return false }
         defaults.set("unsupported", forKey: "language")
         guard AppSettings(defaults: defaults).language == .system else { return false }
-        return ShortcutController.allWindowsKeyCode == 48
-            && ShortcutController.currentAppKeyCode == 50
+        let custom = KeyboardShortcut(keyCode: 16, modifiers: [.maskControl, .maskAlternate], keyLabel: "Y")
+        guard settings.allWindowsShortcut == .allWindows, settings.currentAppShortcut == .currentApp,
+              !settings.setShortcut(.currentApp, currentAppOnly: false),
+              settings.setShortcut(custom, currentAppOnly: false),
+              AppSettings(defaults: defaults).allWindowsShortcut == custom,
+              !settings.setShortcut(custom, currentAppOnly: true),
+              settings.setShortcut(KeyboardShortcut(keyCode: 16, modifiers: .maskCommand, keyLabel: "Y"),
+                                   currentAppOnly: true),
+              AppSettings(defaults: defaults).currentAppShortcut.keyCode == 16 else { return false }
+        // Corrupt or conflicting saved values fall back to the original shortcuts.
+        defaults.set(try? JSONEncoder().encode(custom), forKey: "currentAppShortcut")
+        guard AppSettings(defaults: defaults).allWindowsShortcut == .allWindows,
+              AppSettings(defaults: defaults).currentAppShortcut == .currentApp else { return false }
+        defaults.set(Data("invalid".utf8), forKey: "allWindowsShortcut")
+        guard AppSettings(defaults: defaults).allWindowsShortcut == .allWindows else { return false }
+        settings.resetShortcuts()
+        return AppSettings(defaults: defaults).allWindowsShortcut == .allWindows
+            && AppSettings(defaults: defaults).currentAppShortcut == .currentApp
             && settings.sidebarPosition == .left
             && settings.sidebarItemDisplayMode == .icon
             && defaults.string(forKey: "sidebarPosition") == SidebarPosition.left.rawValue
@@ -162,10 +212,25 @@ struct SettingsView: View {
             }
 
             LabeledContent(L10n.text("All windows", language: language)) {
-                Text("⌘Tab")
+                shortcutButton(currentAppOnly: false)
             }
             LabeledContent(L10n.text("Current app windows", language: language)) {
-                Text("⌘`")
+                shortcutButton(currentAppOnly: true)
+            }
+            HStack {
+                Text(L10n.text("Click a shortcut to record. Esc cancels; Shift switches backward.", language: language))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button(L10n.text("Restore defaults", language: language)) {
+                    shortcuts.cancelRecording()
+                    settings.resetShortcuts()
+                }
+            }
+            if let error = shortcuts.recordingErrorKey {
+                Text(L10n.text(error, language: language))
+                    .font(.caption)
+                    .foregroundStyle(.red)
             }
 
             LabeledContent(L10n.text("Accessibility", language: language)) {
@@ -192,6 +257,26 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
-        .frame(width: 540, height: 440)
+        .frame(width: 540, height: 540)
+        .onDisappear { shortcuts.cancelRecording() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
+            shortcuts.cancelRecording()
+        }
+    }
+
+    private func shortcutButton(currentAppOnly: Bool) -> some View {
+        let recording = shortcuts.recordingCurrentAppOnly == currentAppOnly
+        let shortcut = currentAppOnly ? settings.currentAppShortcut : settings.allWindowsShortcut
+        return Button(recording ? L10n.text("Press shortcut…", language: settings.language) : shortcut.display) {
+            if recording {
+                shortcuts.cancelRecording()
+            } else {
+                shortcuts.beginRecording(currentAppOnly: currentAppOnly) { shortcut in
+                    settings.setShortcut(shortcut, currentAppOnly: currentAppOnly)
+                }
+            }
+        }
+        .accessibilityLabel(L10n.text(currentAppOnly ? "Current app windows" : "All windows", language: settings.language))
+        .accessibilityValue(recording ? L10n.text("Press shortcut…", language: settings.language) : shortcut.display)
     }
 }

@@ -39,3 +39,8 @@
 "OK" = "OK";
 "Cancel" = "Cancel";
 "Move group to end" = "Move group to end";
+"Press shortcut…" = "Press shortcut…";
+"Restore defaults" = "Restore defaults";
+"Click a shortcut to record. Esc cancels; Shift switches backward." = "Click a shortcut to record. Esc cancels; Shift switches backward.";
+"The two shortcuts must be different." = "The two shortcuts must be different.";
+"Use Command, Option or Control with a key; Shift is reserved for reverse switching." = "Use Command, Option or Control with a key; Shift is reserved for reverse switching.";
