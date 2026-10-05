@@ -28,4 +28,18 @@
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/compare/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/compare/"/>
   </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/</loc>
+    <lastmod>2026-10-05</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/guides/switch-between-windows-on-mac/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/guides/switch-between-windows-on-mac/</loc>
+    <lastmod>2026-10-05</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/guides/switch-between-windows-on-mac/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/"/>
+  </url>
 </urlset>
