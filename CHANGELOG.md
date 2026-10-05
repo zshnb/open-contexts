@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+## [0.3.7] - 2026-10-05
+
+### Added
+
+- Customize the all-windows and current-app window switching shortcuts in Settings. Changes take effect immediately and persist after restarting; recording supports cancellation, invalid or duplicate shortcut feedback, and restoring defaults. Shift switches backward, and releasing a shortcut modifier confirms the selected window.
+- Read the new English and Chinese Mac window switching guides on the website, with a table of contents, method comparison, and direct language switching.
+
+### Changed
+
+- Remove the unsigned-app FAQ and its structured data from both website homepages.
+
+### 新增
+
+- 可在设置中自定义所有窗口与当前应用窗口的切换快捷键，修改立即生效并在重启后保留；录入支持取消、无效或重复组合键提示及恢复默认。Shift 反向切换，松开快捷键修饰键确认所选窗口。
+- 官网新增中英文 Mac 窗口切换指南，包含目录、方式对比与直接语言切换。
+
+### 调整
+
+- 从中英文官网首页删除未签名应用的 FAQ 及对应结构化数据。
+
 ## [0.3.6] - 2026-09-29
 
 ### Fixed
