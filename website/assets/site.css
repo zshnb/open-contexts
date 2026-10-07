@@ -386,3 +386,9 @@ kbd,.kbd{font-family:var(--font-body);font-size:.8em;font-weight:540;display:inl
 .mock-stage>.mock-wall{min-width:0;max-width:100%}
 @media (max-width:560px){.mock-wall{padding:24px 12px}.frow{flex-wrap:wrap;padding-inline:10px;gap:6px 8px}.seg button{padding-inline:8px}}
 @media (max-width:560px){.groups-mock{padding:16px}.groups-mock .menu.static{display:none}.groups-mock .appbar.static{margin-inline:auto}}
+
+/* Competitor topic index; articles reuse the guide layout. */
+.competitor-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:32px}
+.competitor-grid ul{display:grid;gap:12px;margin-top:20px}
+.article-header>p:not(.lede):not(.compare-eyebrow){margin-top:20px;color:var(--text-secondary);font-size:.875rem}
+@media(max-width:760px){.competitor-grid{grid-template-columns:1fr}}

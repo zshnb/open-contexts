@@ -2,28 +2,28 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://opencontexts.zshnb.com/</loc>
-    <lastmod>2026-10-02</lastmod>
+    <lastmod>2026-10-07</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/"/>
   </url>
   <url>
     <loc>https://opencontexts.zshnb.com/zh/</loc>
-    <lastmod>2026-10-02</lastmod>
+    <lastmod>2026-10-07</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/"/>
   </url>
   <url>
     <loc>https://opencontexts.zshnb.com/compare/</loc>
-    <lastmod>2026-10-02</lastmod>
+    <lastmod>2026-10-07</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/compare/"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/compare/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/compare/"/>
   </url>
   <url>
     <loc>https://opencontexts.zshnb.com/zh/compare/</loc>
-    <lastmod>2026-10-02</lastmod>
+    <lastmod>2026-10-07</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/compare/"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/compare/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/compare/"/>
@@ -41,5 +41,131 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/guides/switch-between-windows-on-mac/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/alternatives/alttab/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/alternatives/alttab/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/alternatives/alttab/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/alternatives/alttab/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/alternatives/alttab/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/alternatives/alttab/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/alternatives/alttab/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/alternatives/alttab/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/alternatives/contexts/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/alternatives/contexts/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/alternatives/contexts/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/alternatives/contexts/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/alternatives/contexts/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/alternatives/contexts/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/alternatives/contexts/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/alternatives/contexts/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/alternatives/better-window-switcher/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/alternatives/better-window-switcher/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/alternatives/better-window-switcher/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/alternatives/better-window-switcher/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/alternatives/better-window-switcher/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/alternatives/better-window-switcher/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/alternatives/better-window-switcher/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/alternatives/better-window-switcher/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/compare/open-contexts-vs-alttab/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-alttab/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-alttab/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-alttab/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-alttab/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-alttab/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-alttab/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-alttab/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/compare/open-contexts-vs-contexts/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-contexts/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-contexts/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-contexts/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-contexts/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-contexts/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-contexts/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-contexts/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/compare/open-contexts-vs-better-window-switcher/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-better-window-switcher/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-better-window-switcher/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-better-window-switcher/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-better-window-switcher/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-better-window-switcher/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-better-window-switcher/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-better-window-switcher/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/reviews/alttab/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/reviews/alttab/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/reviews/alttab/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/reviews/alttab/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/reviews/alttab/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/reviews/alttab/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/reviews/alttab/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/reviews/alttab/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/reviews/contexts/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/reviews/contexts/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/reviews/contexts/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/reviews/contexts/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/reviews/contexts/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/reviews/contexts/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/reviews/contexts/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/reviews/contexts/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/reviews/better-window-switcher/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/reviews/better-window-switcher/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/reviews/better-window-switcher/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/reviews/better-window-switcher/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/reviews/better-window-switcher/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/reviews/better-window-switcher/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/reviews/better-window-switcher/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/reviews/better-window-switcher/"/>
   </url>
 </urlset>
