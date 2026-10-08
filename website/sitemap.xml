@@ -30,14 +30,14 @@
   </url>
   <url>
     <loc>https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/guides/switch-between-windows-on-mac/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/"/>
   </url>
   <url>
     <loc>https://opencontexts.zshnb.com/zh/guides/switch-between-windows-on-mac/</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/guides/switch-between-windows-on-mac/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/"/>
@@ -195,5 +195,159 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/terms/"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/terms/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/terms/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/guides/mac-dock-alternative/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/guides/mac-dock-alternative/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/guides/mac-dock-alternative/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/guides/mac-dock-alternative/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/guides/mac-dock-alternative/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/guides/mac-dock-alternative/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/guides/mac-dock-alternative/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/guides/mac-dock-alternative/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/guides/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/guides/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/guides/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/guides/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/guides/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/guides/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/guides/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/guides/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/alternatives/sidebar/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/alternatives/sidebar/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/alternatives/sidebar/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/alternatives/sidebar/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/alternatives/sidebar/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/alternatives/sidebar/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/alternatives/sidebar/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/alternatives/sidebar/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/compare/open-contexts-vs-sidebar/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-sidebar/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-sidebar/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-sidebar/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-sidebar/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-sidebar/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-sidebar/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-sidebar/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/reviews/sidebar/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/reviews/sidebar/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/reviews/sidebar/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/reviews/sidebar/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/reviews/sidebar/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/reviews/sidebar/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/reviews/sidebar/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/reviews/sidebar/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/alternatives/ubar/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/alternatives/ubar/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/alternatives/ubar/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/alternatives/ubar/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/alternatives/ubar/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/alternatives/ubar/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/alternatives/ubar/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/alternatives/ubar/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/compare/open-contexts-vs-ubar/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-ubar/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-ubar/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-ubar/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-ubar/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-ubar/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-ubar/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-ubar/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/reviews/ubar/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/reviews/ubar/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/reviews/ubar/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/reviews/ubar/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/reviews/ubar/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/reviews/ubar/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/reviews/ubar/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/reviews/ubar/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/alternatives/dockdoor/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/alternatives/dockdoor/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/alternatives/dockdoor/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/alternatives/dockdoor/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/alternatives/dockdoor/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/alternatives/dockdoor/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/alternatives/dockdoor/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/alternatives/dockdoor/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/compare/open-contexts-vs-dockdoor/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-dockdoor/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-dockdoor/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-dockdoor/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-dockdoor/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-dockdoor/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/compare/open-contexts-vs-dockdoor/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/compare/open-contexts-vs-dockdoor/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/reviews/dockdoor/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/reviews/dockdoor/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/reviews/dockdoor/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/reviews/dockdoor/"/>
+  </url>
+  <url>
+    <loc>https://opencontexts.zshnb.com/zh/reviews/dockdoor/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/reviews/dockdoor/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/reviews/dockdoor/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/reviews/dockdoor/"/>
   </url>
 </urlset>

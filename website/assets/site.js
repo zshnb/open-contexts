@@ -252,9 +252,8 @@ Building for production...
   const MOCKS = {
     switcher: () => `<div class="mac switcher static">${swRows(MRU0, 1)}</div>`,
     appbar: () => `<div class="mac desk-mock">
-      <div class="win" style="left:300px;top:36px;width:600px;height:330px">${BODY.chrome()}</div>
-      <div class="win" style="left:420px;top:170px;width:500px;height:250px">${BODY.terminal()}</div>
-      <div class="appbar static edge" data-pos="left" data-display="title" data-mode="always">${barHTML(groups0(), badges0(), 'div')}</div></div>`,
+      <div class="appbar static edge" data-pos="left" data-display="title" data-mode="always">${barHTML(groups0(), badges0(), 'div')}</div>
+      <div class="appbar static" data-pos="bottom" data-display="title" data-mode="always">${barHTML(groups0(), badges0(), 'div')}</div></div>`,
     groups: () => `<div class="mac groups-mock"><div class="appbar static" data-pos="left" data-display="title" data-mode="always">${barHTML([
       { name: T.ungrouped, items: ['finder'] }, { name: T.code, items: ['terminal', 'chrome', 'claude'] },
       { name: 'AI', items: ['chatgpt'] }, { name: T.team, items: ['slack', 'notes'] }], badges0(), 'div').replace('class="row" title="zsh', 'class="row drop-before" title="zsh')}</div>

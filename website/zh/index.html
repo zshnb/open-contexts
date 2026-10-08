@@ -13,7 +13,7 @@
   gtag('config', 'G-ZGS8C9X3XW');
 </script>
 <title>免费 Mac 窗口切换器 | Open Contexts</title>
-<meta name="description" content="Open Contexts 是免费开源的 Mac 窗口切换器。用 ⌘Tab 在单个窗口之间快速切换，通过侧边栏保存和管理窗口分组，无需账户或订阅。">
+<meta name="description" content="Open Contexts 是免费开源的 Mac 窗口切换器。用 ⌘Tab 切换单个窗口，通过侧边栏或底部窗口 Dock 保存和整理分组。">
 <link rel="canonical" href="https://opencontexts.zshnb.com/zh/">
 <link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/">
 <link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/">
@@ -25,7 +25,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Open Contexts">
 <meta property="og:title" content="Open Contexts：免费的 Mac 窗口切换器">
-<meta property="og:description" content="按窗口切换，而不是按应用。免费开源的 macOS 窗口切换器与应用栏。">
+<meta property="og:description" content="Open Contexts 是免费开源的 Mac 窗口切换器。用 ⌘Tab 切换单个窗口，通过侧边栏或底部窗口 Dock 保存和整理分组。">
 <meta property="og:url" content="https://opencontexts.zshnb.com/zh/">
 <meta property="og:image" content="https://opencontexts.zshnb.com/assets/og.png">
 <meta property="og:locale" content="zh_CN">
@@ -81,7 +81,7 @@
       <a class="nav-link" href="./" aria-current="page">首页</a>
       <a class="nav-link" href="#features">功能</a>
       <a class="nav-link" href="compare/">对比</a>
-      <a class="nav-link" href="guides/switch-between-windows-on-mac/">指南</a>
+      <a class="nav-link" href="/zh/guides/">指南</a>
       <a class="nav-link" href="#download">下载</a>
       <a class="nav-link" href="#faq">常见问题</a>
       <a class="nav-link" href="https://github.com/zshnb/open-contexts">GitHub</a>
@@ -130,7 +130,7 @@
     <div class="container">
       <div class="section-head" data-reveal>
         <h2 class="display">每一个窗口，<br>一个 ⌘Tab。</h2>
-        <p class="lede">系统自带的 ⌘Tab 每个应用只显示一个图标。Open Contexts 显示每一个窗口，两个 Chrome 窗口就是两个选项。列表按最近使用排序，刚刚用过的窗口永远只差一次按键。</p>
+        <p class="lede">系统自带的 ⌘Tab 每个应用只显示一个图标。Open Contexts 显示每一个窗口，两个 Chrome 窗口就是两个选项。列表按最近使用排序，刚刚用过的窗口永远只差一次按键。Dock 栏和窗口切换器均支持多显示器。</p>
       </div>
       <div data-reveal data-mock="switcher"></div>
       <div class="shortcut-row" data-reveal>
@@ -143,11 +143,11 @@
     </div>
   </section>
 
-  <section class="section">
+  <section class="section" id="window-sidebar">
     <div class="container">
       <div class="section-head" data-reveal>
-        <h2 class="display">所有打开的窗口，<br>始终一目了然。</h2>
-        <p class="lede">应用栏停靠在屏幕边缘，按标题列出每个窗口，并显示应用图标和 Dock 角标。点击任意一行即可把窗口调到最前，即使它已最小化或隐藏。</p>
+        <h2 class="display">Mac 窗口侧边栏，<br>也能放在底部。</h2>
+        <p class="lede">把每个打开的窗口放在左右侧边栏或底部窗口 Dock 中，按标题和应用图标直接选择。点击即可切换，用保存的分组整理工作；也可以在指针移到屏幕边缘时再显示。</p>
       </div>
       <div class="mock-stage" data-reveal>
         <div class="mock-wall" data-mock="appbar"></div>
@@ -276,13 +276,13 @@
       </div>
       <div class="footer-cols">
         <div><h2>产品</h2><ul><li><a href="#features">功能</a></li><li><a href="compare/">对比</a></li><li><a href="#download">下载</a></li><li><a href="https://github.com/zshnb/open-contexts/blob/main/CHANGELOG.md">更新日志</a></li></ul></div>
-        <div><h2>支持</h2><ul><li><a href="guides/switch-between-windows-on-mac/">Mac 窗口切换指南</a></li><li><a href="#faq">常见问题</a></li><li><a href="https://github.com/zshnb/open-contexts/issues">反馈问题</a></li><li><a href="https://github.com/zshnb/open-contexts">GitHub</a></li></ul></div>
+        <div><h2>支持</h2><ul><li><a href="guides/switch-between-windows-on-mac/">Mac 窗口切换指南</a></li><li><a href="guides/mac-dock-alternative/">Mac Dock 与侧边栏指南</a></li><li><a href="#faq">常见问题</a></li><li><a href="https://github.com/zshnb/open-contexts/issues">反馈问题</a></li><li><a href="https://github.com/zshnb/open-contexts">GitHub</a></li></ul></div>
         <div><h2>法律</h2><ul><li><a href="/zh/privacy/">隐私政策</a></li><li><a href="/zh/terms/">服务条款</a></li><li><a href="https://github.com/zshnb/open-contexts/blob/main/LICENSE">Apache 2.0</a></li></ul></div>
       </div>
     </div>
     <p class="footer-legal">© 2026 Open Contexts 贡献者。Open Contexts 是独立项目，与 Contexts 无关联。</p>
   </div>
 </footer>
-<script src="../assets/site.js" defer></script>
+<script src="../assets/site.js?v=dock-layout" defer></script>
 </body>
 </html>

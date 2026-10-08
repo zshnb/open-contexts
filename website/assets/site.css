@@ -100,11 +100,12 @@ kbd,.kbd{font-family:var(--font-body);font-size:.8em;font-weight:540;display:inl
 .compare-eyebrow{margin-bottom:24px;font-size:.8125rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--brand-link)}
 .compare-hero .hero-meta{color:var(--text-secondary)}
 .decision-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.guide-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .decision-card{display:flex;flex-direction:column;align-items:flex-start;gap:16px;padding:28px 24px;border:1px solid var(--border);border-radius:var(--radius-card);background:var(--surface-1)}
 .decision-card-featured{border-color:var(--brand);box-shadow:var(--shadow-md)}
 .decision-label{font-size:.75rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text-secondary)}
 .decision-card-featured .decision-label{color:var(--brand-link)}
-.decision-card h3{font-size:1.25rem;font-weight:560;letter-spacing:-.025em}
+.decision-card h2,.decision-card h3{font-size:1.25rem;font-weight:560;letter-spacing:-.025em}
 .decision-card p{font-size:.9375rem;color:var(--text-secondary)}
 .decision-card .text-link{margin-top:auto;padding-top:8px}
 .text-link{color:var(--brand-link);text-decoration:underline;text-underline-offset:4px;font-size:.9375rem;font-weight:500}
@@ -380,9 +381,14 @@ kbd,.kbd{font-family:var(--font-body);font-size:.8em;font-weight:540;display:inl
 .settings-mock .form{height:auto}
 .settings-mock .appbar.static{width:100%;max-width:560px}
 .desk-mock{position:relative;height:460px}
-.desk-mock .appbar.static.edge{position:absolute;left:0;top:50%;translate:0 -50%;border-radius:0 10px 10px 0}
+.desk-mock .appbar.static.edge{position:absolute;left:0;top:calc(50% - 28px);translate:0 -50%;border-radius:0 10px 10px 0}
+.desk-mock .appbar.static[data-pos="bottom"]{position:absolute;left:50%;bottom:24px;translate:-50% 0;width:calc(100% - 48px);border-radius:10px}
 .mock-wall:has(.desk-mock){width:100%;padding:0}
-@media (max-width:760px){.desk-mock .win{display:none}}
+@media (max-width:760px){
+  .desk-mock .appbar[data-pos="bottom"]{width:calc(100% - 24px);justify-content:center}
+  .desk-mock .appbar[data-pos="bottom"] .grp,.desk-mock .appbar[data-pos="bottom"] .t{display:none}
+  .desk-mock .appbar[data-pos="bottom"] .row{flex:0 1 28px;padding:0;justify-content:center}
+}
 .mock-stage>.mock-wall{min-width:0;max-width:100%}
 @media (max-width:560px){.mock-wall{padding:24px 12px}.frow{flex-wrap:wrap;padding-inline:10px;gap:6px 8px}.seg button{padding-inline:8px}}
 @media (max-width:560px){.groups-mock{padding:16px}.groups-mock .menu.static{display:none}.groups-mock .appbar.static{margin-inline:auto}}

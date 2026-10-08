@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-ZGS8C9X3XW"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-ZGS8C9X3XW');
+</script>
+<title>Mac Dock 替代方案：用侧边栏切换与分组窗口 | Open Contexts</title>
+<meta name="description" content="寻找用于窗口切换的免费 Mac Dock 替代方案？Open Contexts 用左右侧边栏或底部应用栏列出单个窗口，支持点击切换与保存自定义分组。">
+<link rel="canonical" href="https://opencontexts.zshnb.com/zh/guides/mac-dock-alternative/">
+<link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/guides/mac-dock-alternative/">
+<link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/guides/mac-dock-alternative/">
+<link rel="alternate" hreflang="x-default" href="https://opencontexts.zshnb.com/guides/mac-dock-alternative/">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0d12" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" href="../../../assets/icon.png">
+<link rel="apple-touch-icon" href="../../../assets/icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Open Contexts">
+<meta property="og:title" content="Mac Dock 替代方案：用侧边栏切换与分组窗口">
+<meta property="og:description" content="寻找用于窗口切换的免费 Mac Dock 替代方案？Open Contexts 用左右侧边栏或底部应用栏列出单个窗口，支持点击切换与保存自定义分组。">
+<meta property="og:url" content="https://opencontexts.zshnb.com/zh/guides/mac-dock-alternative/">
+<meta property="og:image" content="https://opencontexts.zshnb.com/assets/og.png">
+<meta property="og:image:alt" content="Open Contexts 的 macOS 窗口切换器与应用栏">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Mac Dock 替代方案：用侧边栏切换与分组窗口">
+<meta name="twitter:description" content="寻找用于窗口切换的免费 Mac Dock 替代方案？Open Contexts 用左右侧边栏或底部应用栏列出单个窗口，支持点击切换与保存自定义分组。">
+<meta name="twitter:image" content="https://opencontexts.zshnb.com/assets/og.png">
+<meta name="twitter:image:alt" content="Open Contexts 的 macOS 窗口切换器与应用栏">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Mac Dock 替代方案：用侧边栏切换与分组窗口",
+  "description": "寻找用于窗口切换的免费 Mac Dock 替代方案？Open Contexts 用左右侧边栏或底部应用栏列出单个窗口，支持点击切换与保存自定义分组。",
+  "inLanguage": "zh-Hans",
+  "mainEntityOfPage": "https://opencontexts.zshnb.com/zh/guides/mac-dock-alternative/",
+  "image": "https://opencontexts.zshnb.com/assets/og.png",
+  "author": {
+    "@type": "Organization",
+    "name": "Open Contexts",
+    "url": "https://opencontexts.zshnb.com/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Open Contexts",
+    "url": "https://opencontexts.zshnb.com/"
+  }
+}
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">跳到正文</a>
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../../" aria-label="Open Contexts 首页"><img src="../../../assets/icon.png" alt="" width="28" height="28">Open Contexts</a>
+    <nav class="nav-links" aria-label="主导航">
+      <a class="nav-link" href="../../">首页</a>
+      <a class="nav-link" href="../../#features">功能</a>
+      <a class="nav-link" href="../../compare/">对比</a>
+      <a class="nav-link" href="/zh/guides/">指南</a>
+      <a class="nav-link" href="../../#download">下载</a>
+      <a class="nav-link" href="../../#faq">常见问题</a>
+      <a class="nav-link" href="https://github.com/zshnb/open-contexts" rel="noopener noreferrer">GitHub</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="theme-switch" type="button" role="switch" aria-checked="false" aria-label="深色模式">
+        <svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2" fill="currentColor"/><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3 3l1.1 1.1M11.9 11.9L13 13M3 13l1.1-1.1M11.9 4.1L13 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 10.2A6 6 0 0 1 5.8 2.5a6 6 0 1 0 7.7 7.7z" fill="currentColor"/></svg>
+      </button>
+      <a class="lang-link" href="../../../guides/mac-dock-alternative/" hreflang="en" lang="en" aria-label="Read the English article">English</a>
+      <a class="btn btn-primary btn-sm" href="https://github.com/zshnb/open-contexts/releases/latest" rel="noopener noreferrer">下载</a>
+    </div>
+  </div>
+</header>
+
+<main id="main" class="container">
+  <article aria-labelledby="article-title">
+    <header class="article-header">
+      <p class="compare-eyebrow">Mac Dock 与侧边栏指南</p>
+      <h1 class="display-xl" id="article-title">Mac Dock 替代方案：用侧边栏切换与分组窗口</h1>
+      <p class="lede">当多个窗口共用 Dock 中的一个应用图标时，找到具体窗口往往还要多一步。Open Contexts 把打开的窗口逐个列在侧边栏或底部应用栏里，显示标题、应用图标和保存的分组。这篇指南介绍这种方式适合哪些工作习惯、如何设置，以及它与 macOS Dock 各自承担的用途。</p>
+    </header>
+    <div class="article-layout">
+      <nav class="article-toc" aria-label="文章目录">
+        <h2>本文目录</h2><ul><li><a href="#why-a-window-dock">为什么需要窗口栏</a></li><li><a href="#window-sidebar">侧边栏与底部栏</a></li><li><a href="#saved-groups">保存窗口分组</a></li><li><a href="#choose">适合哪些习惯</a></li><li><a href="#dock-boundaries">与系统 Dock 配合</a></li><li><a href="#setup">安装与设置</a></li><li><a href="#faq">常见问题</a></li><li><a href="#next">下载与比较</a></li></ul>
+      </nav>
+      <div class="article-body">
+<section class="article-takeaways" aria-labelledby="why-a-window-dock">
+<h2 id="why-a-window-dock">为什么需要用于窗口切换的 Dock 替代方案？</h2>
+<p>同一应用打开多个窗口时，macOS Dock 仍然只显示一个应用图标。你可以从应用的 Dock 菜单选择窗口，而一个可见的窗口列表能让你先读到标题，再直接点击目标。</p>
+<ul><li>逐个查看窗口，同一个应用的多个窗口也有各自的条目。</li><li>点击想去的窗口，或用 ⌘Tab 从键盘切换。</li><li>按任务把不同应用的窗口整理进命名分组。</li></ul>
+</section>
+<section aria-labelledby="window-sidebar">
+<h2 id="window-sidebar">选择 Mac 窗口侧边栏或底部窗口 Dock</h2>
+<p>Open Contexts 支持多显示器：Dock 栏可以放在每个显示器的左侧、右侧或底部，窗口切换器也可在多个显示器上使用。侧边栏纵向列出窗口标题；底部栏把同一批窗口排成一行。两种布局都用于访问已经打开的窗口。</p>
+<p>希望列表始终在视线内，可以选择常驻显示；希望需要时再出现，可以选择悬浮显示，在指针靠近屏幕边缘时展开。显示内容可选仅应用图标，或同时显示窗口标题与 Dock 角标。</p>
+<div class="mock-stage" data-reveal>
+  <div class="mock-wall" data-mock="appbar"></div>
+</div>
+<p>空间不足时，底部应用栏会均匀收缩条目。</p>
+</section>
+<section aria-labelledby="saved-groups">
+<h2 id="saved-groups">按任务整理侧边栏里的窗口</h2>
+<p>准备发布时，可以把编辑器、终端和问题跟踪页面放进一个分组；查资料时，可以把浏览器与笔记窗口放在一起。点击 ＋ 新建分组，把窗口拖进去，再拖动窗口或分组标题调整顺序。</p>
+<p>右键点击窗口并选择“固定”，可以在列表自动更新时保留它的位置。分组名称和排序保存在本地；重启 Open Contexts 后，能够匹配的窗口会回到保存的分组位置。</p>
+<p>保存分组整理的是窗口列表。它不会重新打开已经关闭的应用、恢复桌面窗口的尺寸和位置，也不会把窗口移到另一个 macOS Space。</p>
+</section>
+<section aria-labelledby="choose">
+<h2 id="choose">窗口侧边栏适合哪些工作习惯？</h2>
+<ul><li><strong>同一应用有多个窗口：</strong>通过标题区分浏览器用户配置、文档或终端会话。</li><li><strong>鼠标与键盘交替使用：</strong>用鼠标点击栏里的窗口，双手在键盘上时再用 ⌘Tab。</li><li><strong>按任务组织工作：</strong>把代码、沟通、资料窗口放进自己命名和排序的分组。</li></ul>
+<p>如果主要需求是打开应用，很少选择同一应用的不同窗口，系统 Dock 可能已经够用。如果你更关注键盘操作，可以先读<a href="/zh/guides/switch-between-windows-on-mac/">Mac 窗口切换指南</a>。</p>
+</section>
+<section aria-labelledby="dock-boundaries">
+<h2 id="dock-boundaries">与 macOS Dock 配合使用</h2>
+<p>Open Contexts 提供另一种访问已打开窗口的方式。启动应用、文件栈与废纸篓等用途仍由系统 Dock 承担。Open Contexts 不会修改或隐藏系统 Dock；是否隐藏它，可以按个人习惯在系统设置中选择。</p>
+<p>应用重点是选择窗口和保存分组，目前不提供实时窗口预览、窗口搜索、触控板切换手势、窗口吸附或自动平铺。保存分组整理的是列表，并非桌面布局。</p>
+<p>想比较侧边栏与搜索的区别，可以阅读 <a href="/zh/compare/open-contexts-vs-contexts/">Open Contexts 与 Contexts 对比</a>，或查看<a href="/zh/compare/">窗口切换器比较</a>。</p>
+</section>
+<section aria-labelledby="setup">
+<h2 id="setup">设置你的 Mac 窗口侧边栏</h2>
+<ol><li>从 <a href="https://github.com/zshnb/open-contexts/releases/latest">GitHub Releases</a> 下载 Universal DMG。Open Contexts 面向 macOS 13 Ventura 及以上版本。</li><li>打开 DMG，把 OpenContexts.app 拖到“应用程序”目录并启动。应用会常驻菜单栏。</li><li>点击菜单栏图标，选择授予辅助功能权限，在“系统设置 → 隐私与安全性 → 辅助功能”中启用 Open Contexts。如果窗口栏未显示内容，请退出并重新启动应用。</li><li>从菜单栏图标打开设置，选择左侧、右侧或底部位置，再选择常驻或悬浮显示，以及图标与标题的显示方式。</li><li>点击 ＋ 创建第一个分组，拖入相关窗口，再点击窗口标题把它调到最前。</li></ol>
+<p><a href="https://github.com/zshnb/open-contexts/blob/main/README.zh-CN.md">安装说明</a>包含 macOS 打开限制和权限排查步骤。全屏行为仍需要更多真实环境验证，请检查自己依赖的工作方式。</p>
+</section>
+<section aria-labelledby="faq">
+<h2 id="faq">常见问题</h2>
+<h3>这是免费的 Mac Dock 替代软件吗？</h3>
+<p>Open Contexts 基于 Apache 2.0 免费开源，无需账号、订阅或试用期限。它提供用于选择已打开窗口的 Dock 替代方式，不覆盖系统 Dock 的所有功能。</p>
+<h3>侧边栏能放到右侧或底部吗？</h3>
+<p>可以。从菜单栏图标打开设置，选择左侧、右侧或底部，还可以选择一直显示，或在指针靠近边缘时再出现。</p>
+<h3>它能替代名为 Sidebar 的付费应用吗？</h3>
+<p>Open Contexts 与 Sidebar 是独立产品。这篇指南中的“侧边栏”指 Open Contexts 的纵向窗口列表，不表示它复现了另一款软件的全部功能。</p>
+<h3>重启后窗口分组还在吗？</h3>
+<p>分组名称和排序保存在本地，能够匹配的窗口也会恢复所属分组和列表顺序。已经关闭的应用不会被重新打开，桌面布局也不会被恢复。</p>
+</section>
+<section aria-labelledby="next">
+<h2 id="next">给打开的窗口一个固定去处</h2>
+<p>试试左右侧边栏或底部窗口栏，为一个任务创建分组，看看按标题选窗口是否符合你的习惯。</p>
+<div class="article-cta"><a class="btn btn-primary btn-lg" href="https://github.com/zshnb/open-contexts/releases/latest">下载 macOS 版</a><a class="btn btn-secondary btn-lg" href="/zh/#demo">试用在线演示</a></div>
+<p>偏好键盘切换？继续阅读<a href="/zh/guides/switch-between-windows-on-mac/">如何在 Mac 上切换窗口</a>。侧边栏与搜索的区别见 <a href="/zh/compare/open-contexts-vs-contexts/">Open Contexts 与 Contexts 对比</a>。产品说明来自<a href="https://github.com/zshnb/open-contexts/blob/main/README.zh-CN.md">项目 README</a>。</p>
+<p>想比较 Dock 工具？继续看 <a href="/zh/compare/open-contexts-vs-sidebar/">Open Contexts 与 Sidebar 对比</a>、<a href="/zh/compare/open-contexts-vs-ubar/">Open Contexts 与 uBar 对比</a>、<a href="/zh/compare/open-contexts-vs-dockdoor/">Open Contexts 与 DockDoor 对比</a>。DockDoor 专题分别介绍免费版与独立付费 Pro。</p>
+</section>
+      </div>
+    </div>
+  </article>
+</main>
+
+<footer class="footer band">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a class="logo" href="../../"><img src="../../../assets/icon.png" alt="" width="28" height="28">Open Contexts</a>
+        <p>免费开源的 macOS 窗口切换器与应用栏。</p>
+      </div>
+      <div class="footer-cols">
+        <div><h2>产品</h2><ul><li><a href="../../#features">功能</a></li><li><a href="../../compare/">对比</a></li><li><a href="../../#download">下载</a></li><li><a href="https://github.com/zshnb/open-contexts/blob/main/CHANGELOG.md" rel="noopener noreferrer">更新日志</a></li></ul></div>
+        <div><h2>支持</h2><ul><li><a href="../switch-between-windows-on-mac/">Mac 窗口切换指南</a></li><li><a href="../../#faq">常见问题</a></li><li><a href="https://github.com/zshnb/open-contexts/issues" rel="noopener noreferrer">反馈问题</a></li><li><a href="https://github.com/zshnb/open-contexts" rel="noopener noreferrer">GitHub</a></li></ul></div>
+        <div><h2>许可</h2><ul><li><a href="/zh/privacy/">隐私政策</a></li><li><a href="/zh/terms/">服务条款</a></li><li><a href="https://github.com/zshnb/open-contexts/blob/main/LICENSE" rel="noopener noreferrer">Apache 2.0</a></li></ul></div>
+      </div>
+    </div>
+    <p class="footer-legal">© 2026 Open Contexts 贡献者。Open Contexts 是独立项目，与 Contexts 或 AltTab 无关联。产品名称归各自所有者所有。</p>
+  </div>
+</footer>
+<script src="../../../assets/site.js?v=dock-layout" defer></script>
+</body>
+</html>
