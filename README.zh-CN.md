@@ -135,7 +135,7 @@ open dist/OpenContexts.app
 <details>
 <summary>发布与签名</summary>
 
-推送 `v*` 标签后，GitHub Actions 会构建 Universal DMG，并将 DMG、`SHA256SUMS.txt` 和含有 DMG EdDSA 签名的 `appcast.xml` 发布到 GitHub Releases。应用通过固定地址 `https://github.com/zshnb/open-contexts/releases/latest/download/appcast.xml` 检查更新。流水线先上传全部产物，再公开发布。
+推送 `v*` 标签后，GitHub Actions 会构建 Universal DMG，并将 DMG、`SHA256SUMS.txt`、含有 DMG EdDSA 签名的 `appcast.xml` 和与 DMG 同名的 Markdown 更新说明发布到 GitHub Releases。说明从 `CHANGELOG.md` 的当前版本提取，检测到新版本时显示在 Sparkle 更新窗口中。应用通过固定地址 `https://github.com/zshnb/open-contexts/releases/latest/download/appcast.xml` 检查更新。流水线校验说明链接、上传全部产物后，再公开发布。
 
 Developer ID 模式默认启用签名与 Apple 公证，需要配置 `APPLE_CERTIFICATE_P12_BASE64`、`APPLE_CERTIFICATE_PASSWORD`、`APPLE_ID`、`APPLE_TEAM_ID` 和 `APPLE_APP_SPECIFIC_PASSWORD`。固定自签名模式使用同一份名为 `OpenContexts Release Signing` 的证书签署所有版本：将包含私钥的 P12 文件以 Base64 编码存入 GitHub Actions Secret `OPENCONTEXTS_CERTIFICATE_P12_BASE64`，将导出密码存入 `OPENCONTEXTS_CERTIFICATE_PASSWORD`，并将仓库变量 `RELEASE_SIGNING_MODE` 设为 `self-signed`。本地可用 `SIGNING_MODE=self-signed CODE_SIGN_IDENTITY=<证书 SHA-1> ./scripts/build-app.sh release` 构建。请安全备份这份证书与私钥；更换证书会改变应用代码身份，可能再次要求辅助功能授权。
 
