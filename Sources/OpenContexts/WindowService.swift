@@ -162,11 +162,6 @@ final class WindowService: ObservableObject {
         }
         guard hasAccessibility, let window = tracked.first(where: { $0.id == id }) else { return }
 
-        if let application = NSRunningApplication(processIdentifier: window.info.processID) {
-            if application.isHidden { application.unhide() }
-            application.activate(options: [.activateIgnoringOtherApps])
-        }
-
         scanQueue.async { [weak self] in
             let appElement = AXUIElementCreateApplication(window.info.processID)
             AXUIElementSetMessagingTimeout(appElement, 0.2)
@@ -174,12 +169,20 @@ final class WindowService: ObservableObject {
             if Self.boolAttribute(kAXMinimizedAttribute, of: window.element) {
                 AXUIElementSetAttributeValue(window.element, kAXMinimizedAttribute as CFString, kCFBooleanFalse)
             }
+            // App activation brings its main/key windows forward, so select the target first.
+            AXUIElementSetAttributeValue(window.element, kAXMainAttribute as CFString, kCFBooleanTrue)
             AXUIElementSetAttributeValue(appElement, kAXFocusedWindowAttribute as CFString, window.element)
             let result = AXUIElementPerformAction(window.element, kAXRaiseAction as CFString)
             if result != .success {
                 self?.logger.error("Failed to raise window \(id, privacy: .public): AX error \(result.rawValue)")
             }
-            Task { @MainActor [weak self] in self?.refresh() }
+            Task { @MainActor [weak self] in
+                if let application = NSRunningApplication(processIdentifier: window.info.processID) {
+                    if application.isHidden { application.unhide() }
+                    application.activate(options: [.activateIgnoringOtherApps])
+                }
+                self?.refresh()
+            }
         }
     }
 
