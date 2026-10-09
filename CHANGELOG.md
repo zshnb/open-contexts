@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-10-09
+
+### Added
+
+- Read the current version's English and Chinese release notes in the update window before installing an update.
+
+### Fixed
+
+- Switching to a Finder window from the sidebar, window menu, or keyboard switcher no longer brings another Finder window to the front with it.
+
+### 新增
+
+- 检测到新版本时，可在更新窗口中查看本次版本的中英文更新说明，再选择安装。
+
+### 修复
+
+- 修复通过侧边栏、窗口菜单或快捷键切换 Finder 窗口时，另一个 Finder 窗口也被同时带到前台的问题。
+
 ## [0.3.7] - 2026-10-05
 
 ### Added
