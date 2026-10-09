@@ -3,7 +3,8 @@ import OpenContextsCore
 
 private let rowHoverColor = NSColor(srgbRed: 80 / 255, green: 151 / 255,
                                     blue: 247 / 255, alpha: 1)
-private let rowOutlineColor = NSColor(srgbRed: 0, green: 0, blue: 0, alpha: 0.32)
+private let rowHoverTintColor = NSColor(srgbRed: 80 / 255, green: 151 / 255,
+                                      blue: 247 / 255, alpha: 0.18)
 
 @MainActor
 final class SidebarPanel: NSPanel, NSMenuDelegate {
@@ -1509,7 +1510,7 @@ private final class SwitcherRow: NSButton {
     var onPointerMove: ((NSPoint) -> Void)?
     private var trackingArea: NSTrackingArea?
     private var showsHoverOutline = false
-    private let outlineLayer = CAShapeLayer()
+    private let hoverLayer = CAShapeLayer()
 
     init(window: WindowInfo, selected: Bool, action: @escaping () -> Void) {
         callback = action
@@ -1523,12 +1524,14 @@ private final class SwitcherRow: NSButton {
         wantsLayer = true
         layer?.cornerRadius = 6
         layer?.backgroundColor = selected ? rowHoverColor.cgColor : NSColor.clear.cgColor
-        outlineLayer.fillColor = nil
-        outlineLayer.strokeColor = rowOutlineColor.cgColor
-        outlineLayer.lineWidth = 1
-        outlineLayer.lineDashPattern = [4, 3]
-        outlineLayer.isHidden = true
-        layer?.addSublayer(outlineLayer)
+        hoverLayer.fillColor = rowHoverTintColor.cgColor
+        hoverLayer.strokeColor = rowHoverColor.cgColor
+        hoverLayer.lineWidth = 1
+        hoverLayer.lineDashPattern = [4, 3]
+        hoverLayer.isHidden = true
+        // Keep the tint and dashed box behind the labels so the light-blue mask
+        // never covers the text.
+        layer?.insertSublayer(hoverLayer, at: 0)
         let textColor = selected ? NSColor.white : NSColor.labelColor
         appLabel.alignment = .right
         appLabel.font = .systemFont(ofSize: 13)
@@ -1565,7 +1568,7 @@ private final class SwitcherRow: NSButton {
 
     override func layout() {
         super.layout()
-        layoutOutlineLayer()
+        layoutHoverLayer()
     }
 
     override func updateTrackingAreas() {
@@ -1583,26 +1586,27 @@ private final class SwitcherRow: NSButton {
 
     fileprivate var smokeHighlighted: Bool { layer?.backgroundColor == rowHoverColor.cgColor }
     fileprivate var smokeShowsOutline: Bool {
-        showsHoverOutline && !outlineLayer.isHidden && outlineLayer.path != nil
-            && outlineLayer.lineDashPattern?.isEmpty == false
+        showsHoverOutline && !hoverLayer.isHidden && hoverLayer.path != nil
+            && hoverLayer.lineDashPattern?.isEmpty == false
+            && hoverLayer.fillColor != nil && hoverLayer.strokeColor != nil
     }
     fileprivate func smokePointerMove(_ pointer: NSPoint) { onPointerMove?(pointer) }
     fileprivate func smokeTap() { callback() }
 
-    // A low-key hollow dashed box marking the row under the pointer. It is
-    // intentionally lighter than the keyboard-selected row so the two never
-    // compete for attention.
+    // Previews the row under the pointer with a light-blue mask plus a blue
+    // dashed box. It is deliberately weaker than the keyboard-selected row
+    // (solid blue fill with white text) so the two never compete for attention.
     fileprivate func setHoverOutline(_ on: Bool) {
         showsHoverOutline = on
-        outlineLayer.isHidden = !on
-        if on { layoutOutlineLayer() }
+        hoverLayer.isHidden = !on
+        if on { layoutHoverLayer() }
     }
 
-    private func layoutOutlineLayer() {
+    private func layoutHoverLayer() {
         let rect = bounds.insetBy(dx: 0.5, dy: 0.5)
-        outlineLayer.frame = bounds
-        outlineLayer.path = CGPath(roundedRect: rect, cornerWidth: 6, cornerHeight: 6,
-                                   transform: nil)
+        hoverLayer.frame = bounds
+        hoverLayer.path = CGPath(roundedRect: rect, cornerWidth: 6, cornerHeight: 6,
+                                 transform: nil)
     }
 
     private func selectUnderPointer(_ event: NSEvent) {
@@ -2149,3 +2153,4 @@ enum PanelSmokeCheck {
         return false
     }
 }
+
