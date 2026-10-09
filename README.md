@@ -32,7 +32,7 @@ The bottom bar lays out windows from left to right and is centered as a whole. W
 
 <img src="docs/screenshots/window-switcher.png" alt="Open Contexts keyboard window switcher showing individual Mac windows" width="600">
 
-The window switcher displays windows in most recently used order. You can continue selecting and switching with the keyboard.
+The window switcher displays windows in most recently used order. You can continue selecting and switching with the keyboard. Pointing at a row only previews it with a faint dashed outline and never moves the keyboard selection; clicking a row opens that window directly.
 
 ## Mac window switcher features
 
@@ -93,6 +93,7 @@ xattr -dr com.apple.quarantine "/Applications/OpenContexts.app"
 - `＋` in the sidebar: Create a group.
 - Right-click a group title: Rename or delete the group.
 - Drag a window to move it into a group or change its order; drag a group title to reorder groups.
+- In the switcher, moving the pointer over a row only previews it with a faint dashed outline; it never changes the keyboard selection, and clicking the row opens that window directly while the shortcut keeps stepping from the same position.
 - Menu bar settings: Place the sidebar on the left, right, or bottom, and choose whether it is always visible or shown when the pointer approaches the screen edge.
 - Display options: Show app icons only, or icons and window titles. If the bottom bar runs out of space, it shrinks window items evenly so all windows stay on one line without scrolling.
 

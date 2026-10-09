@@ -129,8 +129,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
             )
             switchers[id] = SwitcherPanel(
                 screen: screen,
-                onActivate: { [weak self] id in self?.finishSwitcher(activating: id) },
-                onSelect: { [weak self] id in self?.selectSwitcherWindow(id: id) }
+                onActivate: { [weak self] id in self?.finishSwitcher(activating: id) }
             )
         }
         updateSidebars()
@@ -195,14 +194,6 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
         selectedIndex = selectedID.flatMap { id in switchingWindows.firstIndex(where: { $0.id == id }) }
             ?? min(selectedIndex, switchingWindows.count - 1)
-        switchers.values.forEach { $0.update(windows: switchingWindows, selectedIndex: selectedIndex) }
-    }
-
-    private func selectSwitcherWindow(id: String) {
-        guard currentAppOnly != nil,
-              let index = switchingWindows.firstIndex(where: { $0.id == id }),
-              index != selectedIndex else { return }
-        selectedIndex = index
         switchers.values.forEach { $0.update(windows: switchingWindows, selectedIndex: selectedIndex) }
     }
 
