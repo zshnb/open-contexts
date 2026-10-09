@@ -40,7 +40,7 @@ The window switcher displays windows in most recently used order. You can contin
 | --- | --- |
 | Window switching | Displays and switches individual windows rather than apps, and tracks most recently used (MRU) order |
 | Screen edge sidebar | Supports the left, right, or bottom edge; always visible or shown when the pointer reaches the screen edge; optionally shows icons alone or icons with titles |
-| Keyboard switcher | Defaults to `⌘Tab` for all windows and `Command + backtick` for the current app; both shortcuts are customizable in Settings; supports Shift for reverse switching, arrow keys, `Esc`, and releasing a shortcut modifier to confirm |
+| Keyboard switcher | Defaults to `⌘Tab` for all windows and `Command + backtick` for the current app; both shortcuts are customizable in Settings; supports Shift for reverse switching, including tapping Shift on its own to step back once, arrow keys, `Esc`, and releasing a shortcut modifier to confirm |
 | Window activation | Attempts to restore minimized or hidden windows when activated |
 | Window information | Displays app icons, window titles, and notification badges readable from the system Dock |
 | Native macOS app | Built with Swift, AppKit, and SwiftUI; app updates use Sparkle |
@@ -86,7 +86,7 @@ xattr -dr com.apple.quarantine "/Applications/OpenContexts.app"
 
 ## Usage
 
-- `⌘Tab`: Open the switcher for all windows. Press `Tab` again or `↓` to move forward; press `⇧Tab` or `↑` to move backward.
+- `⌘Tab`: Open the switcher for all windows. Press `Tab` again or `↓` to move forward; press `⇧Tab`, `↑`, or tap `⇧` on its own to move backward. A lone `⇧` tap steps back one window and leaves `⇧Tab` at one step.
 - `Command + backtick`: Open the switcher for windows of the current app.
 - `Esc`: Cancel switching. Release a modifier key of the shortcut to activate the selected window (`⌘` by default).
 - Custom shortcuts: Click either shortcut in Settings, then press a combination using Command, Option, or Control and a key. Shift is reserved for reverse switching; Esc cancels recording. Changes take effect immediately and persist after restarting. “Restore defaults” restores `⌘Tab` and `Command + backtick`.

@@ -65,23 +65,50 @@ enum SwitcherAction: Equatable {
 private struct ShortcutState {
     private(set) var isSwitching = false
     private(set) var heldModifiers: CGEventFlags = []
+    private var shiftIsDown = false
+    private var shiftTapPending = false
 
     mutating func begin(currentAppOnly: Bool, reverse: Bool, allowed: Bool,
-                        modifiers: CGEventFlags = .maskCommand) -> SwitcherAction? {
+                        modifiers: CGEventFlags = .maskCommand,
+                        shiftHeld: Bool = false) -> SwitcherAction? {
         guard !isSwitching, allowed else { return nil }
         isSwitching = true
         heldModifiers = modifiers
+        // Shift held before the switcher opened belongs to the opening shortcut, not a tap.
+        shiftIsDown = shiftHeld
+        shiftTapPending = false
         return .begin(currentAppOnly: currentAppOnly, reverse: reverse)
     }
 
     mutating func step(_ amount: Int) -> SwitcherAction? {
-        isSwitching ? .step(amount) : nil
+        guard isSwitching else { return nil }
+        // A key that moves the selection resolves any pending Shift tap, so ⇧Tab stays one step.
+        shiftTapPending = false
+        return .step(amount)
+    }
+
+    /// Tracks Shift on its own: tapping it while switching steps back once, holding it still reverses ⇧Tab.
+    mutating func shiftFlagsChanged(_ flags: CGEventFlags) -> SwitcherAction? {
+        guard isSwitching else { return nil }
+        guard !flags.contains(.maskShift) else {
+            if !shiftIsDown {
+                shiftIsDown = true
+                shiftTapPending = true
+            }
+            return nil
+        }
+        shiftIsDown = false
+        guard shiftTapPending else { return nil }
+        shiftTapPending = false
+        return .step(-1)
     }
 
     mutating func finish(commit: Bool) -> SwitcherAction? {
         guard isSwitching else { return nil }
         isSwitching = false
         heldModifiers = []
+        shiftIsDown = false
+        shiftTapPending = false
         return commit ? .commit : .cancel
     }
 }
@@ -240,8 +267,9 @@ final class ShortcutController: ObservableObject {
     }
 
     private func modifierAction(flags: CGEventFlags) -> SwitcherAction? {
-        guard state.isSwitching, !flags.contains(state.heldModifiers) else { return nil }
-        return state.finish(commit: true)
+        guard state.isSwitching else { return nil }
+        guard flags.contains(state.heldModifiers) else { return state.finish(commit: true) }
+        return state.shiftFlagsChanged(flags)
     }
 
     private func keyAction(keyCode: UInt16, flags: CGEventFlags) -> SwitcherAction? {
@@ -280,7 +308,8 @@ final class ShortcutController: ObservableObject {
             currentAppOnly: currentAppOnly,
             reverse: flags.contains(.maskShift),
             allowed: canBegin?(currentAppOnly) ?? true,
-            modifiers: shortcut.modifiers
+            modifiers: shortcut.modifiers,
+            shiftHeld: flags.contains(.maskShift)
         )
     }
 
@@ -324,7 +353,8 @@ final class ShortcutController: ObservableObject {
               state.begin(currentAppOnly: false, reverse: false, allowed: true) == .begin(currentAppOnly: false, reverse: false),
               state.step(1) == .step(1),
               state.finish(commit: false) == .cancel,
-              state.begin(currentAppOnly: true, reverse: true, allowed: true) == .begin(currentAppOnly: true, reverse: true),
+              state.begin(currentAppOnly: true, reverse: true, allowed: true,
+                          shiftHeld: true) == .begin(currentAppOnly: true, reverse: true),
               state.finish(commit: true) == .commit,
               state.finish(commit: true) == nil else { return false }
 
@@ -340,6 +370,27 @@ final class ShortcutController: ObservableObject {
               controller.keyAction(keyCode: 50, flags: .maskCommand)
                 == .begin(currentAppOnly: true, reverse: false),
               controller.keyAction(keyCode: 53, flags: .maskCommand) == .cancel else { return false }
+
+        // Tapping Shift alone moves back one step and leaves ⇧Tab at one step; Shift held from the
+        // opening shortcut is never mistaken for a tap.
+        let tappedShift = ShortcutController()
+        let shiftHeldFromStart = ShortcutController()
+        guard tappedShift.modifierAction(flags: [.maskShift]) == nil,
+              tappedShift.keyAction(keyCode: 48, flags: .maskCommand)
+                == .begin(currentAppOnly: false, reverse: false),
+              tappedShift.modifierAction(flags: [.maskCommand, .maskShift]) == nil,
+              tappedShift.modifierAction(flags: .maskCommand) == .step(-1),
+              tappedShift.modifierAction(flags: .maskCommand) == nil,
+              tappedShift.modifierAction(flags: [.maskCommand, .maskShift]) == nil,
+              tappedShift.keyAction(keyCode: 48, flags: [.maskCommand, .maskShift]) == .step(-1),
+              tappedShift.modifierAction(flags: .maskCommand) == nil,
+              tappedShift.keyAction(keyCode: 48, flags: .maskCommand) == .step(1),
+              tappedShift.keyAction(keyCode: 53, flags: .maskCommand) == .cancel,
+              shiftHeldFromStart.keyAction(keyCode: 48, flags: [.maskCommand, .maskShift])
+                == .begin(currentAppOnly: false, reverse: true),
+              shiftHeldFromStart.modifierAction(flags: .maskCommand) == nil,
+              shiftHeldFromStart.keyAction(keyCode: 48, flags: [.maskCommand, .maskShift]) == .step(-1),
+              shiftHeldFromStart.keyAction(keyCode: 53, flags: .maskCommand) == .cancel else { return false }
 
         let custom = KeyboardShortcut(keyCode: 16, modifiers: [.maskControl, .maskAlternate], keyLabel: "Y")
         let sameKey = KeyboardShortcut(keyCode: 16, modifiers: .maskCommand, keyLabel: "Y")
