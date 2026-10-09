@@ -114,7 +114,6 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 screen: screen,
                 onActivate: { [weak self] in self?.windowService.activate($0) },
                 windowPinPosition: { [weak self] in self?.groupStore.pinPosition(id: $0) },
-                reservedPinPositions: { [weak self] in self?.groupStore.reservedPinPositions(in: $0) ?? [] },
                 onTogglePin: { [weak self] in self?.groupStore.togglePin(id: $0) },
                 onMoveWindow: { [weak self] id, groupID, beforeID, order in
                     self?.groupStore.moveWindow(id: id, to: groupID, before: beforeID,

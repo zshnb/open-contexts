@@ -747,7 +747,36 @@ final class GroupStoreTests: XCTestCase {
         XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), ["a", "b", "c", "d"])
     }
 
-    func testDraggingPinnedWindowIntoAnotherPinLeavesOtherPinInPlace() throws {
+    func testManualDropCanPlaceNotesImmediatelyAfterPinnedMail() throws {
+        let fileURL = temporaryFileURL()
+        let store = GroupStore(fileURL: fileURL)
+        let all = [window("mail", title: "Mail"), window("other", title: "Other"),
+                   window("notes", title: "Notes")]
+        store.reconcile(all)
+        store.togglePin(id: "mail")
+        store.togglePin(id: "other")
+        let preview = ["mail", "notes", "other"]
+        store.moveWindow(id: "notes", to: GroupStore.ungroupedID, before: "other",
+                         visibleOrderByGroup: [GroupStore.ungroupedID: preview])
+        XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), preview)
+        XCTAssertEqual(store.pinPosition(id: "mail"), 0)
+        XCTAssertEqual(store.pinPosition(id: "other"), 2)
+        store.moveWindow(id: "notes", to: GroupStore.ungroupedID)
+        store.moveWindow(id: "notes", to: GroupStore.ungroupedID, before: "other")
+        XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), preview)
+        XCTAssertEqual(store.pinPosition(id: "other"), 2)
+        store.updateLiveWindows(Array(all.prefix(2)))
+        XCTAssertEqual(store.pinPosition(id: "other"), 2)
+        store.updateLiveWindows(all.reversed())
+        XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), preview)
+        let restarted = GroupStore(fileURL: fileURL)
+        restarted.reconcile(all.reversed())
+        XCTAssertEqual(restarted.windows(in: GroupStore.ungroupedID).map(\.id), preview)
+        XCTAssertTrue(restarted.isPinned(id: "mail"))
+        XCTAssertTrue(restarted.isPinned(id: "other"))
+    }
+
+    func testDraggingPinnedWindowShiftsOtherPinsToMatchManualOrder() throws {
         let fileURL = temporaryFileURL()
         let store = GroupStore(fileURL: fileURL)
         store.reconcile([window("a", title: "A"), window("b", title: "B"),
@@ -755,18 +784,18 @@ final class GroupStoreTests: XCTestCase {
         store.togglePin(id: "b")
         store.togglePin(id: "d")
         store.moveWindow(id: "d", to: GroupStore.ungroupedID, before: "b")
-        XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), ["a", "b", "d", "c"])
-        XCTAssertEqual(store.pinPosition(id: "b"), 1)
-        XCTAssertEqual(store.pinPosition(id: "d"), 2)
+        XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), ["a", "d", "b", "c"])
+        XCTAssertEqual(store.pinPosition(id: "b"), 2)
+        XCTAssertEqual(store.pinPosition(id: "d"), 1)
 
         store.createGroup(name: "Other")
         let other = try XCTUnwrap(store.groups.last?.id)
         store.moveWindow(id: "a", to: other)
         store.togglePin(id: "a")
         store.moveWindow(id: "d", to: other, before: "a")
-        XCTAssertEqual(store.windows(in: other).map(\.id), ["a", "d"])
-        XCTAssertEqual(store.pinPosition(id: "a"), 0)
-        XCTAssertEqual(store.pinPosition(id: "d"), 1)
+        XCTAssertEqual(store.windows(in: other).map(\.id), ["d", "a"])
+        XCTAssertEqual(store.pinPosition(id: "a"), 1)
+        XCTAssertEqual(store.pinPosition(id: "d"), 0)
     }
 
     func testTitleCollisionKeepsAbsolutePinSlotForLaterGrowth() throws {
@@ -838,17 +867,17 @@ final class GroupStoreTests: XCTestCase {
         store.togglePin(id: "b")
 
         store.moveWindow(id: "d", to: work, before: "b")
-        XCTAssertEqual(store.windows(in: work).map(\.id), ["a", "b", "d", "c"])
+        XCTAssertEqual(store.windows(in: work).map(\.id), ["a", "d", "b", "c"])
 
         store.reconcile([window("a", title: "A"), window("b", title: "B"),
                          window("c", title: "C"), window("d", title: "B")])
-        XCTAssertEqual(store.windows(in: work).map(\.id), ["a", "b", "d", "c"])
+        XCTAssertEqual(store.windows(in: work).map(\.id), ["a", "d", "b", "c"])
         XCTAssertFalse(store.isPinned(id: "d"))
         XCTAssertTrue(store.isPinned(id: "b"))
-        XCTAssertEqual(try persistedWindows(at: fileURL, in: work)[1]["pinnedPosition"] as? Int, 1)
+        XCTAssertEqual(try persistedWindows(at: fileURL, in: work)[2]["pinnedPosition"] as? Int, 2)
 
         store.moveWindow(id: "d", to: work)
-        XCTAssertEqual(store.windows(in: work).map(\.id), ["a", "b", "d", "c"])
+        XCTAssertEqual(store.windows(in: work).map(\.id), ["a", "b", "c", "d"])
         XCTAssertTrue(store.isPinned(id: "d"))
     }
 
@@ -864,9 +893,9 @@ final class GroupStoreTests: XCTestCase {
         store.moveWindow(id: "other", to: work)
         store.togglePin(id: "old")
         store.moveWindow(id: "new", to: work)
-        XCTAssertEqual(store.windows(in: work).map(\.id), ["old", "new", "other"])
+        XCTAssertEqual(store.windows(in: work).map(\.id), ["old", "other", "new"])
         XCTAssertTrue(store.isPinned(id: "new"))
-        XCTAssertEqual(try persistedWindows(at: fileURL, in: work).last?["pinnedPosition"] as? Int, 1)
+        XCTAssertEqual(try persistedWindows(at: fileURL, in: work).last?["pinnedPosition"] as? Int, 2)
     }
 
     private func temporaryFileURL() -> URL {
