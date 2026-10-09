@@ -2,6 +2,32 @@
 
 ## [Unreleased]
 
+## [0.3.10] - 2026-10-09
+
+### Added
+
+- Add “Close Window” to the window context menu, separate from “Quit App”, and respect the app's normal close confirmation. Disable the action when the window has no available close button.
+
+### Changed
+
+- Manual window dragging follows the chosen drop position and shifts other pinned windows to match. Automatic refreshes continue to preserve the saved pinned positions.
+
+### Fixed
+
+- Dropping a window on a group header inserts it at the start of the group, preventing the preview from jumping between positions while the pointer stays still.
+
+### 新增
+
+- 窗口右键菜单新增“关闭窗口”，与“退出应用”分开，并遵循应用原有的关闭确认流程；窗口没有可用关闭按钮时，该选项灰显。
+
+### 调整
+
+- 手动拖动窗口时按指定落点排序，其他固定窗口随新顺序顺延；自动刷新继续保持已保存的固定位置。
+
+### 修复
+
+- 拖动窗口到分组标题时插入组首，避免鼠标停在同一位置时预览反复跳动。
+
 ## [0.3.9] - 2026-10-09
 
 ### Added
