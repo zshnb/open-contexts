@@ -17,6 +17,8 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
     private let scroll = NSScrollView()
     private let stack = FlippedStackView()
     private let onActivate: (String) -> Void
+    private let canCloseWindow: (String) -> Bool
+    private let onCloseWindow: (String) -> Void
     private let windowPinPosition: (String) -> Int?
     private let onTogglePin: (String) -> Void
     private let onMoveWindow: WindowMove
@@ -69,6 +71,7 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
     }
 
     init(screen: NSScreen, onActivate: @escaping (String) -> Void,
+         canCloseWindow: @escaping (String) -> Bool, onCloseWindow: @escaping (String) -> Void,
          windowPinPosition: @escaping (String) -> Int?,
          onTogglePin: @escaping (String) -> Void,
          onMoveWindow: @escaping WindowMove, onMoveGroup: @escaping GroupMove,
@@ -77,6 +80,8 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
          onDeleteGroup: @escaping (String) -> Void) {
         self.displayScreen = screen
         self.onActivate = onActivate
+        self.canCloseWindow = canCloseWindow
+        self.onCloseWindow = onCloseWindow
         self.windowPinPosition = windowPinPosition
         self.onTogglePin = onTogglePin
         self.onMoveWindow = onMoveWindow
@@ -239,6 +244,7 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
                     onDraggingChanged: { [weak self] in self?.sourceDraggingChanged($0) }
                 )
                 let menu = NSMenu(title: window.id)
+                menu.autoenablesItems = false
                 menu.delegate = self
                 row.setContextMenu(menu)
                 stack.addArrangedSubview(row)
@@ -277,6 +283,12 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
         pin.representedObject = target.id
         pin.state = windowPinPosition(target.id) != nil ? .on : .off
         menu.addItem(pin)
+        let close = NSMenuItem(title: L10n.text("Close Window", language: language),
+                               action: #selector(closeMenuWindow(_:)), keyEquivalent: "")
+        close.target = self
+        close.representedObject = target.id
+        close.isEnabled = canCloseWindow(target.id)
+        menu.addItem(close)
         menu.addItem(.separator())
         let windows = renderedGroups.flatMap { renderedWindows[$0.id, default: []] }
             .filter { $0.processID == processID }
@@ -301,6 +313,13 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
         guard let id = sender.representedObject as? String,
               renderedWindows.values.joined().contains(where: { $0.id == id }) else { return }
         onTogglePin(id)
+    }
+
+    @objc private func closeMenuWindow(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? String,
+              renderedWindows.values.joined().contains(where: { $0.id == id }),
+              canCloseWindow(id) else { return }
+        onCloseWindow(id)
     }
 
     @objc private func activateMenuWindow(_ sender: NSMenuItem) {
@@ -801,11 +820,25 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
             return menu.items.first?.title == L10n.text("Pin", language: language)
                 && menu.items.first?.representedObject as? String == menu.title
                 && menu.items.first?.state == (windowPinPosition(menu.title) != nil ? .on : .off)
-                && Array(menu.items.dropFirst(2).prefix(windowIDs.count))
+                && !menu.autoenablesItems
+                && menu.items[1].title == L10n.text("Close Window", language: language)
+                && menu.items[1].action == #selector(closeMenuWindow(_:))
+                && menu.items[1].representedObject as? String == menu.title
+                && menu.items[1].isEnabled == canCloseWindow(menu.title)
+                && Array(menu.items.dropFirst(3).prefix(windowIDs.count))
                     .compactMap { $0.representedObject as? String } == windowIDs
                 && menu.items.suffix(2).map(\.title) == [L10n.text("Hide App", language: language),
                                                         L10n.text("Quit App", language: language)]
         }
+    }
+
+    fileprivate func smokeCloseMenuWindow(_ id: String) {
+        guard let menu = sidebarRows.first(where: {
+            if case .window(let rowID, _) = $0.style { return rowID == id }
+            return false
+        })?.menu else { return }
+        menuNeedsUpdate(menu)
+        closeMenuWindow(menu.items[1])
     }
 
     fileprivate var smokeRowHoverAppearanceIsValid: Bool {
@@ -1646,13 +1679,17 @@ private func fallbackApplicationIcon(for window: WindowInfo) -> NSImage {
 enum PanelSmokeCheck {
     static func run() -> Bool {
         _ = NSApplication.shared
+        guard WindowService.closingSelfCheck() else { return fail("window close affected another window") }
         guard let screen = NSScreen.main ?? NSScreen.screens.first else { return false }
 
         var windowMoves: [(String, String, String?)] = []
         var groupMoves: [(String, String?)] = []
+        var closedWindowIDs: [String] = []
         let sidebar = SidebarPanel(
             screen: screen,
             onActivate: { _ in },
+            canCloseWindow: { $0 != "smoke-2" },
+            onCloseWindow: { closedWindowIDs.append($0) },
             windowPinPosition: { $0 == "smoke-1" ? 1 : nil },
             onTogglePin: { _ in },
             onMoveWindow: { id, groupID, beforeID, _ in windowMoves.append((id, groupID, beforeID)) },
@@ -1693,6 +1730,14 @@ enum PanelSmokeCheck {
             sidebar.close()
             return fail("sidebar window menus mismatch")
         }
+        sidebar.smokeCloseMenuWindow(windows[1].id)
+        sidebar.smokeCloseMenuWindow(windows[2].id)
+        sidebar.smokeCloseMenuWindow("missing")
+        guard closedWindowIDs == [windows[1].id] else {
+            sidebar.close()
+            return fail("sidebar close did not target the selected closable window")
+        }
+
         for (value, text, diameter) in [
             ("1" as String?, "1", CGFloat(12)),
             ("•", "", CGFloat(7)),

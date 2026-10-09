@@ -19,6 +19,10 @@ final class WindowService: ObservableObject {
         init(_ value: NSWindow) { self.value = value }
     }
 
+    private final class ClosingCheckDelegate: NSObject, NSWindowDelegate {
+        func windowShouldClose(_ sender: NSWindow) -> Bool { false }
+    }
+
     private struct TrackedWindow: @unchecked Sendable {
         let id: String
         let element: AXUIElement
@@ -186,6 +190,39 @@ final class WindowService: ObservableObject {
         }
     }
 
+    func canClose(_ id: String) -> Bool {
+        if let window = localWindows[id]?.value {
+            return window.standardWindowButton(.closeButton)?.isEnabled == true
+        }
+        guard hasAccessibility, let window = tracked.first(where: { $0.id == id }) else { return false }
+        return Self.closeButton(of: window.element) != nil
+    }
+
+    func close(_ id: String) {
+        guard canClose(id) else { return }
+        if let window = localWindows[id]?.value {
+            window.performClose(nil)
+            publishWindows()
+            return
+        }
+        guard let window = tracked.first(where: { $0.id == id }) else { return }
+        scanQueue.async { [weak self] in
+            guard let button = Self.closeButton(of: window.element) else { return }
+            let result = AXUIElementPerformAction(button, kAXPressAction as CFString)
+            if result != .success {
+                self?.logger.error("Failed to close window \(id, privacy: .public): AX error \(result.rawValue)")
+            }
+            Task { @MainActor [weak self] in self?.refresh() }
+        }
+    }
+
+    nonisolated private static func closeButton(of element: AXUIElement) -> AXUIElement? {
+        AXUIElementSetMessagingTimeout(element, 0.2)
+        guard let button: AXUIElement = attribute(kAXCloseButtonAttribute, of: element) else { return nil }
+        AXUIElementSetMessagingTimeout(button, 0.2)
+        return boolAttribute(kAXEnabledAttribute, of: button) ? button : nil
+    }
+
     func registerLocalWindow(_ window: NSWindow, id: String) {
         localWindows[id] = WeakWindow(window)
         publishWindows()
@@ -198,7 +235,7 @@ final class WindowService: ObservableObject {
 
     static func selfCheck() -> Bool {
         _ = NSApplication.shared
-        guard orderingSelfCheck() else { return false }
+        guard orderingSelfCheck(), closingSelfCheck() else { return false }
         let service = WindowService()
         let id = "local:self-check"
         let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: false)
@@ -230,6 +267,36 @@ final class WindowService: ObservableObject {
             "Dock badge self-check: mapped=\(reads.count) readable=\(readable) badged=\(badged)\n".utf8
         ))
         return true
+    }
+
+    static func closingSelfCheck() -> Bool {
+        _ = NSApplication.shared
+        let service = WindowService()
+        let windows = (0..<2).map { _ in
+            NSWindow(contentRect: NSRect(x: 100, y: 100, width: 200, height: 100),
+                     styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        }
+        defer { windows.forEach { $0.close() } }
+        for (index, window) in windows.enumerated() {
+            window.isReleasedWhenClosed = false
+            window.orderFront(nil)
+            service.registerLocalWindow(window, id: "close-\(index)")
+        }
+        guard windows.allSatisfy(\.isVisible), service.canClose("close-0"),
+              !service.canClose("missing") else { return false }
+        service.close("missing")
+        service.close("close-0")
+        guard !windows[0].isVisible, windows[1].isVisible else { return false }
+        windows[1].standardWindowButton(.closeButton)?.isEnabled = false
+        service.close("close-1")
+        guard !service.canClose("close-1"), windows[1].isVisible else { return false }
+        windows[1].standardWindowButton(.closeButton)?.isEnabled = true
+        let delegate = ClosingCheckDelegate()
+        windows[1].delegate = delegate
+        return withExtendedLifetime(delegate) {
+            service.close("close-1")
+            return windows[1].isVisible
+        }
     }
 
     static func orderingSelfCheck() -> Bool {
