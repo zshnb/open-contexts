@@ -2,9 +2,13 @@
 
 import base64
 import importlib.util
+import os
 from pathlib import Path
+import shutil
+import subprocess
 import sys
 import tempfile
+import textwrap
 import unittest
 import xml.etree.ElementTree as ET
 
@@ -77,6 +81,46 @@ class AppcastTests(unittest.TestCase):
         self.enclosure.set(SPARKLE + "edSignature", base64.b64encode(bytes(32)).decode())
         with self.assertRaisesRegex(ValueError, "Ed25519 signature"):
             self.check()
+
+    def test_generation_step_exports_notes_for_later_steps(self):
+        repository = Path(__file__).resolve().parents[1]
+        workflow = (repository / ".github/workflows/release.yml").read_text()
+        step = workflow.split("      - name: Generate signed Sparkle appcast\n", 1)[1].split("      - name:", 1)[0]
+        script = textwrap.dedent(step.split("        run: |\n", 1)[1])
+        scripts = self.directory / "scripts"
+        scripts.mkdir()
+        shutil.copy2(repository / "scripts/check-appcast.py", scripts)
+        dist = self.directory / "dist"
+        dist.mkdir()
+        shutil.copy2(self.notes, dist / "release-notes.md")
+        ET.ElementTree(self.root).write(self.directory / "fixture-appcast.xml", encoding="utf-8")
+        tools = self.directory / ".build/artifacts/tools"
+        tools.mkdir(parents=True)
+        # Stub key/signing tools; execute the real workflow shell and appcast checker.
+        for name, body in {
+            "swift": "cat >/dev/null",
+            "plutil": "echo 42",
+            "generate_appcast": "cat >/dev/null\ncp fixture-appcast.xml dist/sparkle/appcast.xml",
+            "sign_update": "cat >/dev/null",
+        }.items():
+            executable = tools / name
+            executable.write_text("#!/bin/sh\nset -eu\n" + body + "\n")
+            executable.chmod(0o755)
+        exported = self.directory / "github-env"
+        environment = {
+            **os.environ, "PATH": str(tools) + os.pathsep + os.environ["PATH"],
+            "GITHUB_ENV": str(exported), "GITHUB_REPOSITORY": "zshnb/open-contexts",
+            "RELEASE_TAG": "v1.2.3", "APP_VERSION": "1.2.3",
+            "APP_PATH": "dist/OpenContexts.app", "DMG_PATH": str(self.dmg),
+            "SPARKLE_ED_PRIVATE_KEY": "fixture-only",
+        }
+        environment.pop("SPARKLE_RELEASE_NOTES_PATH", None)
+        result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", script],
+                                cwd=self.directory, env=environment, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        expected = "dist/sparkle/" + self.notes.name
+        self.assertEqual(exported.read_text(), "SPARKLE_RELEASE_NOTES_PATH=" + expected + "\n")
+        self.assertEqual((self.directory / expected).read_bytes(), self.notes.read_bytes())
 
 
 if __name__ == "__main__":

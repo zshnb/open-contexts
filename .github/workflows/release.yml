@@ -189,7 +189,7 @@ jobs:
             dist/sparkle
           mv dist/sparkle/appcast.xml dist/appcast.xml
           signature="$(python3 -B scripts/check-appcast.py \
-            dist/appcast.xml "$DMG_PATH" "$SPARKLE_RELEASE_NOTES_PATH" "$GITHUB_REPOSITORY" "$RELEASE_TAG" \
+            dist/appcast.xml "$DMG_PATH" "$release_notes_path" "$GITHUB_REPOSITORY" "$RELEASE_TAG" \
             "$APP_VERSION" \
             "$(plutil -extract CFBundleVersion raw -o - "$APP_PATH/Contents/Info.plist")")"
           printf '%s' "$SPARKLE_ED_PRIVATE_KEY" | \
