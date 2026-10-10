@@ -45,3 +45,9 @@
 "Click a shortcut to record. Esc cancels; Shift switches backward." = "Click a shortcut to record. Esc cancels; Shift switches backward.";
 "The two shortcuts must be different." = "The two shortcuts must be different.";
 "Use Command, Option or Control with a key; Shift is reserved for reverse switching." = "Use Command, Option or Control with a key; Shift is reserved for reverse switching.";
+"Type an app name or window title" = "Type an app name or window title";
+"Window search" = "Window search";
+"%@ windows" = "%@ windows";
+"%@ results" = "%@ results";
+"No matching windows" = "No matching windows";
+"Try an app name or window title" = "Try an app name or window title";

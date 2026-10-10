@@ -1008,6 +1008,11 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
 final class SwitcherPanel: NSPanel {
     private let stack = FlippedStackView()
     private let scroll = NSScrollView()
+    private let queryLabel = NSTextField(labelWithString: "")
+    private let countLabel = NSTextField(labelWithString: "")
+    private let emptyTitle = NSTextField(labelWithString: "")
+    private let emptyHint = NSTextField(labelWithString: "")
+    private let emptyState = NSStackView()
     private let onActivate: (String) -> Void
     private let onSelect: (String) -> Void
     private let displayScreen: NSScreen
@@ -1038,6 +1043,42 @@ final class SwitcherPanel: NSPanel {
         background.layer?.cornerRadius = 10
         background.layer?.masksToBounds = true
 
+        let header = NSView()
+        let searchIcon = NSImageView()
+        searchIcon.image = NSImage(systemSymbolName: "magnifyingglass", accessibilityDescription: nil)
+        searchIcon.contentTintColor = .secondaryLabelColor
+        queryLabel.font = .systemFont(ofSize: 13)
+        queryLabel.lineBreakMode = .byTruncatingTail
+        queryLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        countLabel.font = .systemFont(ofSize: 12)
+        countLabel.textColor = .secondaryLabelColor
+        countLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        let divider = NSBox()
+        divider.boxType = .separator
+        for view in [searchIcon, queryLabel, countLabel, divider] {
+            view.translatesAutoresizingMaskIntoConstraints = false
+            header.addSubview(view)
+        }
+        header.translatesAutoresizingMaskIntoConstraints = false
+        background.addSubview(header)
+
+        let emptyIcon = NSImageView()
+        emptyIcon.image = searchIcon.image
+        emptyIcon.contentTintColor = .tertiaryLabelColor
+        emptyIcon.translatesAutoresizingMaskIntoConstraints = false
+        emptyIcon.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        emptyIcon.heightAnchor.constraint(equalToConstant: 28).isActive = true
+        emptyTitle.font = .systemFont(ofSize: 13)
+        emptyTitle.textColor = .secondaryLabelColor
+        emptyHint.font = .systemFont(ofSize: 12)
+        emptyHint.textColor = .secondaryLabelColor
+        emptyState.orientation = .vertical
+        emptyState.alignment = .centerX
+        emptyState.spacing = 8
+        [emptyIcon, emptyTitle, emptyHint].forEach { emptyState.addArrangedSubview($0) }
+        emptyState.translatesAutoresizingMaskIntoConstraints = false
+        background.addSubview(emptyState)
+
         scroll.drawsBackground = false
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
@@ -1051,9 +1092,27 @@ final class SwitcherPanel: NSPanel {
         scroll.documentView = stack
         background.addSubview(scroll)
         NSLayoutConstraint.activate([
+            header.leadingAnchor.constraint(equalTo: background.leadingAnchor),
+            header.trailingAnchor.constraint(equalTo: background.trailingAnchor),
+            header.topAnchor.constraint(equalTo: background.topAnchor),
+            header.heightAnchor.constraint(equalToConstant: 40),
+            searchIcon.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
+            searchIcon.centerYAnchor.constraint(equalTo: header.centerYAnchor),
+            searchIcon.widthAnchor.constraint(equalToConstant: 16),
+            searchIcon.heightAnchor.constraint(equalToConstant: 16),
+            queryLabel.leadingAnchor.constraint(equalTo: searchIcon.trailingAnchor, constant: 10),
+            queryLabel.centerYAnchor.constraint(equalTo: header.centerYAnchor),
+            queryLabel.trailingAnchor.constraint(lessThanOrEqualTo: countLabel.leadingAnchor, constant: -12),
+            countLabel.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
+            countLabel.centerYAnchor.constraint(equalTo: header.centerYAnchor),
+            divider.leadingAnchor.constraint(equalTo: header.leadingAnchor),
+            divider.trailingAnchor.constraint(equalTo: header.trailingAnchor),
+            divider.bottomAnchor.constraint(equalTo: header.bottomAnchor),
+            emptyState.centerXAnchor.constraint(equalTo: scroll.centerXAnchor),
+            emptyState.centerYAnchor.constraint(equalTo: scroll.centerYAnchor),
             scroll.leadingAnchor.constraint(equalTo: background.leadingAnchor),
             scroll.trailingAnchor.constraint(equalTo: background.trailingAnchor),
-            scroll.topAnchor.constraint(equalTo: background.topAnchor),
+            scroll.topAnchor.constraint(equalTo: header.bottomAnchor),
             scroll.bottomAnchor.constraint(equalTo: background.bottomAnchor),
             stack.widthAnchor.constraint(equalTo: scroll.contentView.widthAnchor)
         ])
@@ -1064,26 +1123,39 @@ final class SwitcherPanel: NSPanel {
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 
-    func show(windows: [WindowInfo], selectedIndex: Int) {
-        update(windows: windows, selectedIndex: selectedIndex, resetHover: true)
+    func show(results: [WindowSearch.Match], selectedIndex: Int, query: String = "",
+              totalWindowCount: Int? = nil, language: AppLanguage = .system) {
+        update(results: results, selectedIndex: selectedIndex, resetHover: true,
+               query: query, totalWindowCount: totalWindowCount, language: language)
         orderFrontRegardless()
         layoutDocumentView()
         revealSelectedRow()
     }
 
-    func update(windows: [WindowInfo], selectedIndex: Int, resetHover: Bool = false) {
+    func update(results: [WindowSearch.Match], selectedIndex: Int, resetHover: Bool = false,
+                query: String = "", totalWindowCount: Int? = nil, language: AppLanguage = .system) {
         if resetHover {
             hoverOrigin = NSEvent.mouseLocation
         }
+        let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        queryLabel.stringValue = query.isEmpty ? L10n.text("Type an app name or window title", language: language) : query
+        queryLabel.textColor = query.isEmpty ? .secondaryLabelColor : .labelColor
+        queryLabel.setAccessibilityLabel(L10n.text("Window search", language: language))
+        countLabel.stringValue = L10n.format(query.isEmpty ? "%@ windows" : "%@ results",
+                                            String(results.count), language: language)
+        emptyTitle.stringValue = L10n.text("No matching windows", language: language)
+        emptyHint.stringValue = L10n.text("Try an app name or window title", language: language)
+        emptyState.isHidden = !results.isEmpty
         stack.arrangedSubviews.forEach {
             stack.removeArrangedSubview($0)
             $0.removeFromSuperview()
         }
 
         var selectedRow: SwitcherRow?
-        for (index, window) in windows.enumerated() {
+        for (index, match) in results.enumerated() {
+            let window = match.window
             let row = SwitcherRow(
-                window: window, selected: index == selectedIndex,
+                match: match, selected: index == selectedIndex,
                 onPointerMove: { [weak self] pointer in
                     guard self?.canHover(at: pointer) == true else { return }
                     self?.onSelect(window.id)
@@ -1097,14 +1169,13 @@ final class SwitcherPanel: NSPanel {
 
         let area = displayScreen.visibleFrame
         let width = max(320, min(600, area.width - 48))
-        let height = min(max(CGFloat(windows.count) * 28 + 16, 44), max(44, area.height - 80))
+        let height = min(max(CGFloat(totalWindowCount ?? results.count) * 28 + 16, 100) + 40,
+                         max(140, area.height - 80))
         setFrame(NSRect(x: area.midX - width / 2, y: area.midY - height / 2,
                         width: width, height: height), display: true)
         layoutDocumentView()
-        if let selectedRow {
-            self.selectedRow = selectedRow
-            revealSelectedRow()
-        }
+        self.selectedRow = selectedRow
+        revealSelectedRow()
     }
 
     func hideSwitcher() {
@@ -1165,6 +1236,18 @@ final class SwitcherPanel: NSPanel {
     }
 
     fileprivate var smokeHoverOrigin: NSPoint { hoverOrigin }
+
+    fileprivate var smokeSearchHeader: (query: String, count: String, empty: Bool, hasSelection: Bool) {
+        (queryLabel.stringValue, countLabel.stringValue, !emptyState.isHidden, selectedRow != nil)
+    }
+
+    fileprivate var smokeSearchHighlightsAreValid: Bool {
+        stack.arrangedSubviews.compactMap { $0 as? SwitcherRow }.allSatisfy { $0.smokeSearchHighlightsAreValid }
+    }
+
+    fileprivate var smokeTextLayouts: [[NSRect]] {
+        stack.arrangedSubviews.compactMap { ($0 as? SwitcherRow)?.smokeTextLayout }
+    }
 }
 
 @MainActor
@@ -1465,8 +1548,9 @@ private final class SwitcherRow: NSButton {
     private let onPointerMove: (NSPoint) -> Void
     private var trackingArea: NSTrackingArea?
 
-    init(window: WindowInfo, selected: Bool, onPointerMove: @escaping (NSPoint) -> Void,
+    init(match: WindowSearch.Match, selected: Bool, onPointerMove: @escaping (NSPoint) -> Void,
          action: @escaping () -> Void) {
+        let window = match.window
         callback = action
         self.onPointerMove = onPointerMove
         appLabel = NSTextField(labelWithString: window.appName)
@@ -1487,6 +1571,15 @@ private final class SwitcherRow: NSButton {
         titleLabel.font = .systemFont(ofSize: 13, weight: selected ? .medium : .regular)
         titleLabel.textColor = textColor
         titleLabel.lineBreakMode = .byTruncatingTail
+        for (label, ranges) in [(appLabel, match.appRanges), (titleLabel, match.titleRanges)] where !ranges.isEmpty {
+            let text = NSMutableAttributedString(attributedString: label.attributedStringValue)
+            for range in ranges {
+                text.addAttributes([.backgroundColor: NSColor(srgbRed: 1, green: 229 / 255,
+                                                              blue: 138 / 255, alpha: 1),
+                                    .foregroundColor: NSColor.black], range: range)
+            }
+            label.attributedStringValue = text
+        }
         titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         iconView.imageScaling = .scaleProportionallyDown
         [appLabel, iconView, titleLabel].forEach {
@@ -1554,6 +1647,33 @@ private final class SwitcherRow: NSButton {
                 && appLabel.textColor == .white && titleLabel.textColor == .white
             : layer?.backgroundColor == NSColor.clear.cgColor
                 && appLabel.textColor == .labelColor && titleLabel.textColor == .labelColor
+    }
+
+    fileprivate var smokeSearchHighlightsAreValid: Bool {
+        var highlighted = false
+        var valid = true
+        let yellow = NSColor(srgbRed: 1, green: 229 / 255, blue: 138 / 255, alpha: 1)
+        for label in [appLabel, titleLabel] {
+            let text = label.attributedStringValue
+            text.enumerateAttributes(in: NSRange(location: 0, length: text.length)) { attributes, _, _ in
+                if let background = attributes[.backgroundColor] as? NSColor {
+                    highlighted = true
+                    valid = valid && background == yellow && attributes[.foregroundColor] as? NSColor == .black
+                        && attributes[.underlineStyle] == nil
+                } else {
+                    valid = valid && attributes[.foregroundColor] as? NSColor == (selected ? .white : .labelColor)
+                }
+            }
+        }
+        return highlighted && valid && (selected ? smokeHighlighted : !smokeHighlighted)
+    }
+
+    fileprivate var smokeTextLayout: [NSRect] {
+        [appLabel, titleLabel].flatMap { label in
+            [label.frame, label.attributedStringValue.boundingRect(
+                with: NSSize(width: label.bounds.width, height: .greatestFiniteMagnitude),
+                options: [.usesLineFragmentOrigin])]
+        }
     }
 
     @objc private func invoke() { callback() }
@@ -2060,11 +2180,12 @@ enum PanelSmokeCheck {
         sidebar.smokeEndDrag()
 
         let switcherWindows = windows
+        let switcherResults = WindowSearch.filter(switcherWindows, query: "")
         var selectedIDs: [String] = []
         let switcher = SwitcherPanel(screen: screen, onActivate: { _ in },
                                       onSelect: { selectedIDs.append($0) })
         let initialIndex = switcherWindows.count - 1
-        switcher.show(windows: switcherWindows, selectedIndex: initialIndex)
+        switcher.show(results: switcherResults, selectedIndex: initialIndex)
         switcher.contentView?.layoutSubtreeIfNeeded()
         let origin = switcher.smokeHoverOrigin
         let initial = switcher.smokeLayoutIsValid && switcher.smokeHighlightedIndices == [initialIndex]
@@ -2072,22 +2193,65 @@ enum PanelSmokeCheck {
         let still = selectedIDs.isEmpty && switcher.smokeHighlightedIndices == [initialIndex]
         switcher.smokeMove(to: 0, pointer: NSPoint(x: origin.x + 1, y: origin.y))
         let moved = selectedIDs == [switcherWindows[0].id]
-        switcher.update(windows: switcherWindows, selectedIndex: 0)
+        switcher.update(results: switcherResults, selectedIndex: 0)
         let mouseSelected = switcher.smokeHighlightedIndices == [0]
-        switcher.update(windows: switcherWindows, selectedIndex: 1, resetHover: true)
+        switcher.update(results: switcherResults, selectedIndex: 1, resetHover: true)
         let keyboardSelected = switcher.smokeHighlightedIndices == [1]
         switcher.smokeMove(to: 0, pointer: switcher.smokeHoverOrigin)
         let keyboardHeld = selectedIDs.count == 1 && switcher.smokeHighlightedIndices == [1]
         switcher.smokeMove(to: 2, pointer: NSPoint(x: switcher.smokeHoverOrigin.x + 1,
                                                    y: switcher.smokeHoverOrigin.y))
         let movedAgain = selectedIDs == [switcherWindows[0].id, switcherWindows[2].id]
-        switcher.update(windows: switcherWindows, selectedIndex: 2)
+        switcher.update(results: switcherResults, selectedIndex: 2)
         let mouseSelectedAgain = switcher.smokeHighlightedIndices == [2]
-        switcher.show(windows: switcherWindows, selectedIndex: initialIndex)
+        switcher.show(results: switcherResults, selectedIndex: initialIndex)
         switcher.smokeMove(to: 0, pointer: switcher.smokeHoverOrigin)
         let reset = selectedIDs.count == 2 && switcher.smokeHighlightedIndices == [initialIndex]
+        let originalFrame = switcher.frame
+        let searchQuery = "smoke 199"
+        let searchWindows = WindowSearch.filter(switcherWindows, query: searchQuery)
+        switcher.update(results: searchWindows, selectedIndex: 0, resetHover: true, query: "  " + searchQuery + "  ",
+                        totalWindowCount: switcherWindows.count, language: .zh)
+        let searched = searchWindows.count == 1 && switcher.frame == originalFrame
+            && switcher.smokeSearchHeader.query == searchQuery && switcher.smokeSearchHeader.count == "1 个结果"
+            && !switcher.smokeSearchHeader.empty && switcher.smokeHighlightedIndices == [0]
+            && switcher.smokeSearchHighlightsAreValid
+        switcher.smokeMove(to: 0, pointer: switcher.smokeHoverOrigin)
+        let searchKeptSelection = selectedIDs.count == 2
+        switcher.update(results: [], selectedIndex: 0, query: "zzzz",
+                        totalWindowCount: switcherWindows.count, language: .zh)
+        let noResults = switcher.frame == originalFrame && switcher.smokeSearchHeader.empty
+            && switcher.smokeSearchHeader.count == "0 个结果" && switcher.smokeHighlightedIndices.isEmpty
+            && !switcher.smokeSearchHeader.hasSelection
+        switcher.update(results: switcherResults, selectedIndex: initialIndex, language: .en)
+        switcher.update(results: switcherResults, selectedIndex: initialIndex, query: " \t ", language: .en)
+        let cleared = switcher.smokeSearchHeader.query == "Type an app name or window title"
+            && switcher.smokeSearchHeader.count == "200 windows" && !switcher.smokeSearchHeader.empty
+            && switcher.smokeLayoutIsValid && switcher.smokeHighlightedIndices == [initialIndex]
         let valid = initial && still && moved && mouseSelected && keyboardSelected
             && keyboardHeld && movedAgain && mouseSelectedAgain && reset
+            && searched && searchKeptSelection && noResults && cleared
+        let longTitleWindows = [
+            WindowInfo(id: "long-title", appID: "chrome", appName: "Google Chrome",
+                       title: String(repeating: "OpenContexts window search and a long browser title — ", count: 20),
+                       processID: 0),
+            WindowInfo(id: "long-app", appID: "long-app",
+                       appName: String(repeating: "OpenContexts ", count: 20), title: "Open a document", processID: 0)
+        ]
+        let longTitleResults = WindowSearch.filter(longTitleWindows, query: "")
+        let longTitleSearchResults = WindowSearch.filter(longTitleWindows, query: "open")
+        for selected in longTitleWindows.indices {
+            switcher.update(results: longTitleResults, selectedIndex: selected)
+            let normalTextLayouts = switcher.smokeTextLayouts
+            switcher.update(results: longTitleSearchResults, selectedIndex: selected, query: "open")
+            guard switcher.smokeTextLayouts == normalTextLayouts else {
+                let searchedLayouts = switcher.smokeTextLayouts
+                switcher.hideSwitcher()
+                switcher.close()
+                sidebar.close()
+                return fail("search changed long text layout: normal=\(normalTextLayouts) search=\(searchedLayouts)")
+            }
+        }
         switcher.hideSwitcher()
         switcher.close()
         sidebar.close()

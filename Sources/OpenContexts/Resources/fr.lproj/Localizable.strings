@@ -45,3 +45,9 @@
 "Click a shortcut to record. Esc cancels; Shift switches backward." = "Cliquez pour enregistrer. Échap annule ; Maj inverse le sens.";
 "The two shortcuts must be different." = "Les deux raccourcis doivent être différents.";
 "Use Command, Option or Control with a key; Shift is reserved for reverse switching." = "Utilisez Commande, Option ou Contrôle avec une touche ; Maj est réservé au sens inverse.";
+"Type an app name or window title" = "Saisissez un nom d’app ou un titre de fenêtre";
+"Window search" = "Recherche de fenêtres";
+"%@ windows" = "%@ fenêtres";
+"%@ results" = "%@ résultats";
+"No matching windows" = "Aucune fenêtre correspondante";
+"Try an app name or window title" = "Essayez un nom d’app ou un titre de fenêtre";

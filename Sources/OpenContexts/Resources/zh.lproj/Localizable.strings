@@ -45,3 +45,9 @@
 "Click a shortcut to record. Esc cancels; Shift switches backward." = "点击快捷键开始录入，Esc 取消，Shift 反向切换。";
 "The two shortcuts must be different." = "两个快捷键不能相同。";
 "Use Command, Option or Control with a key; Shift is reserved for reverse switching." = "请使用 Command、Option 或 Control 搭配按键；Shift 用于反向切换。";
+"Type an app name or window title" = "输入应用名或窗口标题";
+"Window search" = "窗口搜索";
+"%@ windows" = "%@ 个窗口";
+"%@ results" = "%@ 个结果";
+"No matching windows" = "没有匹配窗口";
+"Try an app name or window title" = "试试应用名或窗口标题";

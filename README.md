@@ -41,6 +41,7 @@ The window switcher displays windows in most recently used order. You can contin
 | Window switching | Displays and switches individual windows rather than apps, and tracks most recently used (MRU) order |
 | Screen edge sidebar | Supports the left, right, or bottom edge; always visible or shown when the pointer reaches the screen edge; optionally shows icons alone or icons with titles |
 | Keyboard switcher | Defaults to `⌘Tab` for all windows and `Command + backtick` for the current app; both shortcuts are customizable in Settings; supports Shift for reverse switching, arrow keys, `Esc`, and releasing a shortcut modifier to confirm |
+| Window search | Keep holding the shortcut modifier and type to search contiguous text in app names and window titles; matching characters have a yellow background |
 | Window activation | Attempts to restore minimized or hidden windows when activated |
 | Window information | Displays app icons, window titles, and notification badges readable from the system Dock |
 | Native macOS app | Built with Swift, AppKit, and SwiftUI; app updates use Sparkle |
@@ -59,7 +60,7 @@ Saved groups organize the window list; they do not reopen apps or restore deskto
 
 Open Contexts recreates the app bar and window switcher experience of [Contexts](https://contexts.co/) and adds saved custom window groups. It is worth considering if you want a free, open-source tool with a compact window title list and a persistent sidebar.
 
-Open Contexts currently does not support window search or trackpad switching gestures. Full-screen behavior still needs verification in more real-world environments. See the [Mac window switcher comparison](https://opencontexts.zshnb.com/compare/) to choose a tool that fits your workflow.
+Open Contexts currently does not support trackpad switching gestures. Full-screen behavior still needs verification in more real-world environments. See the [Mac window switcher comparison](https://opencontexts.zshnb.com/compare/) to choose a tool that fits your workflow.
 
 ## Download and install on macOS
 
@@ -88,6 +89,7 @@ xattr -dr com.apple.quarantine "/Applications/OpenContexts.app"
 
 - `⌘Tab`: Open the switcher for all windows. Press `Tab` again or `↓` to move forward; press `⇧Tab` or `↑` to move backward.
 - `Command + backtick`: Open the switcher for windows of the current app.
+- Search: While the switcher is open, keep holding its modifier and type an app name or window title. Matching is case-insensitive and each term must match contiguous text; space-separated terms can match the app and title together, such as `chr context`. `Backspace` edits the query; deleting it restores the full list. Release the modifier to switch, or to dismiss without switching when there are no matches. Search accepts printable ASCII characters; Chinese input and pinyin matching are not supported.
 - `Esc`: Cancel switching. Release a modifier key of the shortcut to activate the selected window (`⌘` by default).
 - Custom shortcuts: Click either shortcut in Settings, then press a combination using Command, Option, or Control and a key. Shift is reserved for reverse switching; Esc cancels recording. Changes take effect immediately and persist after restarting. “Restore defaults” restores `⌘Tab` and `Command + backtick`.
 - `＋` in the sidebar: Create a group.

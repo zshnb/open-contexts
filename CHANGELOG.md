@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- Search app names and window titles by typing while holding the window switcher's shortcut modifier. Supports case-insensitive contiguous matching, combined app/title queries, and yellow match highlights. Release the modifier to activate the selected result; no matches dismisses the switcher without activating a window.
+
+### 新增
+
+- 窗口切换器支持按住快捷键修饰键输入应用名或窗口标题搜索，忽略大小写，支持连续文本匹配、应用名与标题组合查询及黄色匹配高亮；松开修饰键激活选中结果，无匹配时只关闭切换器。
+
 ## [0.3.10] - 2026-10-09
 
 ### Added

@@ -21,7 +21,10 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var settingsWindow: NSWindow?
     private var statusItem: NSStatusItem?
 
-    private var switchingWindows: [WindowInfo] = []
+    private var switchingResults: [WindowSearch.Match] = []
+    private var switchingWindowCount = 0
+    private var searchQuery = ""
+    private var selectionBeforeSearch: String?
     private var selectedIndex = 0
     private var currentAppOnly: Bool?
     private var currentAppPID: pid_t?
@@ -93,6 +96,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     self.shortcuts.configure(allWindows: self.settings.allWindowsShortcut,
                                              currentApp: self.settings.currentAppShortcut)
                     self.settingsWindow?.title = L10n.text("OpenContexts Settings", language: self.settings.language)
+                    if self.currentAppOnly != nil { self.updateSwitchers() }
                 }
             }
         }
@@ -135,8 +139,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
             )
         }
         updateSidebars()
-        if currentAppOnly != nil, !switchingWindows.isEmpty {
-            switchers.values.forEach { $0.show(windows: switchingWindows, selectedIndex: selectedIndex) }
+        if currentAppOnly != nil {
+            switchers.values.forEach {
+                $0.show(results: switchingResults, selectedIndex: selectedIndex, query: searchQuery,
+                        totalWindowCount: switchingWindowCount, language: settings.language)
+            }
         }
     }
 
@@ -167,19 +174,42 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func handle(_ action: SwitcherAction) {
         switch action {
         case let .begin(currentAppOnly, reverse):
+            searchQuery = ""
+            selectionBeforeSearch = nil
             self.currentAppOnly = currentAppOnly
             currentAppPID = currentAppOnly ? NSWorkspace.shared.frontmostApplication?.processIdentifier : nil
-            switchingWindows = availableWindows(currentAppOnly: currentAppOnly, pid: currentAppPID)
-            guard !switchingWindows.isEmpty else { return }
-            selectedIndex = reverse ? switchingWindows.count - 1 : min(1, switchingWindows.count - 1)
-            switchers.values.forEach { $0.show(windows: switchingWindows, selectedIndex: selectedIndex) }
+            switchingResults = WindowSearch.filter(availableWindows(currentAppOnly: currentAppOnly, pid: currentAppPID),
+                                                    query: "")
+            switchingWindowCount = switchingResults.count
+            guard !switchingResults.isEmpty else { return }
+            selectedIndex = reverse ? switchingResults.count - 1 : min(1, switchingResults.count - 1)
+            switchers.values.forEach {
+                $0.show(results: switchingResults, selectedIndex: selectedIndex,
+                        totalWindowCount: switchingWindowCount, language: settings.language)
+            }
         case let .step(amount):
-            guard !switchingWindows.isEmpty else { return }
-            selectedIndex = (selectedIndex + amount % switchingWindows.count + switchingWindows.count)
-                % switchingWindows.count
-            switchers.values.forEach { $0.update(windows: switchingWindows, selectedIndex: selectedIndex, resetHover: true) }
+            guard !switchingResults.isEmpty else { return }
+            selectedIndex = (selectedIndex + amount % switchingResults.count + switchingResults.count)
+                % switchingResults.count
+            updateSwitchers(resetHover: true)
+        case let .search(query):
+            let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let currentAppOnly else { return }
+            if searchQuery.isEmpty {
+                selectionBeforeSearch = switchingResults.indices.contains(selectedIndex)
+                    ? switchingResults[selectedIndex].window.id : nil
+            }
+            searchQuery = query
+            let windows = availableWindows(currentAppOnly: currentAppOnly, pid: currentAppPID)
+            switchingWindowCount = windows.count
+            guard !windows.isEmpty else { finishSwitcher(activating: nil); return }
+            switchingResults = WindowSearch.filter(windows, query: query)
+            selectedIndex = query.isEmpty
+                ? selectionBeforeSearch.flatMap { id in switchingResults.firstIndex { $0.window.id == id } } ?? 0
+                : 0
+            updateSwitchers(resetHover: true)
         case .commit:
-            let id = switchingWindows.indices.contains(selectedIndex) ? switchingWindows[selectedIndex].id : nil
+            let id = switchingResults.indices.contains(selectedIndex) ? switchingResults[selectedIndex].window.id : nil
             finishSwitcher(activating: id)
         case .cancel:
             finishSwitcher(activating: nil)
@@ -188,29 +218,41 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func refreshVisibleSwitcher() {
         guard let currentAppOnly else { return }
-        let selectedID = switchingWindows.indices.contains(selectedIndex) ? switchingWindows[selectedIndex].id : nil
-        switchingWindows = availableWindows(currentAppOnly: currentAppOnly, pid: currentAppPID)
-        guard !switchingWindows.isEmpty else {
+        let selectedID = switchingResults.indices.contains(selectedIndex) ? switchingResults[selectedIndex].window.id : nil
+        let windows = availableWindows(currentAppOnly: currentAppOnly, pid: currentAppPID)
+        switchingWindowCount = windows.count
+        guard !windows.isEmpty else {
             finishSwitcher(activating: nil)
             return
         }
-        selectedIndex = selectedID.flatMap { id in switchingWindows.firstIndex(where: { $0.id == id }) }
-            ?? min(selectedIndex, switchingWindows.count - 1)
-        switchers.values.forEach { $0.update(windows: switchingWindows, selectedIndex: selectedIndex) }
+        switchingResults = WindowSearch.filter(windows, query: searchQuery)
+        selectedIndex = selectedID.flatMap { id in switchingResults.firstIndex(where: { $0.window.id == id }) }
+            ?? min(selectedIndex, max(0, switchingResults.count - 1))
+        updateSwitchers()
     }
 
     private func selectSwitcherWindow(id: String) {
         guard currentAppOnly != nil,
-              let index = switchingWindows.firstIndex(where: { $0.id == id }),
+              let index = switchingResults.firstIndex(where: { $0.window.id == id }),
               index != selectedIndex else { return }
         selectedIndex = index
-        switchers.values.forEach { $0.update(windows: switchingWindows, selectedIndex: selectedIndex) }
+        updateSwitchers()
+    }
+
+    private func updateSwitchers(resetHover: Bool = false) {
+        switchers.values.forEach {
+            $0.update(results: switchingResults, selectedIndex: selectedIndex, resetHover: resetHover,
+                      query: searchQuery, totalWindowCount: switchingWindowCount, language: settings.language)
+        }
     }
 
     private func finishSwitcher(activating id: String?) {
         shortcuts.resetState()
         switchers.values.forEach { $0.hideSwitcher() }
-        switchingWindows = []
+        switchingResults = []
+        switchingWindowCount = 0
+        searchQuery = ""
+        selectionBeforeSearch = nil
         selectedIndex = 0
         currentAppOnly = nil
         currentAppPID = nil

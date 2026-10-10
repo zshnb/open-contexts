@@ -58,6 +58,7 @@ struct KeyboardShortcut: Codable, Equatable {
 enum SwitcherAction: Equatable {
     case begin(currentAppOnly: Bool, reverse: Bool)
     case step(Int)
+    case search(String)
     case commit
     case cancel
 }
@@ -65,12 +66,14 @@ enum SwitcherAction: Equatable {
 private struct ShortcutState {
     private(set) var isSwitching = false
     private(set) var heldModifiers: CGEventFlags = []
+    private(set) var searchQuery = ""
 
     mutating func begin(currentAppOnly: Bool, reverse: Bool, allowed: Bool,
                         modifiers: CGEventFlags = .maskCommand) -> SwitcherAction? {
         guard !isSwitching, allowed else { return nil }
         isSwitching = true
         heldModifiers = modifiers
+        searchQuery = ""
         return .begin(currentAppOnly: currentAppOnly, reverse: reverse)
     }
 
@@ -78,10 +81,24 @@ private struct ShortcutState {
         isSwitching ? .step(amount) : nil
     }
 
+    mutating func appendToSearch(_ characters: String) -> SwitcherAction? {
+        guard isSwitching, !characters.isEmpty,
+              characters.unicodeScalars.allSatisfy({ (32...126).contains($0.value) }) else { return nil }
+        searchQuery += characters
+        return .search(searchQuery)
+    }
+
+    mutating func deleteFromSearch() -> SwitcherAction? {
+        guard isSwitching else { return nil }
+        if !searchQuery.isEmpty { searchQuery.removeLast() }
+        return .search(searchQuery)
+    }
+
     mutating func finish(commit: Bool) -> SwitcherAction? {
         guard isSwitching else { return nil }
         isSwitching = false
         heldModifiers = []
+        searchQuery = ""
         return commit ? .commit : .cancel
     }
 }
@@ -232,10 +249,13 @@ final class ShortcutController: ObservableObject {
         }
 
         let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
-        guard onAction != nil, let action = keyAction(keyCode: keyCode, flags: flags) else {
-            return Unmanaged.passUnretained(event)
+        guard onAction != nil else { return Unmanaged.passUnretained(event) }
+        let characters = state.isSwitching ? NSEvent(cgEvent: event).flatMap(Self.searchCharacters) : nil
+        guard let action = keyAction(keyCode: keyCode, flags: flags, characters: characters) else {
+            // No key commands may reach the frontmost app while the switcher owns input.
+            return state.isSwitching ? nil : Unmanaged.passUnretained(event)
         }
-        onAction?(action)
+        emit(action, deferred: true)
         return nil
     }
 
@@ -244,9 +264,14 @@ final class ShortcutController: ObservableObject {
         return state.finish(commit: true)
     }
 
-    private func keyAction(keyCode: UInt16, flags: CGEventFlags) -> SwitcherAction? {
+    private static func searchCharacters(_ event: NSEvent) -> String? {
+        event.characters(byApplyingModifiers: event.modifierFlags.intersection([.shift, .capsLock]))
+    }
+
+    private func keyAction(keyCode: UInt16, flags: CGEventFlags, characters: String? = nil) -> SwitcherAction? {
         if state.isSwitching {
-            if allWindowsShortcut.matches(keyCode: keyCode, flags: flags)
+            if state.searchQuery.isEmpty,
+               allWindowsShortcut.matches(keyCode: keyCode, flags: flags)
                 || currentAppShortcut.matches(keyCode: keyCode, flags: flags) {
                 return state.step(flags.contains(.maskShift) ? -1 : 1)
             }
@@ -257,10 +282,12 @@ final class ShortcutController: ObservableObject {
                 return state.step(-1)
             case 125:
                 return state.step(1)
+            case 51:
+                return state.deleteFromSearch()
             case 53:
                 return state.finish(commit: false)
             default:
-                return nil
+                return characters.flatMap { state.appendToSearch($0) }
             }
         }
 
@@ -379,7 +406,8 @@ final class ShortcutController: ObservableObject {
                                           windowNumber: 0, context: nil, characters: "y",
                                           charactersIgnoringModifiers: "y", isARepeat: false, keyCode: 16),
               let recorded = KeyboardShortcut(event: event),
-              recorded.matches(keyCode: 16, flags: custom.modifiers), recorded.keyLabel == "Y" else { return false }
+              recorded.matches(keyCode: 16, flags: custom.modifiers), recorded.keyLabel == "Y",
+              Self.searchCharacters(event) == "y" else { return false }
 
         var acceptRecording = false
         var saved: KeyboardShortcut?
@@ -408,6 +436,34 @@ final class ShortcutController: ObservableObject {
         controller.record(escape)
         guard controller.recordingCurrentAppOnly == nil, controller.recordingMonitor == nil,
               controller.recordingErrorKey == nil else { return false }
+
+        let searchController = ShortcutController()
+        guard searchController.keyAction(keyCode: 13, flags: .maskCommand, characters: "w") == nil,
+              searchController.keyAction(keyCode: 48, flags: .maskCommand)
+                == .begin(currentAppOnly: false, reverse: false),
+              searchController.keyAction(keyCode: 13, flags: .maskCommand, characters: "w") == .search("w"),
+              searchController.keyAction(keyCode: 12, flags: .maskCommand, characters: "q") == .search("wq"),
+              searchController.keyAction(keyCode: 8, flags: .maskCommand, characters: "C") == .search("wqC"),
+              searchController.keyAction(keyCode: 49, flags: .maskCommand, characters: " ") == .search("wqC "),
+              searchController.keyAction(keyCode: 51, flags: .maskCommand) == .search("wqC"),
+              searchController.keyAction(keyCode: 48, flags: [.maskCommand, .maskShift]) == .step(-1),
+              searchController.keyAction(keyCode: 0, flags: .maskCommand, characters: "中") == nil,
+              searchController.keyAction(keyCode: 122, flags: .maskCommand, characters: "\u{f704}") == nil,
+              searchController.modifierAction(flags: []) == .commit,
+              searchController.state.searchQuery.isEmpty,
+              searchController.keyAction(keyCode: 48, flags: .maskCommand)
+                == .begin(currentAppOnly: false, reverse: false),
+              searchController.keyAction(keyCode: 51, flags: .maskCommand) == .search(""),
+              searchController.keyAction(keyCode: 0, flags: .maskCommand, characters: "a") == .search("a"),
+              searchController.keyAction(keyCode: 53, flags: .maskCommand) == .cancel,
+              searchController.state.searchQuery.isEmpty else { return false }
+        searchController.configure(allWindows: custom, currentApp: sameKey)
+        guard searchController.keyAction(keyCode: 16, flags: custom.modifiers)
+                == .begin(currentAppOnly: false, reverse: false),
+              searchController.keyAction(keyCode: 0, flags: custom.modifiers, characters: "a") == .search("a"),
+              searchController.keyAction(keyCode: 16, flags: custom.modifiers, characters: "y") == .search("ay"),
+              searchController.modifierAction(flags: .maskControl) == .commit,
+              searchController.state.searchQuery.isEmpty else { return false }
         return true
     }
 }
