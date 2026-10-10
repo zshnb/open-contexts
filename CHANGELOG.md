@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-10
+
 ### Added
 
 - Search app names and window titles by typing while holding the window switcher's shortcut modifier. Supports case-insensitive contiguous matching, combined app/title queries, and yellow match highlights. Release the modifier to activate the selected result; no matches dismisses the switcher without activating a window.
