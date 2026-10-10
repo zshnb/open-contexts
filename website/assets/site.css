@@ -305,6 +305,10 @@ kbd,.kbd{font-family:var(--font-body);font-size:.8em;font-weight:540;display:inl
 /* window switcher (SwitcherPanel) */
 .switcher{position:absolute;z-index:1000;left:50%;top:50%;width:600px;translate:-50% -50%;padding:8px;border-radius:10px;background:rgba(236,236,238,.84);backdrop-filter:blur(40px) saturate(1.6);-webkit-backdrop-filter:blur(40px) saturate(1.6);box-shadow:0 0 0 .5px rgba(0,0,0,.22),0 24px 70px rgba(0,0,0,.35)}
 .switcher[hidden]{display:none}
+.search-query{padding:8px 12px;color:#303033;font-size:13px}
+input.search-query{width:100%;margin-bottom:4px;border:1px solid #aaa;border-radius:6px;background:#fff;outline-offset:2px}
+input.search-query:focus{outline:none;border-color:#777}
+.srow mark{background:#ffe45c;color:#111;border-radius:2px}
 .srow{display:flex;align-items:center;width:100%;height:28px;padding:0 12px;border:0;border-radius:6px;background:none;font-size:13px;text-align:left;cursor:default}
 .srow .app{flex:none;width:150px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .srow svg{flex:none;width:24px;height:24px;margin:0 12px 0 14px}

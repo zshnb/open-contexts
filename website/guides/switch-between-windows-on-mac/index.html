@@ -13,7 +13,7 @@
   gtag('config', 'G-ZGS8C9X3XW');
 </script>
 <title>How to switch between windows on Mac | Open Contexts</title>
-<meta name="description" content="Learn how to switch between windows on Mac with Command-Tab, Command-backtick, Mission Control, App Exposé, and the free Open Contexts window switcher.">
+<meta name="description" content="Learn Mac window shortcuts and how to search app names or window titles in Open Contexts. Includes query examples and input limits.">
 <link rel="canonical" href="https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/">
 <link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/">
 <link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/guides/switch-between-windows-on-mac/">
@@ -25,7 +25,7 @@
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Open Contexts">
 <meta property="og:title" content="How to switch between windows on Mac">
-<meta property="og:description" content="Learn how to switch between windows on Mac with Command-Tab, Command-backtick, Mission Control, App Exposé, and the free Open Contexts window switcher.">
+<meta property="og:description" content="Learn Mac window shortcuts and how to search app names or window titles in Open Contexts. Includes query examples and input limits.">
 <meta property="og:url" content="https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/">
 <meta property="og:image" content="https://opencontexts.zshnb.com/assets/og.png">
 <meta property="og:image:alt" content="Open Contexts window switcher and app bar for macOS">
@@ -33,24 +33,31 @@
 <meta property="og:locale:alternate" content="zh_CN">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="How to switch between windows on Mac">
-<meta name="twitter:description" content="Learn how to switch between windows on Mac with Command-Tab, Command-backtick, Mission Control, App Exposé, and the free Open Contexts window switcher.">
+<meta name="twitter:description" content="Learn Mac window shortcuts and how to search app names or window titles in Open Contexts. Includes query examples and input limits.">
 <meta name="twitter:image" content="https://opencontexts.zshnb.com/assets/og.png">
 <meta name="twitter:image:alt" content="Open Contexts window switcher and app bar for macOS">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap">
-<link rel="stylesheet" href="../../assets/site.css">
+<link rel="stylesheet" href="../../assets/site.css?v=window-search-copy">
 <script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "Article",
   "headline": "How to switch between windows on Mac",
-  "description": "Learn how to switch between windows on Mac with Command-Tab, Command-backtick, Mission Control, App Exposé, and the free Open Contexts window switcher.",
+  "description": "Learn Mac window shortcuts and how to search app names or window titles in Open Contexts. Includes query examples and input limits.",
   "inLanguage": "en",
   "mainEntityOfPage": "https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/",
   "image": "https://opencontexts.zshnb.com/assets/og.png",
   "publisher": {
+    "@type": "Organization",
+    "name": "Open Contexts",
+    "url": "https://opencontexts.zshnb.com/"
+  },
+  "datePublished": "2026-10-05",
+  "dateModified": "2026-10-10",
+  "author": {
     "@type": "Organization",
     "name": "Open Contexts",
     "url": "https://opencontexts.zshnb.com/"
@@ -98,6 +105,7 @@
 <li><a href="#why-command-tab-falls-short">Why ⌘Tab falls short</a></li>
 <li><a href="#same-app-windows">Same-app windows</a></li>
 <li><a href="#comparison">Compare the methods</a></li>
+<li><a href="#window-search">How to search Mac windows by app name and title</a></li>
 <li><a href="#open-contexts">Switch with Open Contexts</a></li>
 <li><a href="#faq">FAQ</a></li>
 <li><a href="#give-your-mac-every-window">Give your Mac every window</a></li>
@@ -181,6 +189,11 @@
 <h3>Most-recently-used order, first.</h3>
 <p>The list is sorted by most-recently-used order, Windows-style. The window you were just in sits at the top; the second row is where a quick ⌘Tab tap takes you. That one habit - tap and release to bounce back to the previous window - is why most people install it. The <a href="https://github.com/zshnb/open-contexts">project on GitHub</a> is Apache 2.0 licensed, so you can read it, build it, or fork it.</p>
 <p>Prefer choosing windows with the mouse? Explore a <a href="/guides/mac-dock-alternative/">Mac window sidebar or bottom Dock alternative</a> that keeps individual window titles within reach.</p>
+<h2 id="window-search">How to search Mac windows by app name and title</h2>
+<p>Open Contexts searches Mac windows by app name or title. Hold the switcher modifier, type, then release to switch.</p>
+<ol><li>Open the all-window switcher with <kbd>⌘</kbd><kbd>Tab</kbd>, or use Command-backtick for the current app. Keep holding the shortcut modifier.</li><li>Type part of an app name or window title. Matching is case-insensitive: <code>CHROME</code> can match Google Chrome. Each term must match contiguous text; <code>gchr</code> does not fuzzy-match Google Chrome.</li><li>Combine terms with spaces: <code>chr context</code> can match Google Chrome as the app and context in the window title. Every term must match either the app name or title.</li><li>Matching characters have a yellow background. Use Tab, Shift-Tab or the arrow keys to choose a result. <kbd>Backspace</kbd> edits the query; clearing it restores the full list.</li><li>Release the modifier to activate the selected window. If there are no matches, the switcher closes without changing windows. <kbd>Esc</kbd> cancels.</li></ol>
+<p>Input accepts printable ASCII only; Chinese input and pinyin are not supported. Search covers app names and window titles, not page contents or every browser tab. The sidebar has no separate search field.</p>
+<p>In the <a href="/#demo">online demo</a>, click ⌘ Tab and type <code>chr context</code>; Return confirms and Esc cancels. Browsers cannot receive macOS ⌘Tab, so Option-Tab also demonstrates holding a modifier, typing and releasing to switch.</p>
 <h3>Saved window groups.</h3>
 <p>A persistent app bar sits on the left, right, or bottom edge of every display and lists each window by title next to its Dock badge. Click a row to bring that window forward, even when it is minimized or hidden. From there you can sort windows into groups - code, chat, research - and they return to the same place after a restart. Saved groups are the feature the paid app Contexts never had.</p>
 <h3>Set it up in two minutes.</h3>
@@ -191,7 +204,7 @@
 <li>Press ⌘Tab. Every window is there, in the order you last used it.</li>
 </ol>
 <h3>What Open Contexts does not do.</h3>
-<p>Be clear about the trade. Open Contexts does not currently offer window search, a thumbnail grid, or trackpad gestures, and it shows a compact titled list rather than previews of your windows. It needs Accessibility access; without it, or while the app is closed, ⌘Tab is left exactly as macOS shipped it. If you rely on visual thumbnails, AltTab remains the better-known alternative. If you want a fast, titled, MRU list with saved groups, this is the shorter path.</p>
+<p>Be clear about the trade. Open Contexts offers app-name and title search, but no thumbnail grid or trackpad gestures, and it shows a compact titled list rather than previews of your windows. It needs Accessibility access; without it, or while the app is closed, ⌘Tab is left exactly as macOS shipped it. If you rely on visual thumbnails, AltTab remains the better-known alternative. If you want a fast, titled, MRU list with saved groups, this is the shorter path.</p>
 <h2 id="faq">FAQ</h2>
 <p><strong>How do I switch between windows on Mac with the keyboard alone?</strong> Use ⌘Tab to change apps. For windows within the current app, check your assigned "Move focus to next window" shortcut; on a US layout it is commonly <kbd>⌘`</kbd>. Open Contexts uses ⌘Tab by default for a titled list of individual windows across apps.</p>
 <p><strong>Why does <kbd>⌘`</kbd> sometimes do nothing?</strong> The key can differ by keyboard layout, the shortcut may have been reassigned, or the app may not support the expected window-switching behavior. Check "Move focus to next window" under System Settings → Keyboard → Keyboard Shortcuts. Open Contexts also lets you choose its own same-app window shortcut.</p>
@@ -222,13 +235,13 @@
       </div>
       <div class="footer-cols">
         <div><h2>Product</h2><ul><li><a href="../../#features">Features</a></li><li><a href="../../compare/">Compare</a></li><li><a href="../../#download">Download</a></li><li><a href="https://github.com/zshnb/open-contexts/blob/main/CHANGELOG.md" rel="noopener noreferrer">Changelog</a></li></ul></div>
-        <div><h2>Support</h2><ul><li><a href="./" aria-current="page">How to switch windows on Mac</a></li><li><a href="../../#faq">FAQ</a></li><li><a href="https://github.com/zshnb/open-contexts/issues" rel="noopener noreferrer">Report an issue</a></li><li><a href="https://github.com/zshnb/open-contexts" rel="noopener noreferrer">GitHub</a></li></ul></div>
+        <div><h2>Support</h2><ul><li><a href="/guides/switch-between-windows-on-mac/#window-search">Window search</a></li><li><a href="./" aria-current="page">How to switch windows on Mac</a></li><li><a href="../../#faq">FAQ</a></li><li><a href="https://github.com/zshnb/open-contexts/issues" rel="noopener noreferrer">Report an issue</a></li><li><a href="https://github.com/zshnb/open-contexts" rel="noopener noreferrer">GitHub</a></li></ul></div>
         <div><h2>Legal</h2><ul><li><a href="/privacy/">Privacy Policy</a></li><li><a href="/terms/">Terms of Service</a></li><li><a href="https://github.com/zshnb/open-contexts/blob/main/LICENSE" rel="noopener noreferrer">Apache 2.0</a></li></ul></div>
       </div>
     </div>
     <p class="footer-legal">© 2026 Open Contexts contributors. Open Contexts is an independent project and is not affiliated with Contexts or AltTab. Product names belong to their respective owners.</p>
   </div>
 </footer>
-<script src="../../assets/site.js" defer></script>
+<script src="../../assets/site.js?v=window-search" defer></script>
 </body>
 </html>

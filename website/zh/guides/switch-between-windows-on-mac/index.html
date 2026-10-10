@@ -13,7 +13,7 @@
   gtag('config', 'G-ZGS8C9X3XW');
 </script>
 <title>如何在 Mac 上切换窗口 | Open Contexts</title>
-<meta name="description" content="了解 Mac 上的应用与窗口切换方式：⌘Tab、同应用窗口快捷键、Mission Control 和 App Exposé，以及免费开源的 Open Contexts。">
+<meta name="description" content="了解 Mac 窗口切换快捷键，以及 Open Contexts 的应用名与标题搜索：按住修饰键输入、空格组合查询、黄色高亮和输入限制。">
 <link rel="canonical" href="https://opencontexts.zshnb.com/zh/guides/switch-between-windows-on-mac/">
 <link rel="alternate" hreflang="en" href="https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/">
 <link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.zshnb.com/zh/guides/switch-between-windows-on-mac/">
@@ -25,7 +25,7 @@
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Open Contexts">
 <meta property="og:title" content="如何在 Mac 上切换窗口">
-<meta property="og:description" content="了解 Mac 上的应用与窗口切换方式：⌘Tab、同应用窗口快捷键、Mission Control 和 App Exposé，以及免费开源的 Open Contexts。">
+<meta property="og:description" content="了解 Mac 窗口切换快捷键，以及 Open Contexts 的应用名与标题搜索：按住修饰键输入、空格组合查询、黄色高亮和输入限制。">
 <meta property="og:url" content="https://opencontexts.zshnb.com/zh/guides/switch-between-windows-on-mac/">
 <meta property="og:image" content="https://opencontexts.zshnb.com/assets/og.png">
 <meta property="og:image:alt" content="Open Contexts 的 macOS 窗口切换器与应用栏">
@@ -33,24 +33,31 @@
 <meta property="og:locale:alternate" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="如何在 Mac 上切换窗口">
-<meta name="twitter:description" content="了解 Mac 上的应用与窗口切换方式：⌘Tab、同应用窗口快捷键、Mission Control 和 App Exposé，以及免费开源的 Open Contexts。">
+<meta name="twitter:description" content="了解 Mac 窗口切换快捷键，以及 Open Contexts 的应用名与标题搜索：按住修饰键输入、空格组合查询、黄色高亮和输入限制。">
 <meta name="twitter:image" content="https://opencontexts.zshnb.com/assets/og.png">
 <meta name="twitter:image:alt" content="Open Contexts 的 macOS 窗口切换器与应用栏">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap">
-<link rel="stylesheet" href="../../../assets/site.css">
+<link rel="stylesheet" href="../../../assets/site.css?v=window-search-copy">
 <script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "Article",
   "headline": "如何在 Mac 上切换窗口",
-  "description": "了解 Mac 上的应用与窗口切换方式：⌘Tab、同应用窗口快捷键、Mission Control 和 App Exposé，以及免费开源的 Open Contexts。",
+  "description": "了解 Mac 窗口切换快捷键，以及 Open Contexts 的应用名与标题搜索：按住修饰键输入、空格组合查询、黄色高亮和输入限制。",
   "inLanguage": "zh-Hans",
   "mainEntityOfPage": "https://opencontexts.zshnb.com/zh/guides/switch-between-windows-on-mac/",
   "image": "https://opencontexts.zshnb.com/assets/og.png",
   "publisher": {
+    "@type": "Organization",
+    "name": "Open Contexts",
+    "url": "https://opencontexts.zshnb.com/"
+  },
+  "datePublished": "2026-10-05",
+  "dateModified": "2026-10-10",
+  "author": {
     "@type": "Organization",
     "name": "Open Contexts",
     "url": "https://opencontexts.zshnb.com/"
@@ -99,7 +106,8 @@
           <li><a href="#why-command-tab-falls-short">为什么 ⌘Tab 不够用</a></li>
           <li><a href="#same-app-windows">同一应用的多个窗口</a></li>
           <li><a href="#comparison">五种方式对比</a></li>
-          <li><a href="#open-contexts">使用 Open Contexts</a></li>
+          <li><a href="#window-search">如何搜索 Mac 窗口：应用名与标题</a></li>
+<li><a href="#open-contexts">使用 Open Contexts</a></li>
           <li><a href="#faq">常见问题</a></li>
           <li><a href="#give-your-mac-every-window">让每个窗口都可直接选择</a></li>
           <li><a href="#sources">参考资料</a></li>
@@ -153,6 +161,11 @@
         <h3>按最近使用顺序排列</h3>
         <p>窗口列表采用类似 Windows 的最近使用顺序。当前窗口在最上方，快速按下并松开 ⌘Tab 会切到第二行，也就是刚刚使用的上一个窗口。这种快速返回的操作，是很多人安装窗口切换器的原因。<a href="https://github.com/zshnb/open-contexts">GitHub 项目</a>采用 Apache 2.0 许可，你可以阅读源码、自行构建或 Fork。</p>
         <p>习惯用鼠标选择窗口？了解如何把<a href="/zh/guides/mac-dock-alternative/">Mac 窗口侧边栏或底部应用栏作为 Dock 的补充</a>，直接查看窗口标题并点击切换。</p>
+<h2 id="window-search">如何搜索 Mac 窗口：应用名与标题</h2>
+<p>Open Contexts 支持按应用名或标题搜索 Mac 窗口：按住切换器修饰键输入，松开切换。</p>
+<ol><li>按 <kbd>⌘</kbd><kbd>Tab</kbd> 打开全部窗口切换器，或使用 Command 加反引号打开当前应用的窗口列表。保持按住快捷键中的修饰键。</li><li>输入应用名或标题的一部分。大小写不影响匹配，例如 <code>CHROME</code> 可匹配 Google Chrome。每个词必须是连续文本，<code>gchr</code> 不会模糊匹配 Google Chrome。</li><li>用空格组合搜索词：<code>chr context</code> 可匹配应用名 Google Chrome 和标题中含有 context 的窗口；所有词都必须匹配应用名或标题。</li><li>匹配字符以黄色底色高亮。使用 Tab、Shift-Tab 或方向键选择；用 <kbd>Backspace</kbd> 删除查询，删空后恢复完整列表。</li><li>松开修饰键激活选中结果；无匹配时只关闭切换器，不切换窗口。<kbd>Esc</kbd> 取消。</li></ol>
+<p>输入只接受可打印 ASCII 字符，不支持中文输入和拼音。搜索范围是窗口的应用名与标题，不包含网页正文或浏览器中的所有标签页；侧边栏不提供独立的搜索框。</p>
+<p><a href="/zh/#demo">在线演示</a>中可先点击 ⌘ Tab，再输入 <code>chr context</code>；用 Return 确认或 Esc 取消。浏览器收不到 macOS 的 ⌘Tab，因此也可用 Option-Tab 演示按住修饰键、输入、松开切换的过程。</p>
 <h3>保存窗口分组</h3>
         <p>常驻应用栏可以放在每个显示器的左侧、右侧或底部，在应用图标与 Dock 标记旁列出窗口标题。点击一行即可激活对应窗口，即使它已经最小化或隐藏。你也可以把窗口整理到“代码”“聊天”“资料”等分组，重启后仍然保留分组位置。可保存的自定义窗口分组，是付费应用 Contexts 未提供的功能。</p>
         <h3>两分钟完成设置</h3>
@@ -163,7 +176,7 @@
           <li>按下默认快捷键 ⌘Tab，即可看到按最近使用顺序排列的窗口列表。</li>
         </ol>
         <h3>Open Contexts 目前的边界</h3>
-        <p>Open Contexts 目前没有窗口搜索、缩略图网格或触控板手势，显示的是紧凑的标题列表，而非窗口预览。它需要辅助功能权限；未授权或应用关闭时，不会接管系统的 ⌘Tab。如果你依赖视觉缩略图，AltTab 是值得比较的选择。如果你需要按最近使用顺序排列的标题列表和可保存分组，Open Contexts 更贴近这种使用方式。</p>
+        <p>Open Contexts 支持应用名与窗口标题搜索，但没有缩略图网格或触控板手势，显示的是紧凑的标题列表，而非窗口预览。它需要辅助功能权限；未授权或应用关闭时，不会接管系统的 ⌘Tab。如果你依赖视觉缩略图，AltTab 是值得比较的选择。如果你需要按最近使用顺序排列的标题列表和可保存分组，Open Contexts 更贴近这种使用方式。</p>
         <h2 id="faq">常见问题</h2>
         <p><strong>如何只用键盘在 Mac 上切换窗口？</strong> 用 ⌘Tab 切换应用。同一应用内的窗口，请查看系统分配的“将焦点移到下一个窗口”快捷键，美式布局上通常是 <kbd>⌘`</kbd>。Open Contexts 默认用 ⌘Tab 打开跨应用的窗口标题列表。</p>
         <p><strong>为什么 <kbd>⌘`</kbd> 有时没有反应？</strong> 实际按键可能随键盘布局变化，快捷键也可能被修改，或应用不支持预期的窗口切换行为。请在“系统设置 → 键盘 → 键盘快捷键”中检查“将焦点移到下一个窗口”。Open Contexts 也允许单独设置自己的同应用窗口快捷键。</p>
@@ -194,13 +207,13 @@
       </div>
       <div class="footer-cols">
         <div><h2>产品</h2><ul><li><a href="../../#features">功能</a></li><li><a href="../../compare/">对比</a></li><li><a href="../../#download">下载</a></li><li><a href="https://github.com/zshnb/open-contexts/blob/main/CHANGELOG.md" rel="noopener noreferrer">更新日志</a></li></ul></div>
-        <div><h2>支持</h2><ul><li><a href="./" aria-current="page">Mac 窗口切换指南</a></li><li><a href="../../#faq">常见问题</a></li><li><a href="https://github.com/zshnb/open-contexts/issues" rel="noopener noreferrer">反馈问题</a></li><li><a href="https://github.com/zshnb/open-contexts" rel="noopener noreferrer">GitHub</a></li></ul></div>
+        <div><h2>支持</h2><ul><li><a href="/zh/guides/switch-between-windows-on-mac/#window-search">搜索窗口</a></li><li><a href="./" aria-current="page">Mac 窗口切换指南</a></li><li><a href="../../#faq">常见问题</a></li><li><a href="https://github.com/zshnb/open-contexts/issues" rel="noopener noreferrer">反馈问题</a></li><li><a href="https://github.com/zshnb/open-contexts" rel="noopener noreferrer">GitHub</a></li></ul></div>
         <div><h2>许可</h2><ul><li><a href="/zh/privacy/">隐私政策</a></li><li><a href="/zh/terms/">服务条款</a></li><li><a href="https://github.com/zshnb/open-contexts/blob/main/LICENSE" rel="noopener noreferrer">Apache 2.0</a></li></ul></div>
       </div>
     </div>
     <p class="footer-legal">© 2026 Open Contexts 贡献者。Open Contexts 是独立项目，与 Contexts 或 AltTab 无关联。产品名称归各自所有者所有。</p>
   </div>
 </footer>
-<script src="../../../assets/site.js" defer></script>
+<script src="../../../assets/site.js?v=window-search" defer></script>
 </body>
 </html>

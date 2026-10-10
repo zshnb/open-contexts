@@ -2,7 +2,7 @@
 
 <h1 align="center"><img src="assets/AppIcon.png" alt="Open Contexts icon" width="48" height="48" align="absbottom"> Open Contexts — Free, open-source Mac window switcher</h1>
 
-Open Contexts is a **free, open-source window switcher for macOS** with a persistent app bar and saved window groups. Use `⌘Tab` to switch between individual windows, organize them by task in the sidebar, and customize your keyboard shortcuts. All features are included, with no account or subscription.
+Open Contexts is a **free, open-source window switcher for macOS** with app-name and window-title search, a persistent app bar, and saved window groups. Use `⌘Tab` to switch between individual windows, organize them by task in the sidebar, and customize your keyboard shortcuts. All features are included, with no account or subscription.
 
 [Download for macOS](https://github.com/zshnb/open-contexts/releases/latest) · [Official website](https://opencontexts.zshnb.com/) · [How to switch between windows on Mac](https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/) · [Compare Mac window switchers](https://opencontexts.zshnb.com/compare/)
 
@@ -41,7 +41,7 @@ The window switcher displays windows in most recently used order. You can contin
 | Window switching | Displays and switches individual windows rather than apps, and tracks most recently used (MRU) order |
 | Screen edge sidebar | Supports the left, right, or bottom edge; always visible or shown when the pointer reaches the screen edge; optionally shows icons alone or icons with titles |
 | Keyboard switcher | Defaults to `⌘Tab` for all windows and `Command + backtick` for the current app; both shortcuts are customizable in Settings; supports Shift for reverse switching, arrow keys, `Esc`, and releasing a shortcut modifier to confirm |
-| Window search | Keep holding the shortcut modifier and type to search contiguous text in app names and window titles; matching characters have a yellow background |
+| Window search | Search by app name or window title: hold the switcher modifier, type, then release to switch; matches are highlighted in yellow |
 | Window activation | Attempts to restore minimized or hidden windows when activated |
 | Window information | Displays app icons, window titles, and notification badges readable from the system Dock |
 | Native macOS app | Built with Swift, AppKit, and SwiftUI; app updates use Sparkle |
@@ -89,7 +89,7 @@ xattr -dr com.apple.quarantine "/Applications/OpenContexts.app"
 
 - `⌘Tab`: Open the switcher for all windows. Press `Tab` again or `↓` to move forward; press `⇧Tab` or `↑` to move backward.
 - `Command + backtick`: Open the switcher for windows of the current app.
-- Search: While the switcher is open, keep holding its modifier and type an app name or window title. Matching is case-insensitive and each term must match contiguous text; space-separated terms can match the app and title together, such as `chr context`. `Backspace` edits the query; deleting it restores the full list. Release the modifier to switch, or to dismiss without switching when there are no matches. Search accepts printable ASCII characters; Chinese input and pinyin matching are not supported.
+- Search: Open the switcher, hold its modifier, type an app name or window title, then release to switch. Matching ignores case and uses contiguous text. Combine terms with spaces, such as `chr context`. `Backspace` deletes characters; clearing the query restores the list. With no matches, releasing only closes the switcher. Input supports English letters, numbers and symbols (printable ASCII); Chinese input and pinyin are not supported.
 - `Esc`: Cancel switching. Release a modifier key of the shortcut to activate the selected window (`⌘` by default).
 - Custom shortcuts: Click either shortcut in Settings, then press a combination using Command, Option, or Control and a key. Shift is reserved for reverse switching; Esc cancels recording. Changes take effect immediately and persist after restarting. “Restore defaults” restores `⌘Tab` and `Command + backtick`.
 - `＋` in the sidebar: Create a group.

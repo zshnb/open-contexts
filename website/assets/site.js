@@ -10,12 +10,14 @@
     sidebar: '应用栏', always: '始终显示', hover: '悬浮显示', display: '显示内容', icon: '仅图标', iconTitle: '图标和标题',
     position: '应用栏位置', left: '左', right: '右', bottom: '底部', allWin: '所有窗口', curWin: '当前应用窗口',
     access: '辅助功能', granted: '已授权', pin: '固定', hideApp: '隐藏应用', quitApp: '退出应用',
+    search: '输入应用名或窗口标题', noMatches: '没有匹配的窗口',
   } : {
     ungrouped: 'Ungrouped', newGroupName: 'New Group', code: 'Code', team: 'Team',
     settings: 'Settings…', updates: 'Check for Updates…', quit: 'Quit OpenContexts', settingsTitle: 'OpenContexts Settings',
     sidebar: 'Sidebar', always: 'Always visible', hover: 'Show on hover', display: 'Display', icon: 'Icons only', iconTitle: 'Icons and titles',
     position: 'Sidebar position', left: 'Left', right: 'Right', bottom: 'Bottom', allWin: 'All windows', curWin: 'Current app windows',
     access: 'Accessibility', granted: 'Granted', pin: 'Pin', hideApp: 'Hide App', quitApp: 'Quit App',
+    search: 'Type an app name or window title', noMatches: 'No matching windows',
   }
 
   const sq = (fill, extra = '') => `<rect x="4" y="4" width="56" height="56" rx="13" fill="${fill}"${extra}/>`
@@ -58,8 +60,38 @@
   const barHTML = (groups, badges, tag) =>
     groups.map(g => `<div class="grp" data-g="${g.id}">${esc(g.name)}</div>` + g.items.map(id => rowHTML(id, badges, tag)).join('')).join('')
     + `<${tag === 'button' ? 'button' : 'div'} class="newgrp" title="${T.newGroupName}">＋<span class="t"> ${T.newGroupName}</span></${tag === 'button' ? 'button' : 'div'}>`
-  const swRows = (list, sel, tag = 'div') => list.map((id, i) =>
-    `<${tag} class="srow" role="option" data-i="${i}" aria-selected="${i === sel}"><span class="app">${APPS[id].name}</span>${ICON[id]}<span class="t">${esc(APPS[id].title)}</span></${tag}>`).join('')
+  function searchWindows(list, query) {
+    const tokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean)
+    return list.map(id => {
+      let score = 0
+      for (const token of tokens) {
+        const scores = [APPS[id].name, APPS[id].title].map(text => {
+          const at = text.toLowerCase().indexOf(token)
+          if (at < 0) return -1
+          return text.length === token.length ? 1000 : at === 0 ? 700
+            : /[^\p{L}\p{N}]/u.test(text[at - 1]) || /[a-z]/.test(text[at - 1]) && /[A-Z]/.test(text[at]) ? 600 : 500
+        })
+        if (Math.max(...scores) < 0) return null
+        score += Math.max(...scores)
+      }
+      return { id, score }
+    }).filter(Boolean).sort((a, b) => b.score - a.score).map(match => match.id)
+  }
+  function highlight(text, query) {
+    const ranges = query.toLowerCase().trim().split(/\s+/).filter(Boolean).map(token => {
+      const at = text.toLowerCase().indexOf(token)
+      return [at, at + token.length]
+    }).filter(([at]) => at >= 0)
+    let html = '', marked = false
+    for (let i = 0; i < text.length; i++) {
+      const match = ranges.some(([start, end]) => i >= start && i < end)
+      if (match !== marked) html += match ? '<mark>' : '</mark>'
+      html += esc(text[i]); marked = match
+    }
+    return html + (marked ? '</mark>' : '')
+  }
+  const swRows = (list, sel, tag = 'div', query = '') => list.map((id, i) =>
+    `<${tag} class="srow" role="option" data-i="${i}" aria-selected="${i === sel}"><span class="app">${highlight(APPS[id].name, query)}</span>${ICON[id]}<span class="t">${highlight(APPS[id].title, query)}</span></${tag}>`).join('')
   const seg = (k, opts, cur) => `<div class="seg" role="group">${opts.map(([v, label]) =>
     `<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${v === cur}">${label}</button>`).join('')}</div>`
   const settingsForm = s => `<div class="form"><div class="form-group">
@@ -119,7 +151,7 @@ Building for production...
       ${Object.keys(APPS).map(id => { const [x, y, w, h] = APPS[id].box; return `<div class="win" data-win="${id}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px">${BODY[id]()}</div>` }).join('')}
       <div class="win" data-win="settings" style="left:290px;top:130px;width:540px;height:400px">${titlebar(T.settingsTitle).replace('<i class=""></i>', '<i class="close" title="Close"></i>')}<div class="wbody" data-form></div></div>
       <nav class="appbar" aria-label="App bar"></nav>
-      <div class="switcher" role="listbox" aria-label="Window switcher" hidden></div>
+      <div class="switcher" role="dialog" aria-label="Window switcher" hidden></div>
       <button class="cmd-pill" type="button" data-act="cmdtab"><kbd>⌘ Tab</kbd>${zh ? '打开窗口切换器' : 'Show window switcher'}</button>`
 
     const $ = s => screen.querySelector(s)
@@ -150,7 +182,10 @@ Building for production...
     function renderSw() {
       sw.hidden = !st.sw
       $('.cmd-pill').hidden = !!st.sw // the button comes back whenever the switcher closes
-      sw.innerHTML = st.sw ? swRows(st.sw.list, st.sw.sel, 'button') : ''
+      sw.innerHTML = st.sw ? `<input class="search-query" type="text" aria-label="${T.search}" placeholder="${T.search}" value="${esc(st.sw.query)}" autocomplete="off" spellcheck="false">`
+        + `<div role="listbox" aria-label="${T.allWin}">${swRows(st.sw.list, st.sw.sel, 'button', st.sw.query)}</div>`
+        + (st.sw.list.length ? '' : `<div class="search-query" role="status">${T.noMatches}</div>`) : ''
+      sw.querySelector('input')?.focus({ preventScroll: true })
     }
 
     // AppController.activate: restore minimized/hidden, move to front of MRU
@@ -164,12 +199,12 @@ Building for production...
     // AppController: first ⌘Tab selects index 1 (the previous window), ⇧ starts from the end
     function openSw(reverse, held) {
       const list = [...st.mru]
-      st.sw = { list, sel: reverse ? list.length - 1 : Math.min(1, list.length - 1), held }
+      st.sw = { list, query: '', sel: reverse ? list.length - 1 : Math.min(1, list.length - 1), held }
       st.menu = false
       render()
     }
-    const step = d => { const n = st.sw.list.length; st.sw.sel = (st.sw.sel + d + n) % n; renderSw() }
-    const commit = () => { const id = st.sw.list[st.sw.sel]; st.sw = null; activate(id) }
+    const step = d => { const n = st.sw.list.length; if (n) st.sw.sel = (st.sw.sel + d + n) % n; renderSw() }
+    const commit = () => { const id = st.sw.list[st.sw.sel]; st.sw = null; id ? activate(id) : renderSw() }
     const cancel = () => { st.sw = null; renderSw() }
     const cmdTab = () => st.sw ? step(1) : openSw(false, false)
     const openSettings = () => { st.settings = true; st.front = 'settings'; st.menu = false; render() }
@@ -204,6 +239,12 @@ Building for production...
       const r = e.target.closest('.srow')
       if (r && +r.dataset.i !== st.sw.sel) { st.sw.sel = +r.dataset.i; renderSw() }
     })
+    sw.addEventListener('input', e => {
+      if (/^[\x20-\x7e]*$/.test(e.target.value)) {
+        st.sw.query = e.target.value; st.sw.list = searchWindows(st.mru, st.sw.query); st.sw.sel = 0
+      }
+      renderSw()
+    })
 
     // Drag windows between groups (HTML5 drag and drop; desktop browsers only)
     const clearDrop = () => bar.querySelectorAll('.drop-before').forEach(x => x.classList.remove('drop-before'))
@@ -225,18 +266,26 @@ Building for production...
     bar.addEventListener('dragend', () => { st.drag = null; clearDrop(); render() })
 
     // Keyboard. Browsers never see ⌘Tab (macOS takes it), so ⌥Tab stands in for the held-modifier flow.
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Tab' && e.altKey) { e.preventDefault(); st.sw ? step(e.shiftKey ? -1 : 1) : openSw(e.shiftKey, true); return }
+    window.addEventListener('keydown', e => {
+      if (e.key === 'Tab' && e.altKey) { e.preventDefault(); e.stopPropagation(); st.sw ? step(e.shiftKey ? -1 : 1) : openSw(e.shiftKey, true); return }
       if (!st.sw) return
-      const k = e.key
+      // Option-letter keys produce accented characters on macOS; use the letter for the held-modifier demo.
+      const k = e.altKey && /^Key[A-Z]$/.test(e.code) ? e.code.slice(3).toLowerCase() : e.key
       if (k === 'Tab') step(e.shiftKey ? -1 : 1)
       else if (k === 'ArrowDown') step(1)
       else if (k === 'ArrowUp') step(-1)
       else if (k === 'Enter') commit()
       else if (k === 'Escape') cancel()
+      else if (k === 'Backspace' || !e.isComposing && /^[\x20-\x7e]$/.test(k)) {
+        st.sw.query = k === 'Backspace' ? st.sw.query.slice(0, -1) : st.sw.query + k
+        st.sw.list = searchWindows(st.mru, st.sw.query)
+        st.sw.sel = 0
+        renderSw()
+      }
       else return
       e.preventDefault()
-    })
+      e.stopPropagation()
+    }, true)
     document.addEventListener('keyup', e => { if (e.key === 'Alt' && st.sw?.held) commit() })
 
     viewport.closest('.demo').addEventListener('click', e => {
@@ -250,6 +299,7 @@ Building for production...
 
   // Static illustrations for the feature sections
   const MOCKS = {
+    search: () => `<div class="mac switcher static"><div class="search-query">chr context</div>${swRows(searchWindows(MRU0, 'chr context'), 0, 'div', 'chr context')}</div>`,
     switcher: () => `<div class="mac switcher static">${swRows(MRU0, 1)}</div>`,
     appbar: () => `<div class="mac desk-mock">
       <div class="appbar static edge" data-pos="left" data-display="title" data-mode="always">${barHTML(groups0(), badges0(), 'div')}</div>

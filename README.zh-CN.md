@@ -2,7 +2,7 @@
 
 <h1 align="center"><img src="assets/AppIcon.png" alt="Open Contexts 图标" width="48" height="48" align="absbottom"> Open Contexts — 免费开源的 Mac 窗口切换器</h1>
 
-Open Contexts 是**免费开源的 macOS 窗口切换器**，提供常驻应用栏和可保存的窗口分组。用 `⌘Tab` 在单个窗口之间切换，在侧边栏按任务整理窗口，并自定义键盘快捷键。全部功能免费，无需账户或订阅。
+Open Contexts 是**免费开源的 macOS 窗口切换器**，支持按应用名或窗口标题搜索，提供常驻应用栏和可保存的窗口分组。用 `⌘Tab` 在单个窗口之间切换，在侧边栏按任务整理窗口，并自定义键盘快捷键。全部功能免费，无需账户或订阅。
 
 [下载 macOS 版本](https://github.com/zshnb/open-contexts/releases/latest) · [官方网站](https://opencontexts.zshnb.com/zh/) · [如何在 Mac 上切换窗口](https://opencontexts.zshnb.com/zh/guides/switch-between-windows-on-mac/) · [Mac 窗口切换器对比](https://opencontexts.zshnb.com/zh/compare/)
 
@@ -41,7 +41,7 @@ Open Contexts 是**免费开源的 macOS 窗口切换器**，提供常驻应用�
 | 窗口级切换 | 以窗口而不是应用为单位展示和切换，并跟踪最近使用顺序（MRU） |
 | 屏幕边缘应用栏 | 支持左侧、右侧或底部，始终显示或移到屏幕边缘时唤出；可选择仅显示图标或同时显示标题 |
 | 键盘切换器 | 默认 `⌘Tab` 切换所有窗口，`Command + 反引号` 切换当前应用窗口，可在设置中自定义；支持 Shift 反向切换、方向键、`Esc` 与松开快捷键修饰键确认 |
-| 窗口搜索 | 保持按住快捷键修饰键，直接输入连续文本搜索应用名或窗口标题；匹配字符以黄色底色高亮 |
+| 窗口搜索 | 按应用名或窗口标题搜索：按住切换器修饰键输入，松开即可切换；匹配文字黄色高亮 |
 | 窗口激活 | 激活最小化或隐藏的窗口时尝试恢复显示 |
 | 窗口信息 | 显示应用图标、窗口标题与系统可读取的 Dock 通知角标 |
 | macOS 原生应用 | 使用 Swift、AppKit 和 SwiftUI 构建；应用更新使用 Sparkle |
@@ -89,7 +89,7 @@ xattr -dr com.apple.quarantine "/Applications/OpenContexts.app"
 
 - `⌘Tab`：打开所有窗口切换器；继续按 `Tab` 或按 `↓` 向前选择，按 `⇧Tab` 或 `↑` 向后选择。
 - `Command + 反引号`：打开当前应用的窗口切换器。
-- 搜索：切换器打开后，保持按住修饰键，直接输入应用名或窗口标题。忽略大小写，每个搜索词必须匹配连续文本；空格分隔的词可组合匹配应用名和标题，例如 `chr context`。`Backspace` 删除字符，删空后恢复完整列表。松开修饰键切换；无匹配时只关闭切换器。搜索接受可打印的 ASCII 字符，不支持中文输入和拼音匹配。
+- 搜索：打开切换器，按住修饰键输入应用名或窗口标题，松开即可切换。忽略大小写，匹配连续文本，支持空格组合搜索，如 `chr context`。`Backspace` 删除字符，删空后恢复窗口列表；无匹配时只关闭切换器。输入支持英文字母、数字和符号（可打印 ASCII），不支持中文或拼音。
 - `Esc`：取消切换；松开快捷键中的任一修饰键，激活选中的窗口（默认松开 `⌘`）。
 - 自定义快捷键：在设置中点击相应快捷键，再按下 Command、Option 或 Control 与按键的组合。Shift 保留用于反向切换，Esc 取消录入。修改立即生效，重启后保留；点击“恢复默认”可恢复 `⌘Tab` 和 `Command + 反引号`。
 - 应用栏中的 `＋`：新建分组。
