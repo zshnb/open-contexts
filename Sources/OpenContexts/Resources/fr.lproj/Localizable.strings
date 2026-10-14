@@ -15,6 +15,8 @@
 "Sidebar" = "Barre latérale";
 "Display" = "Affichage";
 "Sidebar position" = "Position de la barre latérale";
+"Center app bar" = "Centrer la barre d’applications";
+"Drag to move the app bar. Double-click to center." = "Faites glisser pour déplacer la barre d’applications. Double-cliquez pour la centrer.";
 "Language" = "Langue";
 "System" = "Système";
 "All windows" = "Toutes les fenêtres";

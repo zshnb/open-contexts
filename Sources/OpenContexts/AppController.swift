@@ -114,6 +114,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         for screen in NSScreen.screens {
             let id = Self.displayID(for: screen)
+            let placementKey = Self.sidebarPlacementKey(for: id)
             sidebars[id] = SidebarPanel(
                 screen: screen,
                 onActivate: { [weak self] in self?.windowService.activate($0) },
@@ -130,7 +131,10 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 },
                 onCreateGroup: { [weak self] in self?.groupStore.createGroup(name: $0) },
                 onRenameGroup: { [weak self] id, name in self?.groupStore.renameGroup(id: id, name: name) },
-                onDeleteGroup: { [weak self] in self?.groupStore.deleteGroup(id: $0) }
+                onDeleteGroup: { [weak self] in self?.groupStore.deleteGroup(id: $0) },
+                onPlacementChange: { [weak self] position, placement in
+                    self?.settings.setSidebarPlacement(placement, screenID: placementKey, position: position)
+                }
             )
             switchers[id] = SwitcherPanel(
                 screen: screen,
@@ -164,7 +168,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 sidebarWidth: CGFloat(settings.sidebarWidth),
                 position: settings.sidebarPosition,
                 itemDisplayMode: settings.sidebarItemDisplayMode,
-                language: settings.language
+                language: settings.language,
+                placement: settings.sidebarPlacement(screenID: Self.sidebarPlacementKey(for: id),
+                                                     position: settings.sidebarPosition)
             )
             panel.updateBadges(windowService.appBadges)
         }
@@ -332,5 +338,12 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private static func displayID(for screen: NSScreen) -> CGDirectDisplayID {
         (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value ?? 0
+    }
+
+    private static func sidebarPlacementKey(for id: CGDirectDisplayID) -> String {
+        if let uuid = CGDisplayCreateUUIDFromDisplayID(id)?.takeRetainedValue() {
+            return CFUUIDCreateString(nil, uuid) as String
+        }
+        return String(id)
     }
 }

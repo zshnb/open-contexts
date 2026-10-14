@@ -15,6 +15,8 @@
 "Sidebar" = "应用栏";
 "Display" = "显示内容";
 "Sidebar position" = "应用栏位置";
+"Center app bar" = "恢复居中";
+"Drag to move the app bar. Double-click to center." = "拖动以移动应用栏；双击恢复居中。";
 "Language" = "语言";
 "System" = "跟随系统";
 "All windows" = "所有窗口";

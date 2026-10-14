@@ -15,6 +15,8 @@
 "Sidebar" = "サイドバー";
 "Display" = "表示内容";
 "Sidebar position" = "サイドバーの位置";
+"Center app bar" = "中央に戻す";
+"Drag to move the app bar. Double-click to center." = "ドラッグしてアプリバーを移動します。ダブルクリックで中央に戻します。";
 "Language" = "言語";
 "System" = "システムに合わせる";
 "All windows" = "すべてのウインドウ";
