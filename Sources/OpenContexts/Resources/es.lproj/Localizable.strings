@@ -72,3 +72,5 @@
 "Full screen %@" = "Pantalla completa %@";
 "Current" = "Actual";
 "Current desktop" = "Escritorio actual";
+"Only show windows on the current display" = "Mostrar solo las ventanas de la pantalla actual";
+"With multiple displays, list only windows on the display under the pointer." = "Con varias pantallas, muestra solo las ventanas de la pantalla donde está el puntero.";

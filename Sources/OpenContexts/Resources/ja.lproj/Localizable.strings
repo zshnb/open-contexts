@@ -72,3 +72,5 @@
 "Full screen %@" = "フルスクリーン %@";
 "Current" = "現在";
 "Current desktop" = "現在のデスクトップ";
+"Only show windows on the current display" = "現在のディスプレイのウインドウのみ表示";
+"With multiple displays, list only windows on the display under the pointer." = "複数のディスプレイを使用している場合、ポインタがあるディスプレイ上のウインドウのみを表示します。";

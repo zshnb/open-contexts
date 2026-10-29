@@ -72,3 +72,5 @@
 "Full screen %@" = "Plein écran %@";
 "Current" = "Actuel";
 "Current desktop" = "Bureau actuel";
+"Only show windows on the current display" = "Afficher uniquement les fenêtres de l’écran actuel";
+"With multiple displays, list only windows on the display under the pointer." = "Avec plusieurs écrans, affiche uniquement les fenêtres de l’écran sous le pointeur.";

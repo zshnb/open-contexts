@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+### Added
+
+- Optionally list only windows on the display under the pointer when using multiple displays.
+
+### Fixed
+
+- Show the window switcher on one display (the one under the pointer) instead of on every display.
+
+### 新增
+
+- 可在设置中开启“仅显示当前显示器的窗口”，连接多个显示器时只列出鼠标指针所在显示器上的窗口。
+
+### 修复
+
+- 窗口切换器只在鼠标指针所在的显示器上显示，不再在每个显示器上各显示一份。
+
 ## [0.5.0] - 2026-10-25
 
 ### Added

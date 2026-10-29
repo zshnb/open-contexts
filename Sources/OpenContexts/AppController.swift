@@ -28,6 +28,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var selectedIndex = 0
     private var currentAppOnly: Bool?
     private var currentAppPID: pid_t?
+    /// The display the visible switcher appears on and, optionally, lists windows from.
+    private var switchingDisplayID: CGDirectDisplayID?
     private var didRestoreGroups = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -152,11 +154,10 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
         updateSidebars()
         if currentAppOnly != nil {
-            switchers.values.forEach {
-                $0.show(results: switchingResults, selectedIndex: selectedIndex, query: searchQuery,
-                        groupBySpace: settings.showWindowsFromAllDesktops,
-                        totalWindowCount: switchingWindowCount, language: settings.language)
-            }
+            if let id = switchingDisplayID, switchers[id] == nil { switchingDisplayID = Self.displayID(for: activeScreen()) }
+            activeSwitcher?.show(results: switchingResults, selectedIndex: selectedIndex, query: searchQuery,
+                                 groupBySpace: settings.showWindowsFromAllDesktops,
+                                 totalWindowCount: switchingWindowCount, language: settings.language)
         }
     }
 
@@ -185,7 +186,12 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func availableWindows(currentAppOnly: Bool, pid: pid_t? = nil) -> [WindowInfo] {
-        let windows = windowService.windows.filter { settings.showWindowsFromAllDesktops || $0.isOnCurrentSpace }
+        var windows = windowService.windows.filter { settings.showWindowsFromAllDesktops || $0.isOnCurrentSpace }
+        if settings.showWindowsFromCurrentDisplayOnly, NSScreen.screens.count > 1 {
+            let display = switchingDisplayID ?? Self.displayID(for: activeScreen())
+            windows = WindowSwitcher.windows(windows, onDisplay: Self.displayUUID(display),
+                                             knownDisplays: Set(NSScreen.screens.map { Self.displayUUID(Self.displayID(for: $0)) }))
+        }
         guard currentAppOnly else { return windows }
         let processID = pid ?? NSWorkspace.shared.frontmostApplication?.processIdentifier
         return windows.filter { $0.processID == processID }
@@ -196,9 +202,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         switch action {
         case .toggleSidebar:
             finishSwitcher(activating: nil)
-            guard let screen = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) })
-                    ?? NSScreen.main,
-                  let panel = sidebars[Self.displayID(for: screen)] else { return }
+            guard let panel = sidebars[Self.displayID(for: activeScreen())] else { return }
             let expanded = !panel.isShortcutExpanded
             dismissSidebar()
             panel.setShortcutExpanded(expanded)
@@ -209,19 +213,18 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
             searchQuery = ""
             selectionBeforeSearch = nil
             self.currentAppOnly = currentAppOnly
+            switchingDisplayID = Self.displayID(for: activeScreen())
             currentAppPID = currentAppOnly ? NSWorkspace.shared.frontmostApplication?.processIdentifier : nil
             switchingResults = WindowSwitcher.filter(availableWindows(currentAppOnly: currentAppOnly, pid: currentAppPID),
                                                      query: "", allSpaces: settings.showWindowsFromAllDesktops)
             switchingWindowCount = switchingResults.count
-            guard !switchingResults.isEmpty else { return }
+            guard !switchingResults.isEmpty else { finishSwitcher(activating: nil); return }
             let firstIsFocused = switchingResults.first?.window.id == windowService.focusedWindowID
             selectedIndex = reverse ? switchingResults.count - 1
                 : firstIsFocused ? min(1, switchingResults.count - 1) : 0
-            switchers.values.forEach {
-                $0.show(results: switchingResults, selectedIndex: selectedIndex,
-                        groupBySpace: settings.showWindowsFromAllDesktops,
-                        totalWindowCount: switchingWindowCount, language: settings.language)
-            }
+            activeSwitcher?.show(results: switchingResults, selectedIndex: selectedIndex,
+                                 groupBySpace: settings.showWindowsFromAllDesktops,
+                                 totalWindowCount: switchingWindowCount, language: settings.language)
         case let .step(amount):
             guard !switchingResults.isEmpty else { return }
             selectedIndex = (selectedIndex + amount % switchingResults.count + switchingResults.count)
@@ -279,11 +282,17 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func updateSwitchers(resetHover: Bool = false) {
-        switchers.values.forEach {
-            $0.update(results: switchingResults, selectedIndex: selectedIndex, resetHover: resetHover,
-                      groupBySpace: settings.showWindowsFromAllDesktops,
-                      query: searchQuery, totalWindowCount: switchingWindowCount, language: settings.language)
-        }
+        activeSwitcher?.update(results: switchingResults, selectedIndex: selectedIndex, resetHover: resetHover,
+                               groupBySpace: settings.showWindowsFromAllDesktops,
+                               query: searchQuery, totalWindowCount: switchingWindowCount, language: settings.language)
+    }
+
+    private var activeSwitcher: SwitcherPanel? {
+        switchingDisplayID.flatMap { switchers[$0] }
+    }
+
+    private func activeScreen() -> NSScreen {
+        NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) ?? NSScreen.main ?? NSScreen.screens[0]
     }
 
     private func finishSwitcher(activating id: String?) {
@@ -296,6 +305,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         selectedIndex = 0
         currentAppOnly = nil
         currentAppPID = nil
+        switchingDisplayID = nil
         if let id { windowService.activate(id) }
     }
 
@@ -367,5 +377,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private static func displayID(for screen: NSScreen) -> CGDirectDisplayID {
         (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value ?? 0
+    }
+
+    private static func displayUUID(_ display: CGDirectDisplayID) -> String {
+        CGDisplayCreateUUIDFromDisplayID(display).map {
+            CFUUIDCreateString(nil, $0.takeRetainedValue()) as String
+        } ?? ""
     }
 }

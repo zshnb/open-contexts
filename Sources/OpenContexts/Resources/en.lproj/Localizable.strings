@@ -72,3 +72,5 @@
 "Full screen %@" = "Full screen %@";
 "Current" = "Current";
 "Current desktop" = "Current desktop";
+"Only show windows on the current display" = "Only show windows on the current display";
+"With multiple displays, list only windows on the display under the pointer." = "With multiple displays, list only windows on the display under the pointer.";

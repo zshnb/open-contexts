@@ -503,7 +503,8 @@ final class WindowService: ObservableObject {
         defer { restorationTask?.cancel(); restorationWindow?.orderOut(nil); service.stop() }
         if simulateRestoration {
             guard let space = target.info.space, space.isCurrent else { return false }
-            target.info.space = WindowSpace(id: space.id, index: space.index, isCurrent: false)
+            target.info.space = WindowSpace(id: space.id, index: space.index, isCurrent: false,
+                                             displayID: space.displayID)
             result = ScanResult(windows: [target], focusedID: nil, fullscreenScreenIDs: [],
                                 activeAppIDs: [appID], badgeReads: nil)
             let window = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 240, height: 120),

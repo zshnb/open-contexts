@@ -43,4 +43,20 @@ final class WindowSpaceTests: XCTestCase {
         let windows = [window("fallback", app: "Editor", space: nil)]
         XCTAssertEqual(WindowSwitcher.filter(windows, query: "", allSpaces: false).map(\.window.id), ["fallback"])
     }
+
+    func testCurrentDisplayKeepsItsDesktopsAndWindowsOnUnknownDisplays() {
+        let main = WindowSpace(id: 1, index: 1, isCurrent: true, displayID: "MAIN")
+        let mainOther = WindowSpace(id: 2, index: 2, isCurrent: false, displayID: "MAIN")
+        let side = WindowSpace(id: 3, index: 3, isCurrent: true, displayID: "SIDE")
+        let shared = WindowSpace(id: 4, index: 4, isCurrent: true, displayID: "Main")
+        let windows = [window("main", app: "Editor", space: main),
+                       window("main-other", app: "Editor", space: mainOther),
+                       window("side", app: "Chat", space: side),
+                       window("shared", app: "Mail", space: shared),
+                       window("unknown", app: "Notes", space: nil)]
+        XCTAssertEqual(WindowSwitcher.windows(windows, onDisplay: "MAIN", knownDisplays: ["MAIN", "SIDE"]).map(\.id),
+                       ["main", "main-other", "shared", "unknown"])
+        XCTAssertEqual(WindowSwitcher.windows(windows, onDisplay: "SIDE", knownDisplays: ["MAIN", "SIDE"]).map(\.id),
+                       ["side", "shared", "unknown"])
+    }
 }

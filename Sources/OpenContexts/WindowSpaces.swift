@@ -59,10 +59,12 @@ enum WindowSpaces {
         var membership: [CGWindowID: [WindowSpace]] = [:]
         for display in displays {
             let current = (display["Current Space"] as? [String: Any])?["id64"] as? NSNumber
+            let displayID = display["Display Identifier"] as? String
             for raw in display["Spaces"] as? [[String: Any]] ?? [] {
                 guard let id = raw["id64"] as? NSNumber else { continue }
                 let space = WindowSpace(id: id.uint64Value, index: spaces.count + 1,
-                                        isCurrent: id == current, isFullscreen: (raw["type"] as? Int) == 4)
+                                        isCurrent: id == current, isFullscreen: (raw["type"] as? Int) == 4,
+                                        displayID: displayID)
                 spaces.append(space)
                 var setTags: UInt64 = 0, clearTags: UInt64 = 0
                 let ids = api.windows(api.connection(), 0, [id] as CFArray, 7, &setTags, &clearTags)?

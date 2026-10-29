@@ -42,6 +42,7 @@ The window switcher displays windows in most recently used order. You can contin
 | Screen edge sidebar | Supports the left, right, or bottom edge; always visible, shown on hover, or off; left and right sidebars can align to the top, center, or bottom; optionally shows icons alone or icons with titles |
 | Keyboard switcher | Defaults to `⌘Tab` for all windows and `Command + backtick` for the current app; both shortcuts are customizable in Settings; supports Shift for reverse switching, arrow keys, `Esc`, and releasing a shortcut modifier to confirm |
 | All desktops | Enable Settings → General → Show windows from all desktops to group the switcher by desktop. Current desktops appear first in recent order; other desktops follow in desktop order, with windows sorted by app and title |
+| Multiple displays | The switcher appears on the display under the pointer. Enable Settings → General → Only show windows on the current display to list only that display's windows |
 | Sidebar shortcut | Press `⌃⌘B` to keep the sidebar open on the screen under the pointer, even when set to Off; move the pointer into the sidebar and away, press again, or press `Esc` to return to its visibility setting. Customize or disable it in Settings → Shortcuts |
 | Window search | Search by app name or window title: hold the switcher modifier, type, then release to switch; matches are highlighted in yellow |
 | Active window highlight | Keeps the current window highlighted in the app bar with the same blue background and white text as the window switcher |

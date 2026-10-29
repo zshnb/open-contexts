@@ -72,3 +72,5 @@
 "Full screen %@" = "全屏 %@";
 "Current" = "当前";
 "Current desktop" = "当前桌面";
+"Only show windows on the current display" = "仅显示当前显示器的窗口";
+"With multiple displays, list only windows on the display under the pointer." = "连接多个显示器时，只列出鼠标指针所在显示器上的窗口。";
