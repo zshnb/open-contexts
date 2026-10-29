@@ -126,6 +126,8 @@ final class ShortcutController: ObservableObject {
     var onAction: ((SwitcherAction) -> Void)?
     var canBegin: ((Bool) -> Bool)?
     var canDismissSidebar: (() -> Bool)?
+    /// Keeps the switcher open after the modifiers are released; Return commits instead.
+    var keepsSwitcherOpen = false
     private(set) var allWindowsShortcut = KeyboardShortcut.allWindows
     private(set) var currentAppShortcut = KeyboardShortcut.currentApp
     private(set) var sidebarShortcut: KeyboardShortcut? = .sidebar
@@ -287,7 +289,7 @@ final class ShortcutController: ObservableObject {
     }
 
     private func modifierAction(flags: CGEventFlags) -> SwitcherAction? {
-        guard state.isSwitching, !flags.contains(state.heldModifiers) else { return nil }
+        guard state.isSwitching, !keepsSwitcherOpen, !flags.contains(state.heldModifiers) else { return nil }
         return state.finish(commit: true)
     }
 
@@ -318,6 +320,8 @@ final class ShortcutController: ObservableObject {
                 return state.step(1)
             case 51:
                 return state.deleteFromSearch()
+            case 36, 76:
+                return state.finish(commit: true)
             case 53:
                 return state.finish(commit: false)
             default:
@@ -515,6 +519,23 @@ final class ShortcutController: ObservableObject {
               searchController.keyAction(keyCode: 0, flags: .maskCommand, characters: "a") == .search("a"),
               searchController.keyAction(keyCode: 53, flags: .maskCommand) == .cancel,
               searchController.state.searchQuery.isEmpty else { return false }
+        let stickyController = ShortcutController()
+        stickyController.keepsSwitcherOpen = true
+        guard stickyController.keyAction(keyCode: 48, flags: .maskCommand)
+                == .begin(currentAppOnly: false, reverse: false),
+              stickyController.modifierAction(flags: []) == nil,
+              stickyController.keyAction(keyCode: 0, flags: [], characters: "a") == .search("a"),
+              stickyController.keyAction(keyCode: 48, flags: []) == .step(1),
+              stickyController.keyAction(keyCode: 125, flags: []) == .step(1),
+              stickyController.keyAction(keyCode: 36, flags: []) == .commit,
+              stickyController.state.searchQuery.isEmpty,
+              stickyController.keyAction(keyCode: 0, flags: [], characters: "a") == nil,
+              stickyController.keyAction(keyCode: 48, flags: .maskCommand)
+                == .begin(currentAppOnly: false, reverse: false),
+              stickyController.keyAction(keyCode: 53, flags: []) == .cancel,
+              searchController.keyAction(keyCode: 48, flags: .maskCommand)
+                == .begin(currentAppOnly: false, reverse: false),
+              searchController.keyAction(keyCode: 36, flags: .maskCommand) == .commit else { return false }
         searchController.configure(allWindows: custom, currentApp: sameKey)
         guard searchController.keyAction(keyCode: 16, flags: custom.modifiers)
                 == .begin(currentAppOnly: false, reverse: false),

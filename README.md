@@ -40,7 +40,7 @@ The window switcher displays windows in most recently used order. You can contin
 | --- | --- |
 | Window switching | Displays and switches individual windows rather than apps, and tracks most recently used (MRU) order |
 | Screen edge sidebar | Supports the left, right, or bottom edge; always visible, shown on hover, or off; left and right sidebars can align to the top, center, or bottom; optionally shows icons alone or icons with titles |
-| Keyboard switcher | Defaults to `⌘Tab` for all windows and `Command + backtick` for the current app; both shortcuts are customizable in Settings; supports Shift for reverse switching, arrow keys, `Esc`, and releasing a shortcut modifier to confirm |
+| Keyboard switcher | Defaults to `⌘Tab` for all windows and `Command + backtick` for the current app; both shortcuts are customizable in Settings; supports Shift for reverse switching, arrow keys, `Esc`, `Return`, and releasing a shortcut modifier to confirm; optionally keep it open after releasing the modifier |
 | All desktops | Enable Settings → General → Show windows from all desktops to group the switcher by desktop. Current desktops appear first in recent order; other desktops follow in desktop order, with windows sorted by app and title |
 | Sidebar shortcut | Press `⌃⌘B` to keep the sidebar open on the screen under the pointer, even when set to Off; move the pointer into the sidebar and away, press again, or press `Esc` to return to its visibility setting. Customize or disable it in Settings → Shortcuts |
 | Window search | Search by app name or window title: hold the switcher modifier, type, then release to switch; matches are highlighted in yellow |
@@ -93,7 +93,8 @@ xattr -dr com.apple.quarantine "/Applications/OpenContexts.app"
 - `⌘Tab`: Open the switcher for all windows. Press `Tab` again or `↓` to move forward; press `⇧Tab` or `↑` to move backward.
 - `Command + backtick`: Open the switcher for windows of the current app.
 - Search: Open the switcher, hold its modifier, type an app name or window title, then release to switch. Matching ignores case and uses contiguous text. Combine terms with spaces, such as `chr context`. `Backspace` deletes characters; clearing the query restores the list. With no matches, releasing only closes the switcher. Input supports English letters, numbers and symbols (printable ASCII); Chinese input and pinyin are not supported.
-- `Esc`: Cancel switching. Release a modifier key of the shortcut to activate the selected window (`⌘` by default).
+- `Esc`: Cancel switching. Release a modifier key of the shortcut, or press `Return`, to activate the selected window (`⌘` by default).
+- Keep open: Turn on Settings → General → "Keep switcher open after releasing modifiers" to type without holding the modifier. Press `Return` to switch; press `Esc` or click outside to close.
 - Custom shortcuts: Click either shortcut in Settings, then press a combination using Command, Option, or Control and a key. Shift is reserved for reverse switching; Esc cancels recording. Changes take effect immediately and persist after restarting. “Restore defaults” restores `⌘Tab` and `Command + backtick`.
 - `＋` in the sidebar: Create a group.
 - Right-click a group title: Rename or delete the group.

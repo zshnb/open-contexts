@@ -68,6 +68,8 @@
 "Window switcher" = "窗口切换器";
 "Show windows from all desktops" = "显示所有桌面的窗口";
 "The current desktop comes first in recent order. Other desktops stay grouped in a stable order." = "当前桌面置顶并按最近使用排序，其他桌面分组采用稳定顺序。";
+"Keep switcher open after releasing modifiers" = "松开修饰键后保持切换器打开";
+"Type to search without holding the modifier. Press Return to switch; press Esc or click outside to close." = "无需按住修饰键即可输入搜索。按 Return 切换，按 Esc 或点击外部关闭。";
 "Desktop %@" = "桌面 %@";
 "Full screen %@" = "全屏 %@";
 "Current" = "当前";

@@ -68,6 +68,8 @@
 "Window switcher" = "Window switcher";
 "Show windows from all desktops" = "Show windows from all desktops";
 "The current desktop comes first in recent order. Other desktops stay grouped in a stable order." = "The current desktop comes first in recent order. Other desktops stay grouped in a stable order.";
+"Keep switcher open after releasing modifiers" = "Keep switcher open after releasing modifiers";
+"Type to search without holding the modifier. Press Return to switch; press Esc or click outside to close." = "Type to search without holding the modifier. Press Return to switch; press Esc or click outside to close.";
 "Desktop %@" = "Desktop %@";
 "Full screen %@" = "Full screen %@";
 "Current" = "Current";

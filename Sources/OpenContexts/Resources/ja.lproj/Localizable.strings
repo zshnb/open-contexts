@@ -68,6 +68,8 @@
 "Window switcher" = "ウインドウ切替";
 "Show windows from all desktops" = "すべてのデスクトップのウインドウを表示";
 "The current desktop comes first in recent order. Other desktops stay grouped in a stable order." = "現在のデスクトップを最近使った順で先頭に表示します。他のデスクトップは固定の順序でグループ化します。";
+"Keep switcher open after releasing modifiers" = "修飾キーを離しても切り替え画面を開いたままにする";
+"Type to search without holding the modifier. Press Return to switch; press Esc or click outside to close." = "修飾キーを押し続けなくても入力して検索できます。Return で切り替え、Esc または外側をクリックで閉じます。";
 "Desktop %@" = "デスクトップ %@";
 "Full screen %@" = "フルスクリーン %@";
 "Current" = "現在";

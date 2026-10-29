@@ -68,6 +68,8 @@
 "Window switcher" = "Selector de ventanas";
 "Show windows from all desktops" = "Mostrar ventanas de todos los escritorios";
 "The current desktop comes first in recent order. Other desktops stay grouped in a stable order." = "El escritorio actual aparece primero, por uso reciente. Los demás se agrupan en un orden estable.";
+"Keep switcher open after releasing modifiers" = "Mantener el selector abierto al soltar los modificadores";
+"Type to search without holding the modifier. Press Return to switch; press Esc or click outside to close." = "Escribe para buscar sin mantener pulsado el modificador. Pulsa Retorno para cambiar; pulsa Esc o haz clic fuera para cerrar.";
 "Desktop %@" = "Escritorio %@";
 "Full screen %@" = "Pantalla completa %@";
 "Current" = "Actual";

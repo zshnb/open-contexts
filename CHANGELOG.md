@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- Optionally keep the switcher open after releasing the modifiers, so you can type to search freely; press `Return` to switch, or `Esc` or click outside to close. `Return` also switches immediately while holding the modifier.
+
+### 新增
+
+- 可在设置中开启“松开修饰键后保持切换器打开”，无需按住修饰键即可自由输入搜索；按 `Return` 切换，按 `Esc` 或点击外部关闭。按住修饰键时也可按 `Return` 立即切换。
+
 ## [0.5.0] - 2026-10-25
 
 ### Added
