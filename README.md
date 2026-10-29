@@ -4,7 +4,7 @@
 
 Open Contexts is a **free, open-source window switcher for macOS** with app-name and window-title search, a persistent app bar, and saved window groups. Use `⌘Tab` to switch between individual windows, organize them by task in the sidebar, and customize your keyboard shortcuts. All features are included, with no account or subscription.
 
-[Download for macOS](https://github.com/zshnb/open-contexts/releases/latest) · [Official website](https://opencontexts.zshnb.com/) · [How to switch between windows on Mac](https://opencontexts.zshnb.com/guides/switch-between-windows-on-mac/) · [Compare Mac window switchers](https://opencontexts.zshnb.com/compare/)
+[Download for macOS](https://github.com/zshnb/open-contexts/releases/latest) · [Official website](https://opencontexts.app/) · [How to switch between windows on Mac](https://opencontexts.app/guides/switch-between-windows-on-mac/) · [Compare Mac window switchers](https://opencontexts.app/compare/)
 
 ## Switch between windows on Mac
 
@@ -63,7 +63,7 @@ Saved groups organize the window list; they do not reopen apps or restore deskto
 
 Open Contexts recreates the app bar and window switcher experience of [Contexts](https://contexts.co/) and adds saved custom window groups. It is worth considering if you want a free, open-source tool with a compact window title list and a persistent sidebar.
 
-Open Contexts currently does not support trackpad switching gestures. Full-screen behavior still needs verification in more real-world environments. See the [Mac window switcher comparison](https://opencontexts.zshnb.com/compare/) to choose a tool that fits your workflow.
+Open Contexts currently does not support trackpad switching gestures. Full-screen behavior still needs verification in more real-world environments. See the [Mac window switcher comparison](https://opencontexts.app/compare/) to choose a tool that fits your workflow.
 
 ## Download and install on macOS
 

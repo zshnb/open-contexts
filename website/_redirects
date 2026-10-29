@@ -1,3 +1,6 @@
+# Move the previous domain permanently while preserving paths and query strings.
+https://opencontexts.zshnb.com/* https://opencontexts.app/:splat 301
+
 # Consolidate redundant /alternatives/* and /reviews/* pages into canonical /compare/* pages
 /alternatives/alttab /compare/open-contexts-vs-alttab/ 301
 /alternatives/alttab/ /compare/open-contexts-vs-alttab/ 301

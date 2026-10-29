@@ -4,7 +4,7 @@
 
 Open Contexts 是**免费开源的 macOS 窗口切换器**，支持按应用名或窗口标题搜索，提供常驻应用栏和可保存的窗口分组。用 `⌘Tab` 在单个窗口之间切换，在侧边栏按任务整理窗口，并自定义键盘快捷键。全部功能免费，无需账户或订阅。
 
-[下载 macOS 版本](https://github.com/zshnb/open-contexts/releases/latest) · [官方网站](https://opencontexts.zshnb.com/zh/) · [如何在 Mac 上切换窗口](https://opencontexts.zshnb.com/zh/guides/switch-between-windows-on-mac/) · [Mac 窗口切换器对比](https://opencontexts.zshnb.com/zh/compare/)
+[下载 macOS 版本](https://github.com/zshnb/open-contexts/releases/latest) · [官方网站](https://opencontexts.app/zh/) · [如何在 Mac 上切换窗口](https://opencontexts.app/zh/guides/switch-between-windows-on-mac/) · [Mac 窗口切换器对比](https://opencontexts.app/zh/compare/)
 
 ## 在 Mac 上切换与整理窗口
 
@@ -63,7 +63,7 @@ Open Contexts 是**免费开源的 macOS 窗口切换器**，支持按应用名�
 
 Open Contexts 复刻了 [Contexts](https://contexts.co/) 的应用栏和窗口切换体验，并加入可保存的自定义窗口分组。如果你需要免费开源的工具、紧凑的窗口标题列表和常驻侧边栏，可以考虑使用它。
 
-Open Contexts 目前不支持触控板切换手势。全屏行为仍需在更多真实环境中验证。可阅读 [Mac 窗口切换器对比](https://opencontexts.zshnb.com/zh/compare/)，按自己的工作方式选择工具。
+Open Contexts 目前不支持触控板切换手势。全屏行为仍需在更多真实环境中验证。可阅读 [Mac 窗口切换器对比](https://opencontexts.app/zh/compare/)，按自己的工作方式选择工具。
 
 ## 在 macOS 上下载与安装
 
