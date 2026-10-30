@@ -43,4 +43,21 @@ final class WindowSpaceTests: XCTestCase {
         let windows = [window("fallback", app: "Editor", space: nil)]
         XCTAssertEqual(WindowSwitcher.filter(windows, query: "", allSpaces: false).map(\.window.id), ["fallback"])
     }
+
+    func testVisibleSpacesKeepOrderAndOnlyDropOtherDesktops() {
+        let spaces: [WindowSpace?] = [nil, WindowSpace(id: 1, index: 1, isCurrent: true),
+                                      WindowSpace(id: 2, index: 2, isCurrent: false),
+                                      WindowSpace(id: 3, index: 3, isCurrent: false, isFullscreen: true)]
+        var generator = SystemRandomNumberGenerator()
+        for _ in 0..<200 {
+            let windows = (0..<Int.random(in: 0...12, using: &generator)).map {
+                window("w\($0)", app: "App", space: spaces.randomElement(using: &generator)!)
+            }
+            XCTAssertEqual(windows.onVisibleSpaces(allSpaces: true), windows)
+            let current = windows.onVisibleSpaces(allSpaces: false)
+            XCTAssertEqual(current, windows.filter { $0.space?.isCurrent != false })
+            XCTAssertTrue(current.allSatisfy(\.isOnCurrentSpace))
+            XCTAssertEqual(windows.filter { !$0.isOnCurrentSpace }.count + current.count, windows.count)
+        }
+    }
 }

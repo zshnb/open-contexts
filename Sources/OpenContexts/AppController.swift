@@ -30,13 +30,17 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var currentAppPID: pid_t?
     private var didRestoreGroups = false
 
+    private var includesWindowsFromAllDesktops: Bool {
+        settings.showWindowsFromAllDesktops || settings.showSidebarWindowsFromAllDesktops
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         configureMenuBar()
         configureShortcuts()
         observeState()
         rebuildPanels()
-        windowService.setIncludeAllSpaces(settings.showWindowsFromAllDesktops)
+        windowService.setIncludeAllSpaces(includesWindowsFromAllDesktops)
         windowService.start()
         if !windowService.hasAccessibility { showSettings() }
     }
@@ -105,7 +109,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     self.shortcuts.configure(allWindows: self.settings.allWindowsShortcut,
                                              currentApp: self.settings.currentAppShortcut,
                                              sidebar: self.settings.sidebarShortcut)
-                    self.windowService.setIncludeAllSpaces(self.settings.showWindowsFromAllDesktops)
+                    self.windowService.setIncludeAllSpaces(self.includesWindowsFromAllDesktops)
                     if self.settings.sidebarShortcut == nil { self.dismissSidebar() }
                     self.settingsWindow?.title = L10n.text("OpenContexts Settings", language: self.settings.language)
                     if self.currentAppOnly != nil { self.refreshVisibleSwitcher() }
@@ -162,7 +166,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func updateSidebars() {
         let windowsByGroup = Dictionary(uniqueKeysWithValues: groupStore.groups.map {
-            ($0.id, groupStore.windows(in: $0.id).filter(\.isOnCurrentSpace))
+            ($0.id, groupStore.windows(in: $0.id).onVisibleSpaces(allSpaces: settings.showSidebarWindowsFromAllDesktops))
         })
         for (id, panel) in sidebars {
             panel.update(

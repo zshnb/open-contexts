@@ -72,12 +72,14 @@ final class AppSettings: ObservableObject {
     @Published private(set) var currentAppShortcut: KeyboardShortcut
     @Published private(set) var sidebarShortcut: KeyboardShortcut?
     @Published private(set) var showWindowsFromAllDesktops: Bool
+    @Published private(set) var showSidebarWindowsFromAllDesktops: Bool
 
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         showWindowsFromAllDesktops = defaults.object(forKey: "showWindowsFromAllDesktops") as? Bool ?? false
+        showSidebarWindowsFromAllDesktops = defaults.object(forKey: "showSidebarWindowsFromAllDesktops") as? Bool ?? false
         func loadShortcut(_ key: String, fallback: KeyboardShortcut) -> KeyboardShortcut {
             guard let data = defaults.data(forKey: key),
                   let shortcut = try? JSONDecoder().decode(KeyboardShortcut.self, from: data),
@@ -163,6 +165,11 @@ final class AppSettings: ObservableObject {
         defaults.set(enabled, forKey: "showWindowsFromAllDesktops")
     }
 
+    func setShowSidebarWindowsFromAllDesktops(_ enabled: Bool) {
+        showSidebarWindowsFromAllDesktops = enabled
+        defaults.set(enabled, forKey: "showSidebarWindowsFromAllDesktops")
+    }
+
     @discardableResult
     func setShortcut(_ shortcut: KeyboardShortcut, target: ShortcutTarget) -> Bool {
         let others = ShortcutTarget.allCases.filter { $0 != target }.compactMap { self.shortcut(for: $0) }
@@ -212,6 +219,13 @@ final class AppSettings: ObservableObject {
         guard AppSettings(defaults: defaults).showWindowsFromAllDesktops else { return false }
         initial.setShowWindowsFromAllDesktops(false)
         guard !AppSettings(defaults: defaults).showWindowsFromAllDesktops else { return false }
+        guard !initial.showSidebarWindowsFromAllDesktops else { return false }
+        initial.setShowSidebarWindowsFromAllDesktops(true)
+        let sidebarAllDesktops = AppSettings(defaults: defaults)
+        guard sidebarAllDesktops.showSidebarWindowsFromAllDesktops,
+              !sidebarAllDesktops.showWindowsFromAllDesktops else { return false }
+        initial.setShowSidebarWindowsFromAllDesktops(false)
+        guard !AppSettings(defaults: defaults).showSidebarWindowsFromAllDesktops else { return false }
         guard initial.sidebarMode == .always, initial.sidebarVerticalAlignment == .center,
               initial.showUngrouped, initial.showCreateGroup,
               initial.sidebarWidth == Self.defaultSidebarWidth else { return false }
@@ -504,6 +518,12 @@ struct SettingsView: View {
                     }
                     .disabled(settings.sidebarItemDisplayMode == .icon)
                 }
+            }
+            settingsRow("Desktops") {
+                Toggle(L10n.text("Show windows from all desktops", language: language), isOn: Binding(
+                    get: { settings.showSidebarWindowsFromAllDesktops }, set: settings.setShowSidebarWindowsFromAllDesktops
+                ))
+                .toggleStyle(.checkbox)
             }
             settingsRow("Groups") {
                 VStack(alignment: .leading, spacing: 12) {
