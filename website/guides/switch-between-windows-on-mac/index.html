@@ -39,7 +39,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap">
-<link rel="stylesheet" href="../../assets/site.css?v=sidebar-settings-041">
+<link rel="stylesheet" href="../../assets/site.css?v=features-051-copy">
 <script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <script type="application/ld+json">
 {
@@ -186,25 +186,30 @@
 <h2 id="open-contexts">Open Contexts: every window, one ⌘Tab.</h2>
 <p>Open Contexts is a free, open-source window switcher and window manager for macOS. By default, it takes over ⌘Tab and changes what the list contains. Instead of one icon per app, you get every individual window, each with its app icon and title, so two Chrome windows are two choices. Its default <kbd>⌘`</kbd> shortcut opens a titled list of the current app's windows. Both shortcuts can be customized in settings. The app bar and window switcher both support multiple displays.</p>
 <p>It is a native Swift app. macOS 13 Ventura or later, one DMG, and only the Accessibility permission. No account, no cloud, no subscription - window groups live in a single <code>groups.json</code> file in Application Support on your Mac.</p>
-<h3>Most-recently-used order, first.</h3>
-<p>The list is sorted by most-recently-used order, Windows-style. The window you were just in sits at the top; the second row is where a quick ⌘Tab tap takes you. That one habit - tap and release to bounce back to the previous window - is why most people install it. The <a href="https://github.com/zshnb/open-contexts">project on GitHub</a> is Apache 2.0 licensed, so you can read it, build it, or fork it.</p>
+<h3>Most-recently-used order on the current desktop</h3>
+<p>The current desktop’s windows are sorted by most-recently-used order, Windows-style. The window you were just in sits at the top; the second row is where a quick ⌘Tab tap takes you. That one habit - tap and release to bounce back to the previous window - is why most people install it. The <a href="https://github.com/zshnb/open-contexts">project on GitHub</a> is Apache 2.0 licensed, so you can read it, build it, or fork it.</p>
 <p>Prefer choosing windows with the mouse? Explore a <a href="/guides/mac-dock-alternative/">Mac window sidebar or bottom Dock alternative</a> that keeps individual window titles within reach.</p>
+<h3 id="all-desktops">Switch between windows across desktops</h3>
+<p>In Settings → General, enable Show windows from all desktops. The switcher groups windows by desktop, with the current desktop first. Recent-use order applies only to the current desktop. Other desktops follow in desktop order, with windows sorted by app name and title. Search keeps these desktop groups and hides groups with no results. Choosing a window on another desktop switches to that desktop and brings the window forward; it does not move the window to your current desktop.</p>
 <h2 id="window-search">How to search Mac windows by app name and title</h2>
 <p>Open Contexts searches Mac windows by app name or title. Hold the switcher modifier, type, then release to switch.</p>
-<ol><li>Open the all-window switcher with <kbd>⌘</kbd><kbd>Tab</kbd>, or use Command-backtick for the current app. Keep holding the shortcut modifier.</li><li>Type part of an app name or window title. Matching is case-insensitive: <code>CHROME</code> can match Google Chrome. Each term must match contiguous text; <code>gchr</code> does not fuzzy-match Google Chrome.</li><li>Combine terms with spaces: <code>chr context</code> can match Google Chrome as the app and context in the window title. Every term must match either the app name or title.</li><li>Matching characters have a yellow background. Use Tab, Shift-Tab or the arrow keys to choose a result. <kbd>Backspace</kbd> edits the query; clearing it restores the full list.</li><li>Release the modifier to activate the selected window. If there are no matches, the switcher closes without changing windows. <kbd>Esc</kbd> cancels.</li></ol>
-<p>Input accepts printable ASCII only; Chinese input and pinyin are not supported. Search covers app names and window titles, not page contents or every browser tab. The sidebar has no separate search field.</p>
-<p>In the <a href="/#demo">online demo</a>, click ⌘ Tab and type <code>chr context</code>; Return confirms and Esc cancels. Browsers cannot receive macOS ⌘Tab, so Option-Tab also demonstrates holding a modifier, typing and releasing to switch.</p>
+<ol><li>Open the all-window switcher with <kbd>⌘</kbd><kbd>Tab</kbd>, or use Command-backtick for the current app. Keep holding the shortcut modifier.</li><li>Type part of an app name or window title. Matching is case-insensitive: <code>CHROME</code> can match Google Chrome. Each term matches contiguous text in the app name or window title.</li><li>Combine terms with spaces: <code>chr context</code> can match Google Chrome as the app and context in the window title. Every term must match either the app name or title.</li><li>Matching characters have a yellow background. Use Tab, Shift-Tab or the arrow keys to choose a result. <kbd>Backspace</kbd> edits the query; clearing it restores the full list.</li><li>Release the modifier to activate the selected window. If there are no matches, the switcher closes without changing windows. <kbd>Esc</kbd> cancels.</li></ol>
+<p>Chinese app names and window titles also match toneless pinyin: <code>weixin</code> or <code>weix</code> finds 微信, and <code>fabu</code> can match 发布 in a title. A match can end partway through the last syllable; the corresponding Chinese characters are highlighted. Literal text matches rank above equivalent pinyin matches. Search covers app names and window titles in the keyboard switcher.</p>
+<p>In the <a href="/#demo">online demo</a>, click ⌘ Tab and type <code>chr context</code>, <code>weix</code> or <code>fabu</code>; Return confirms and Esc cancels. Browsers cannot receive macOS ⌘Tab, so Option-Tab also demonstrates holding a modifier, typing and releasing to switch.</p>
+<p>To try cross-desktop switching in the demo, open Settings → General and enable Show windows from all desktops. Select a window under Desktop 2 or Desktop 3, then reopen the switcher: the newly current desktop appears first.</p>
 <h3>Saved window groups.</h3>
-<p>A persistent app bar sits on the left, right, or bottom edge of every display and lists each window by title next to its Dock badge. Click a row to bring that window forward, even when it is minimized or hidden. From there you can sort windows into groups - code, chat, research - and they return to the same place after a restart. Saved groups are the feature the paid app Contexts never had.</p>
+<p>A persistent app bar sits on the left, right, or bottom edge of every display and lists each window by title next to its Dock badge. Click a row to bring that window forward, even when it is minimized or hidden. From there you can sort windows into groups - code, chat, research - and they return to the same place after a restart. Saved groups keep related windows together across apps.</p>
+<h3>Open the sidebar from the keyboard</h3>
+<p>The sidebar highlights the active window in blue with white text. Press <kbd>⌃⌘B</kbd> to temporarily open it on the display under the pointer, even when its visibility is Off. Move the pointer into the sidebar and away, press the shortcut again or press Esc to dismiss the temporary view. Change or disable this shortcut in Settings → Shortcuts. The online demo also has a ⌃⌘B button.</p>
 <h3>Set it up in two minutes.</h3>
 <ol>
 <li>Download the DMG from the GitHub releases page.</li>
 <li>Drag Open Contexts to Applications and open it.</li>
 <li>Grant Accessibility access when macOS asks.</li>
-<li>Press ⌘Tab. Every window is there, in the order you last used it.</li>
+<li>Press ⌘Tab. Current-desktop windows appear in the order you last used them.</li>
 </ol>
-<h3>What Open Contexts does not do.</h3>
-<p>Be clear about the trade. Open Contexts offers app-name and title search, but no thumbnail grid or trackpad gestures, and it shows a compact titled list rather than previews of your windows. It needs Accessibility access; without it, or while the app is closed, ⌘Tab is left exactly as macOS shipped it. If you rely on visual thumbnails, AltTab remains the better-known alternative. If you want a fast, titled, MRU list with saved groups, this is the shorter path.</p>
+<h3>A compact window list for keyboard switching</h3>
+<p>Open Contexts combines app-name and title search with a compact window title list and saved groups. It needs Accessibility access; without it, or while the app is closed, ⌘Tab is left exactly as macOS shipped it. Use the keyboard to choose a window by title, return to a recently used window or find a saved task group.</p>
 <h2 id="faq">FAQ</h2>
 <p><strong>How do I switch between windows on Mac with the keyboard alone?</strong> Use ⌘Tab to change apps. For windows within the current app, check your assigned "Move focus to next window" shortcut; on a US layout it is commonly <kbd>⌘`</kbd>. Open Contexts uses ⌘Tab by default for a titled list of individual windows across apps.</p>
 <p><strong>Why does <kbd>⌘`</kbd> sometimes do nothing?</strong> The key can differ by keyboard layout, the shortcut may have been reassigned, or the app may not support the expected window-switching behavior. Check "Move focus to next window" under System Settings → Keyboard → Keyboard Shortcuts. Open Contexts also lets you choose its own same-app window shortcut.</p>
@@ -242,6 +247,6 @@
     <p class="footer-legal">© 2026 Open Contexts contributors. Open Contexts is an independent project and is not affiliated with Contexts or AltTab. Product names belong to their respective owners.</p>
   </div>
 </footer>
-<script src="../../assets/site.js?v=sidebar-settings-041" defer></script>
+<script src="../../assets/site.js?v=features-051-copy" defer></script>
 </body>
 </html>

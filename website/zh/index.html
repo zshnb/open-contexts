@@ -13,7 +13,7 @@
   gtag('config', 'G-2DX33ZMFCV');
 </script>
 <title>免费 Mac 窗口切换器与搜索 | Open Contexts</title>
-<meta name="description" content="免费开源的 Mac 窗口切换器，按应用名或窗口标题搜索，快速定位窗口。支持 ⌘Tab 切换、侧边栏、底部 Dock 和保存窗口分组。">
+<meta name="description" content="免费开源的 Mac 窗口切换器，按应用名、窗口标题或中文拼音搜索，跨桌面快速定位窗口。支持 ⌘Tab 切换、侧边栏、底部 Dock 和保存窗口分组。">
 <link rel="canonical" href="https://opencontexts.app/zh/">
 <link rel="alternate" hreflang="en" href="https://opencontexts.app/">
 <link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.app/zh/">
@@ -25,7 +25,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Open Contexts">
 <meta property="og:title" content="Open Contexts：免费的 Mac 窗口切换器">
-<meta property="og:description" content="免费开源的 Mac 窗口切换器，按应用名或窗口标题搜索，快速定位窗口。支持 ⌘Tab 切换、侧边栏、底部 Dock 和保存窗口分组。">
+<meta property="og:description" content="免费开源的 Mac 窗口切换器，按应用名、窗口标题或中文拼音搜索，跨桌面快速定位窗口。支持 ⌘Tab 切换、侧边栏、底部 Dock 和保存窗口分组。">
 <meta property="og:url" content="https://opencontexts.app/zh/">
 <meta property="og:image" content="https://opencontexts.app/assets/og.png">
 <meta property="og:locale" content="zh_CN">
@@ -35,7 +35,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap">
 <link rel="stylesheet" href="../assets/vendor/basecoat/settings.css?v=1.0.2">
-<link rel="stylesheet" href="../assets/site.css?v=basecoat-settings-1">
+<link rel="stylesheet" href="../assets/site.css?v=features-051-copy">
 <script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <script type="application/ld+json">
 {
@@ -44,10 +44,10 @@
   "name": "Open Contexts",
   "alternateName": "OpenContexts",
   "inLanguage": "zh-Hans",
-  "description": "免费开源的 Mac 窗口切换器，按应用名或窗口标题搜索，快速定位窗口。支持 ⌘Tab 切换、侧边栏、底部 Dock 和保存窗口分组。",
+  "description": "免费开源的 Mac 窗口切换器，按应用名、窗口标题或中文拼音搜索，跨桌面快速定位窗口。支持 ⌘Tab 切换、侧边栏、底部 Dock 和保存窗口分组。",
   "applicationCategory": "UtilitiesApplication",
   "operatingSystem": "macOS 13.0 or later",
-  "softwareVersion": "0.4.2",
+  "softwareVersion": "0.5.1",
   "url": "https://opencontexts.app/zh/",
   "downloadUrl": "https://github.com/zshnb/open-contexts/releases/latest",
   "image": "https://opencontexts.app/assets/og.png",
@@ -106,9 +106,10 @@
         <div class="demo-viewport"><div class="screen mac" role="application" aria-label="Open Contexts 交互演示"></div></div>
       </div>
       <div class="demo-bar">
-        <p>点击 <kbd>⌘ Tab</kbd>，可输入 ASCII 搜索（例如 <code>chr context</code>），然后用 <kbd>Tab</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>Return</kbd> <kbd>Esc</kbd> 操作。Backspace 删除查询。拖动窗口可在分组间移动。</p>
+        <p>点击 <kbd>⌘ Tab</kbd>，输入 <code>chr context</code>，或用 <code>weix</code> 搜索“微信”。用 Tab、方向键、Return 或 Esc 操作。在“设置 → 通用”开启所有桌面，体验按桌面分组切换。点击 ⌃⌘B 按钮可临时唤起已关闭的侧边栏，鼠标移入再移出即可收起。拖动窗口可在分组间移动。</p>
         <div class="actions">
           <button class="btn btn-primary btn-sm" type="button" data-act="cmdtab">⌘ Tab</button>
+          <button class="btn btn-secondary btn-sm" type="button" data-act="sidebar" aria-pressed="false">⌃⌘B 侧边栏</button>
           <button class="btn btn-secondary btn-sm" type="button" data-act="settings">设置</button>
           <button class="btn btn-secondary btn-sm" type="button" data-act="reset">重置</button>
         </div>
@@ -120,7 +121,8 @@
     <div class="container">
       <div class="section-head" data-reveal>
         <h2 class="display">每一个窗口，<br>一个 ⌘Tab。</h2>
-        <p class="lede">系统自带的 ⌘Tab 每个应用只显示一个图标。Open Contexts 显示每一个窗口，两个 Chrome 窗口就是两个选项。列表按最近使用排序，刚刚用过的窗口永远只差一次按键。Dock 栏和窗口切换器均支持多显示器。</p>
+        <p class="lede">系统自带的 ⌘Tab 每个应用只显示一个图标。Open Contexts 显示每一个窗口，两个 Chrome 窗口就是两个选项。当前桌面的窗口按最近使用排序，轻按一次 ⌘Tab 即可回到上一个窗口。Dock 栏和窗口切换器均支持多显示器。</p>
+        <p>在“设置 → 通用”开启“显示所有桌面的窗口”，即可直接选择其他桌面的窗口。切换器按桌面分组，当前桌面置顶；最近使用排序仅影响当前桌面，其他桌面按桌面顺序排列，组内按应用名和标题排序。</p>
       </div>
       <div data-reveal data-mock="switcher" data-nosnippet></div>
       <div class="shortcut-row" data-reveal>
@@ -138,7 +140,7 @@
       <div class="section-head" data-reveal>
         <h2 class="display">输入名称，找到窗口。</h2>
         <p class="lede">按 ⌘Tab 打开切换器，按住 ⌘ 输入应用名或窗口标题，松开即可切换。</p>
-        <p>匹配文字黄色高亮，支持空格组合搜索，如 <code>chr context</code>。输入支持英文字母、数字和符号，不支持中文或拼音。 <a class="text-link" href="/zh/guides/switch-between-windows-on-mac/#window-search">查看搜索指南 →</a></p>
+        <p>匹配文字黄色高亮，支持空格组合搜索，如 <code>chr context</code>。中文应用名和窗口标题支持无声调拼音搜索：输入 <code>weixin</code> 或 <code>weix</code> 即可找到“微信”。<a class="text-link" href="/zh/guides/switch-between-windows-on-mac/#window-search">查看搜索指南 →</a></p>
       </div>
       <div data-reveal data-mock="search" data-nosnippet></div>
     </div>
@@ -148,7 +150,8 @@
     <div class="container">
       <div class="section-head" data-reveal>
         <h2 class="display">Mac 窗口侧边栏，<br>也能放在底部。</h2>
-        <p class="lede">把每个打开的窗口放在左右侧边栏或底部窗口 Dock 中，按标题和应用图标直接选择。点击即可切换，用保存的分组整理工作；可以常驻显示、移到屏幕边缘时显示，或关闭应用栏并继续用键盘切换。</p>
+        <p class="lede">把每个打开的窗口放在左右侧边栏或底部窗口 Dock 中，按标题和应用图标直接选择。点击即可切换，用保存的分组整理工作；可以常驻显示、移到屏幕边缘时显示，或关闭应用栏并继续用键盘切换。当前窗口以蓝底白字高亮，方便辨认。</p>
+        <p>按 <kbd>⌃⌘B</kbd>，可在鼠标所在屏幕临时唤起侧边栏，即使侧边栏已关闭。鼠标移入再移出、再次按快捷键或按 Esc，即可恢复原来的显示设置。可在“设置 → 快捷键”修改或禁用此快捷键。</p>
       </div>
       <div class="mock-stage" data-reveal>
         <div class="mock-wall" data-mock="appbar" data-nosnippet></div>
@@ -160,7 +163,7 @@
     <div class="container split">
       <div class="split-copy" data-reveal>
         <h2 class="display">会记住的<br>窗口分组。</h2>
-        <p class="lede">Contexts 从未支持保存分组，Open Contexts 支持。把窗口按代码、聊天或资料分组，重启之后依然各归其位。</p>
+        <p class="lede">Open Contexts 会保存你的窗口分组。把窗口按代码、聊天或资料分组，重启之后依然各归其位。</p>
         <ul class="checks">
           <li>直接在应用栏中新建、重命名和删除分组</li>
           <li>拖动窗口或整个分组来调整顺序</li>
@@ -245,10 +248,10 @@
     <div class="container-prose">
       <h2 class="display center">常见问题</h2>
       <div class="faq">
-        <details><summary>如何搜索应用名或窗口标题？</summary><p>打开窗口切换器后保持按住修饰键，输入应用名或窗口标题。搜索忽略大小写，每个词匹配连续文本，空格分隔的词可组合匹配应用名和标题。Backspace 删除，删空恢复列表；松开修饰键切换，无匹配时只关闭。仅接受可打印 ASCII，不支持中文输入、拼音、模糊搜索或单个浏览器标签页搜索。</p></details>
+        <details><summary>如何搜索应用名或窗口标题？</summary><p>打开窗口切换器后保持按住修饰键，输入应用名或窗口标题。搜索忽略大小写，每个词匹配连续文本，空格分隔的词可组合匹配应用名和标题。Backspace 删除，删空恢复列表；松开修饰键切换，无匹配时只关闭。中文应用名与标题可用无声调拼音匹配，如 <code>weixin</code> 或 <code>weix</code> 匹配“微信”。</p></details>
         <details><summary>Open Contexts 免费吗？</summary><p>是的。Open Contexts 基于 Apache License 2.0 免费开源，包含全部功能，没有试用期、账号或订阅。</p></details>
-        <details><summary>Open Contexts 是 Mac 上的 Alt-Tab 吗？</summary><p>是的。Windows 上的 Alt-Tab 在窗口之间切换，而 macOS 的 ⌘Tab 在应用之间切换。Open Contexts 接管 ⌘Tab，按最近使用顺序列出每一个窗口；<code>⌘`</code> 只列出当前应用的窗口。</p></details>
-        <details><summary>Open Contexts 和 Contexts 有什么区别？</summary><p>Open Contexts 是付费应用 Contexts 中应用栏和窗口切换器的开源复刻，并新增了 Contexts 不支持的自定义分组保存。支持按住切换器修饰键搜索应用名与窗口标题，不支持触控板手势。 <a class="text-link" href="compare/open-contexts-vs-contexts/">查看 Open Contexts 与 Contexts 的详细对比 →</a></p></details>
+        <details><summary>Open Contexts 是 Mac 上的 Alt-Tab 吗？</summary><p>是的。Windows 上的 Alt-Tab 在窗口之间切换，而 macOS 的 ⌘Tab 在应用之间切换。Open Contexts 接管 ⌘Tab，按最近使用顺序列出当前桌面的窗口；开启所有桌面后按桌面分组，当前桌面置顶；<code>⌘`</code> 只列出当前应用的窗口。</p></details>
+        <details><summary>Open Contexts 和 Contexts 有什么区别？</summary><p>Open Contexts 是付费应用 Contexts 中应用栏和窗口切换器的开源复刻，并加入可保存的自定义窗口分组。支持按住切换器修饰键搜索应用名与窗口标题。 <a class="text-link" href="compare/open-contexts-vs-contexts/">查看 Open Contexts 与 Contexts 的详细对比 →</a></p></details>
         <details><summary>和 AltTab 等其他窗口切换器相比有什么不同？</summary><p>Open Contexts 用紧凑的列表显示每个窗口的应用名、图标和标题，而不是缩略图网格；同时搭配常驻的应用栏，可以把窗口整理进保存的分组。 <a class="text-link" href="compare/open-contexts-vs-alttab/">查看 Open Contexts 与 AltTab 的详细对比 →</a></p></details>
         <details><summary>支持哪些 Mac 和 macOS 版本？</summary><p>需要 macOS 13 Ventura 或更高版本，以 DMG 形式提供。</p></details>
         <details><summary>为什么需要辅助功能权限？</summary><p>辅助功能权限让 Open Contexts 能够发现和切换窗口，并处理键盘快捷键。未授权或应用未运行时，Open Contexts 不会接管 ⌘Tab。</p></details>
@@ -290,6 +293,6 @@
 </footer>
 <script src="../assets/vendor/basecoat/basecoat.min.js" defer></script>
 <script src="../assets/vendor/basecoat/range.min.js" defer></script>
-<script src="../assets/site.js?v=basecoat-settings-1" defer></script>
+<script src="../assets/site.js?v=features-051-copy" defer></script>
 </body>
 </html>

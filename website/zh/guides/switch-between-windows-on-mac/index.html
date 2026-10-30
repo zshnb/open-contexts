@@ -39,7 +39,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap">
-<link rel="stylesheet" href="../../../assets/site.css?v=sidebar-settings-041">
+<link rel="stylesheet" href="../../../assets/site.css?v=features-051-copy">
 <script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <script type="application/ld+json">
 {
@@ -158,16 +158,21 @@
         <h2 id="open-contexts">Open Contexts：每个窗口，一个 ⌘Tab</h2>
         <p>Open Contexts 是免费开源的 macOS 窗口切换器与窗口管理工具。默认情况下，它接管 ⌘Tab，改变列表中的内容：每个应用一个图标，变成每个窗口一个选项，并带有应用图标与窗口标题。两个 Chrome 窗口因此就是两个可选项。默认的 <kbd>⌘`</kbd> 则打开当前应用的窗口标题列表。两个快捷键均可在设置中自定义。Dock 栏和窗口切换器均支持多显示器。</p>
         <p>它是一款原生 Swift 应用，支持 macOS 13 Ventura 及以上版本，下载一个 DMG，只需授予辅助功能权限。无需账户、云服务或订阅，窗口分组保存在 Mac 上 Application Support 目录中的一个 <code>groups.json</code> 文件里。</p>
-        <h3>按最近使用顺序排列</h3>
-        <p>窗口列表采用类似 Windows 的最近使用顺序。当前窗口在最上方，快速按下并松开 ⌘Tab 会切到第二行，也就是刚刚使用的上一个窗口。这种快速返回的操作，是很多人安装窗口切换器的原因。<a href="https://github.com/zshnb/open-contexts">GitHub 项目</a>采用 Apache 2.0 许可，你可以阅读源码、自行构建或 Fork。</p>
+        <h3>当前桌面按最近使用顺序排列</h3>
+        <p>当前桌面的窗口列表采用类似 Windows 的最近使用顺序。当前窗口在最上方，快速按下并松开 ⌘Tab 会切到第二行，也就是刚刚使用的上一个窗口。这种快速返回的操作，是很多人安装窗口切换器的原因。<a href="https://github.com/zshnb/open-contexts">GitHub 项目</a>采用 Apache 2.0 许可，你可以阅读源码、自行构建或 Fork。</p>
         <p>习惯用鼠标选择窗口？了解如何把<a href="/zh/guides/mac-dock-alternative/">Mac 窗口侧边栏或底部应用栏作为 Dock 的补充</a>，直接查看窗口标题并点击切换。</p>
+<h3 id="all-desktops">在多个桌面之间切换窗口</h3>
+<p>在“设置 → 通用”开启“显示所有桌面的窗口”。切换器按桌面分组，当前桌面置顶；最近使用排序仅影响当前桌面。其他桌面按桌面顺序排列，组内按应用名和标题排序。搜索时保留桌面分组，没有结果的分组自动隐藏。选中其他桌面的窗口后，会切换到对应桌面并将窗口置前，不会把窗口移动到当前桌面。</p>
 <h2 id="window-search">如何搜索 Mac 窗口：应用名与标题</h2>
 <p>Open Contexts 支持按应用名或标题搜索 Mac 窗口：按住切换器修饰键输入，松开切换。</p>
-<ol><li>按 <kbd>⌘</kbd><kbd>Tab</kbd> 打开全部窗口切换器，或使用 Command 加反引号打开当前应用的窗口列表。保持按住快捷键中的修饰键。</li><li>输入应用名或标题的一部分。大小写不影响匹配，例如 <code>CHROME</code> 可匹配 Google Chrome。每个词必须是连续文本，<code>gchr</code> 不会模糊匹配 Google Chrome。</li><li>用空格组合搜索词：<code>chr context</code> 可匹配应用名 Google Chrome 和标题中含有 context 的窗口；所有词都必须匹配应用名或标题。</li><li>匹配字符以黄色底色高亮。使用 Tab、Shift-Tab 或方向键选择；用 <kbd>Backspace</kbd> 删除查询，删空后恢复完整列表。</li><li>松开修饰键激活选中结果；无匹配时只关闭切换器，不切换窗口。<kbd>Esc</kbd> 取消。</li></ol>
-<p>输入只接受可打印 ASCII 字符，不支持中文输入和拼音。搜索范围是窗口的应用名与标题，不包含网页正文或浏览器中的所有标签页；侧边栏不提供独立的搜索框。</p>
-<p><a href="/zh/#demo">在线演示</a>中可先点击 ⌘ Tab，再输入 <code>chr context</code>；用 Return 确认或 Esc 取消。浏览器收不到 macOS 的 ⌘Tab，因此也可用 Option-Tab 演示按住修饰键、输入、松开切换的过程。</p>
+<ol><li>按 <kbd>⌘</kbd><kbd>Tab</kbd> 打开全部窗口切换器，或使用 Command 加反引号打开当前应用的窗口列表。保持按住快捷键中的修饰键。</li><li>输入应用名或标题的一部分。大小写不影响匹配，例如 <code>CHROME</code> 可匹配 Google Chrome。每个词匹配应用名或窗口标题中的连续文本。</li><li>用空格组合搜索词：<code>chr context</code> 可匹配应用名 Google Chrome 和标题中含有 context 的窗口；所有词都必须匹配应用名或标题。</li><li>匹配字符以黄色底色高亮。使用 Tab、Shift-Tab 或方向键选择；用 <kbd>Backspace</kbd> 删除查询，删空后恢复完整列表。</li><li>松开修饰键激活选中结果；无匹配时只关闭切换器，不切换窗口。<kbd>Esc</kbd> 取消。</li></ol>
+<p>中文应用名和窗口标题可用无声调拼音匹配：<code>weixin</code> 或 <code>weix</code> 可找到“微信”，<code>fabu</code> 可匹配标题中的“发布”。最后一个音节可只输入一部分，对应汉字会整体高亮；同等情况下，字面匹配优先于拼音匹配。在键盘切换器中，可搜索窗口的应用名与标题。</p>
+<p><a href="/zh/#demo">在线演示</a>中可先点击 ⌘ Tab，再输入 <code>chr context</code>、<code>weix</code> 或 <code>fabu</code>；用 Return 确认或 Esc 取消。浏览器收不到 macOS 的 ⌘Tab，因此也可用 Option-Tab 演示按住修饰键、输入、松开切换的过程。</p>
+<p>要体验演示中的跨桌面切换，可在“设置 → 通用”开启所有桌面，选择“桌面 2”或“桌面 3”下的窗口，再打开切换器：新的当前桌面会显示在最前。</p>
 <h3>保存窗口分组</h3>
-        <p>常驻应用栏可以放在每个显示器的左侧、右侧或底部，在应用图标与 Dock 标记旁列出窗口标题。点击一行即可激活对应窗口，即使它已经最小化或隐藏。你也可以把窗口整理到“代码”“聊天”“资料”等分组，重启后仍然保留分组位置。可保存的自定义窗口分组，是付费应用 Contexts 未提供的功能。</p>
+        <p>常驻应用栏可以放在每个显示器的左侧、右侧或底部，在应用图标与 Dock 标记旁列出窗口标题。点击一行即可激活对应窗口，即使它已经最小化或隐藏。你也可以把窗口整理到“代码”“聊天”“资料”等分组，重启后仍然保留分组位置。可保存的自定义窗口分组，让不同应用中的相关窗口保持在一起。</p>
+        <h3>用快捷键临时唤起侧边栏</h3>
+        <p>侧边栏以蓝底白字高亮当前窗口。按 <kbd>⌃⌘B</kbd> 可在鼠标所在屏幕临时唤起侧边栏，即使显示方式已设为“关闭”。鼠标移入侧边栏再移出、再次按快捷键或按 Esc，即可结束临时显示。在“设置 → 快捷键”中可修改或禁用此快捷键。在线演示也提供了 ⌃⌘B 按钮。</p>
         <h3>两分钟完成设置</h3>
         <ol>
           <li>从 GitHub Releases 页面下载 DMG。</li>
@@ -175,11 +180,11 @@
           <li>在 macOS 提示时授予辅助功能权限。</li>
           <li>按下默认快捷键 ⌘Tab，即可看到按最近使用顺序排列的窗口列表。</li>
         </ol>
-        <h3>Open Contexts 目前的边界</h3>
-        <p>Open Contexts 支持应用名与窗口标题搜索，但没有缩略图网格或触控板手势，显示的是紧凑的标题列表，而非窗口预览。它需要辅助功能权限；未授权或应用关闭时，不会接管系统的 ⌘Tab。如果你依赖视觉缩略图，AltTab 是值得比较的选择。如果你需要按最近使用顺序排列的标题列表和可保存分组，Open Contexts 更贴近这种使用方式。</p>
+        <h3>用紧凑列表快速选择窗口</h3>
+        <p>Open Contexts 将应用名与窗口标题搜索、紧凑的标题列表和可保存分组结合起来。它需要辅助功能权限；未授权或应用关闭时，不会接管系统的 ⌘Tab。可以用键盘按标题选择窗口、回到最近使用的窗口，或从保存的任务分组中找到目标。</p>
         <h2 id="faq">常见问题</h2>
         <p><strong>如何只用键盘在 Mac 上切换窗口？</strong> 用 ⌘Tab 切换应用。同一应用内的窗口，请查看系统分配的“将焦点移到下一个窗口”快捷键，美式布局上通常是 <kbd>⌘`</kbd>。Open Contexts 默认用 ⌘Tab 打开跨应用的窗口标题列表。</p>
-        <p><strong>为什么 <kbd>⌘`</kbd> 有时没有反应？</strong> 实际按键可能随键盘布局变化，快捷键也可能被修改，或应用不支持预期的窗口切换行为。请在“系统设置 → 键盘 → 键盘快捷键”中检查“将焦点移到下一个窗口”。Open Contexts 也允许单独设置自己的同应用窗口快捷键。</p>
+        <p><strong>为什么 <kbd>⌘`</kbd> 有时没有反应？</strong> 实际按键可能随键盘布局、快捷键设置与应用行为而变化。请在“系统设置 → 键盘 → 键盘快捷键”中检查“将焦点移到下一个窗口”。Open Contexts 也允许单独设置自己的同应用窗口快捷键。</p>
         <p><strong>如何在 Mac 上切换 Chrome 窗口？</strong> 先切到 Chrome，再使用它的“窗口”菜单或系统中配置的同应用窗口快捷键。美式布局上通常是 <kbd>⌘`</kbd>。窗口很多时，Open Contexts 可以直接列出标题供你选择。</p>
         <p><strong>Open Contexts 真的免费吗？</strong> 是的。项目采用 Apache License 2.0 开源，全部功能均可使用，没有试用限制、账户或订阅。需要 macOS 13 Ventura 或更高版本。</p>
         <h2 id="give-your-mac-every-window">让每个窗口都可直接选择</h2>
@@ -214,6 +219,6 @@
     <p class="footer-legal">© 2026 Open Contexts 贡献者。Open Contexts 是独立项目，与 Contexts 或 AltTab 无关联。产品名称归各自所有者所有。</p>
   </div>
 </footer>
-<script src="../../../assets/site.js?v=sidebar-settings-041" defer></script>
+<script src="../../../assets/site.js?v=features-051-copy" defer></script>
 </body>
 </html>

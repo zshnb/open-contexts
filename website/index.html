@@ -13,7 +13,7 @@
   gtag('config', 'G-2DX33ZMFCV');
 </script>
 <title>Free Mac Window Switcher &amp; Search | Open Contexts</title>
-<meta name="description" content="Free Mac window switcher with app-name and window-title search. Switch windows with Command-Tab, a sidebar or saved window groups.">
+<meta name="description" content="Free Mac window switcher with app-name and window-title search. Switch across desktops, use a sidebar and save window groups.">
 <link rel="canonical" href="https://opencontexts.app/">
 <link rel="alternate" hreflang="en" href="https://opencontexts.app/">
 <link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.app/zh/">
@@ -25,7 +25,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Open Contexts">
 <meta property="og:title" content="Open Contexts: the free Mac window switcher">
-<meta property="og:description" content="Free Mac window switcher with app-name and window-title search. Switch windows with Command-Tab, a sidebar or saved window groups.">
+<meta property="og:description" content="Free Mac window switcher with app-name and window-title search. Switch across desktops, use a sidebar and save window groups.">
 <meta property="og:url" content="https://opencontexts.app/">
 <meta property="og:image" content="https://opencontexts.app/assets/og.png">
 <meta property="og:locale" content="en_US">
@@ -35,7 +35,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap">
 <link rel="stylesheet" href="assets/vendor/basecoat/settings.css?v=1.0.2">
-<link rel="stylesheet" href="assets/site.css?v=basecoat-settings-1">
+<link rel="stylesheet" href="assets/site.css?v=features-051-copy">
 <script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <script type="application/ld+json">
 {
@@ -43,10 +43,10 @@
   "@type": "SoftwareApplication",
   "name": "Open Contexts",
   "alternateName": "OpenContexts",
-  "description": "Free Mac window switcher with app-name and window-title search. Switch windows with Command-Tab, a sidebar or saved window groups.",
+  "description": "Free Mac window switcher with app-name and window-title search. Switch across desktops, use a sidebar and save window groups.",
   "applicationCategory": "UtilitiesApplication",
   "operatingSystem": "macOS 13.0 or later",
-  "softwareVersion": "0.4.2",
+  "softwareVersion": "0.5.1",
   "url": "https://opencontexts.app/",
   "downloadUrl": "https://github.com/zshnb/open-contexts/releases/latest",
   "image": "https://opencontexts.app/assets/og.png",
@@ -106,9 +106,10 @@
         <div class="demo-viewport"><div class="screen mac" role="application" aria-label="Interactive Open Contexts demo"></div></div>
       </div>
       <div class="demo-bar">
-        <p>Click <kbd>⌘ Tab</kbd>, type to search (try <code>chr context</code>), then use <kbd>Tab</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>Return</kbd> <kbd>Esc</kbd>. Backspace edits the query. Drag windows between groups.</p>
+        <p>Click <kbd>⌘ Tab</kbd> and search <code>chr context</code>. Use Tab, arrow keys, Return or Esc. In Settings → General, enable all desktops to try grouped switching. The ⌃⌘B button temporarily opens the sidebar, even when it is off; move into the bar and away to dismiss it. Drag windows between groups.</p>
         <div class="actions">
           <button class="btn btn-primary btn-sm" type="button" data-act="cmdtab">⌘ Tab</button>
+          <button class="btn btn-secondary btn-sm" type="button" data-act="sidebar" aria-pressed="false">⌃⌘B Sidebar</button>
           <button class="btn btn-secondary btn-sm" type="button" data-act="settings">Settings</button>
           <button class="btn btn-secondary btn-sm" type="button" data-act="reset">Reset</button>
         </div>
@@ -120,7 +121,8 @@
     <div class="container">
       <div class="section-head" data-reveal>
         <h2 class="display">Every window,<br>one ⌘Tab.</h2>
-        <p class="lede">The built-in ⌘Tab shows one icon per app. Open Contexts shows every window, so two Chrome windows are two choices. The list is in most-recently-used order, and the window you were just in is always one keystroke away. The app bar and window switcher both support multiple displays.</p>
+        <p class="lede">The built-in ⌘Tab shows one icon per app. Open Contexts shows every window, so two Chrome windows are two choices. On the current desktop, windows follow most-recently-used order, so a quick ⌘Tab takes you back to the previous window. The app bar and window switcher both support multiple displays.</p>
+        <p>Enable Settings → General → Show windows from all desktops to reach windows in other Spaces. The switcher groups windows by desktop, with the current desktop first. Recent-use order applies only to the current desktop; other desktops follow in desktop order, with windows sorted by app and title.</p>
       </div>
       <div data-reveal data-mock="switcher" data-nosnippet></div>
       <div class="shortcut-row" data-reveal>
@@ -138,7 +140,7 @@
       <div class="section-head" data-reveal>
         <h2 class="display">Type a name. Find your window.</h2>
         <p class="lede">Press ⌘Tab, keep holding ⌘ and type an app name or window title. Release ⌘ to switch.</p>
-        <p>Matches are highlighted in yellow. Combine search terms with spaces, such as <code>chr context</code>. Input supports English letters, numbers and symbols; Chinese input and pinyin are not supported. <a class="text-link" href="/guides/switch-between-windows-on-mac/#window-search">Read the search guide →</a></p>
+        <p>Matches are highlighted in yellow. Combine search terms with spaces, such as <code>chr context</code>. <a class="text-link" href="/guides/switch-between-windows-on-mac/#window-search">Read the search guide →</a></p>
       </div>
       <div data-reveal data-mock="search" data-nosnippet></div>
     </div>
@@ -148,7 +150,8 @@
     <div class="container">
       <div class="section-head" data-reveal>
         <h2 class="display">A sidebar and window dock<br>for your Mac.</h2>
-        <p class="lede">Keep every open window in a left or right sidebar, or a bottom window dock. Click a window to switch, and organize your work with saved groups. Keep the bar visible, reveal it at the screen edge, or turn it off and use keyboard switching.</p>
+        <p class="lede">Keep every open window in a left or right sidebar, or a bottom window dock. Click a window to switch, and organize your work with saved groups. Keep the bar visible, reveal it at the screen edge, or turn it off and use keyboard switching. The active window stays highlighted in blue with white text.</p>
+        <p>Press <kbd>⌃⌘B</kbd> to temporarily open the sidebar on the display under your pointer, even when it is off. Move into the sidebar and away, press the shortcut again, or press Esc to return to its visibility setting. Customize or disable the shortcut in Settings → Shortcuts.</p>
       </div>
       <div class="mock-stage" data-reveal>
         <div class="mock-wall" data-mock="appbar" data-nosnippet></div>
@@ -160,7 +163,7 @@
     <div class="container split">
       <div class="split-copy" data-reveal>
         <h2 class="display">Window groups<br>that remember.</h2>
-        <p class="lede">Contexts never had saved groups. Open Contexts does. Sort windows into groups for code, chat, or research, and they come back in the same place after a restart.</p>
+        <p class="lede">Open Contexts saves your window groups. Sort windows into groups for code, chat, or research, and they come back in the same place after a restart.</p>
         <ul class="checks">
           <li>Create, rename, and delete groups right from the app bar</li>
           <li>Drag windows or whole groups to reorder them</li>
@@ -245,10 +248,10 @@
     <div class="container-prose">
       <h2 class="display center">Frequently Asked Questions</h2>
       <div class="faq">
-        <details><summary>How do I search app names or window titles?</summary><p>Open the switcher, hold its modifier and type an app name or window title. Search is case-insensitive; each term matches contiguous text and space-separated terms can match app and title together. Backspace edits the query; clearing it restores the list. Release to switch, or dismiss without switching when there are no matches. Input is printable ASCII; Chinese input, pinyin, fuzzy matching and individual browser-tab search are not supported.</p></details>
+        <details><summary>How do I search app names or window titles?</summary><p>Open the switcher, hold its modifier and type an app name or window title. Search is case-insensitive; each term matches contiguous text and space-separated terms can match app and title together. Backspace edits the query; clearing it restores the list. Release to switch, or dismiss without switching when there are no matches.</p></details>
         <details><summary>Is Open Contexts free?</summary><p>Yes. Open Contexts is free and open source under the Apache License 2.0. Every feature is included, with no trial, account, or subscription.</p></details>
-        <details><summary>Is Open Contexts an Alt-Tab for Mac?</summary><p>Yes. On Windows, Alt-Tab switches between windows. The macOS ⌘Tab switches between apps. Open Contexts takes over ⌘Tab and lists every individual window in most-recently-used order, and <code>⌘`</code> limits the list to the current app's windows.</p></details>
-        <details><summary>How is Open Contexts different from Contexts?</summary><p>Open Contexts is an open-source recreation of the app bar and window switcher from the paid app Contexts. It adds saved custom window groups, which Contexts does not have. Open Contexts supports app-name and window-title search while holding the switcher modifier. Trackpad gestures are not supported. <a class="text-link" href="compare/open-contexts-vs-contexts/">Compare Open Contexts vs Contexts →</a></p></details>
+        <details><summary>Is Open Contexts an Alt-Tab for Mac?</summary><p>Yes. On Windows, Alt-Tab switches between windows. The macOS ⌘Tab switches between apps. Open Contexts takes over ⌘Tab and lists individual windows in most-recently-used order on the current desktop. Enable all desktops to group windows by desktop, with the current one first; <code>⌘`</code> limits the list to the current app's windows.</p></details>
+        <details><summary>How is Open Contexts different from Contexts?</summary><p>Open Contexts is an open-source recreation of the app bar and window switcher from the paid app Contexts. It adds saved custom window groups. Open Contexts supports app-name and window-title search while holding the switcher modifier. <a class="text-link" href="compare/open-contexts-vs-contexts/">Compare Open Contexts vs Contexts →</a></p></details>
         <details><summary>How is it different from other window switchers such as AltTab?</summary><p>Open Contexts shows a compact list with each window's app, icon, and title instead of a grid of thumbnails, and pairs the switcher with a persistent app bar where you can organize windows into saved groups. <a class="text-link" href="compare/open-contexts-vs-alttab/">Compare Open Contexts vs AltTab →</a></p></details>
         <details><summary>Which Macs and macOS versions are supported?</summary><p>Open Contexts requires macOS 13 Ventura or later and ships as a DMG.</p></details>
         <details><summary>Why does Open Contexts need Accessibility permission?</summary><p>Accessibility permission lets Open Contexts find windows, switch to them, and handle keyboard shortcuts. Without it, or while the app is closed, Open Contexts does not take over ⌘Tab.</p></details>
@@ -290,6 +293,6 @@
 </footer>
 <script src="assets/vendor/basecoat/basecoat.min.js" defer></script>
 <script src="assets/vendor/basecoat/range.min.js" defer></script>
-<script src="assets/site.js?v=basecoat-settings-1" defer></script>
+<script src="assets/site.js?v=features-051-copy" defer></script>
 </body>
 </html>

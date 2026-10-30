@@ -14,6 +14,8 @@
     off: '关闭', alignment: '垂直位置', top: '上方', center: '居中', width: '侧边栏宽度', reset: '恢复默认',
     general: '通用', features: '功能', shortcuts: '快捷键', groups: '分组', language: '语言',
     showUngrouped: '显示未分组（为空时自动隐藏）', showCreateGroup: '显示新建分组按钮',
+    allDesktops: '显示所有桌面的窗口', desktop: '桌面', current: '当前',
+    sidebarShortcut: '唤起侧边栏', enableShortcut: '启用侧边栏快捷键',
   } : {
     ungrouped: 'Ungrouped', newGroupName: 'New Group', code: 'Code', team: 'Team',
     settings: 'Settings…', updates: 'Check for Updates…', quit: 'Quit OpenContexts', settingsTitle: 'OpenContexts Settings',
@@ -24,6 +26,8 @@
     off: 'Off', alignment: 'Vertical alignment', top: 'Top', center: 'Center', width: 'Sidebar width', reset: 'Restore defaults',
     general: 'General', features: 'Features', shortcuts: 'Shortcuts', groups: 'Groups', language: 'Language',
     showUngrouped: 'Show Ungrouped (hidden when empty)', showCreateGroup: 'Show New Group button',
+    allDesktops: 'Show windows from all desktops', desktop: 'Desktop', current: 'Current',
+    sidebarShortcut: 'Show sidebar', enableShortcut: 'Enable sidebar shortcut',
   }
 
   const sq = (fill, extra = '') => `<rect x="4" y="4" width="56" height="56" rx="13" fill="${fill}"${extra}/>`
@@ -35,51 +39,68 @@
     chatgpt: `<svg viewBox="0 0 64 64" aria-hidden="true">${sq('#fff', ' stroke="#d9d9d9"')}<g fill="none" stroke="#111" stroke-width="3.2"><ellipse cx="32" cy="32" rx="16" ry="7"/><ellipse cx="32" cy="32" rx="16" ry="7" transform="rotate(60 32 32)"/><ellipse cx="32" cy="32" rx="16" ry="7" transform="rotate(120 32 32)"/></g></svg>`,
     claude: `<svg viewBox="0 0 64 64" aria-hidden="true">${sq('#d97757')}<path d="M32 15v34M15 32h34M20 20l24 24M44 20L20 44" stroke="#fff" stroke-width="4.2" stroke-linecap="round"/></svg>`,
     slack: `<svg viewBox="0 0 64 64" aria-hidden="true">${sq('#fff', ' stroke="#d9d9d9"')}<g stroke-width="6.5" stroke-linecap="round"><path d="M26 16v32" stroke="#36c5f0"/><path d="M16 38h32" stroke="#ecb22e"/><path d="M38 16v32" stroke="#e01e5a"/><path d="M16 26h32" stroke="#2eb67d"/></g></svg>`,
+    wechat: `<svg viewBox="0 0 64 64" aria-hidden="true">${sq('#07b75b')}<path d="M13 29c0-9 8-15 18-15s18 6 18 15-8 15-18 15h-6l-9 5 2-9c-3-3-5-6-5-11" fill="#fff"/><circle cx="25" cy="27" r="2" fill="#07b75b"/><circle cx="37" cy="27" r="2" fill="#07b75b"/></svg>`,
   }
   const STATUS_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="5.5" width="13" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M3.5 3.5h9M5.5 1.5h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>'
 
   // box: [x, y, width, height] on the 1120×700 stage
   const APPS = {
-    terminal: { name: 'Terminal', title: 'zsh — ~/open-contexts', box: [310, 300, 540, 320] },
-    finder: { name: 'Finder', title: 'Applications', box: [250, 64, 520, 330] },
-    chrome: { name: 'Google Chrome', title: 'zshnb/open-contexts - Google Chrome', box: [450, 110, 600, 420] },
-    notes: { name: 'Notes', title: 'All iCloud — 12 notes', box: [280, 90, 560, 380] },
-    chatgpt: { name: 'ChatGPT', title: 'ChatGPT', box: [370, 70, 600, 440] },
-    claude: { name: 'Claude', title: 'Claude', box: [330, 120, 620, 430] },
-    slack: { name: 'Slack', title: '#releases - Open Contexts - Slack', box: [260, 96, 680, 430] },
+    terminal: { name: 'Terminal', title: 'zsh — ~/open-contexts', desktop: 1, box: [310, 300, 540, 320] },
+    finder: { name: 'Finder', title: 'Applications', desktop: 1, box: [250, 64, 520, 330] },
+    chrome: { name: 'Google Chrome', title: 'zshnb/open-contexts - Google Chrome', desktop: 1, box: [450, 110, 600, 420] },
+    notes: { name: 'Notes', title: '发布清单 — Open Contexts', desktop: 1, box: [280, 90, 560, 380] },
+    chatgpt: { name: 'ChatGPT', title: 'ChatGPT', desktop: 3, box: [370, 70, 600, 440] },
+    claude: { name: 'Claude', title: 'Claude', desktop: 2, box: [330, 120, 620, 430] },
+    slack: { name: 'Slack', title: '#releases - Open Contexts - Slack', desktop: 2, box: [260, 96, 680, 430] },
+    wechat: { name: '微信', title: '项目讨论 — 微信', desktop: 1, box: [360, 100, 560, 400] },
   }
-  const MRU0 = ['terminal', 'chrome', 'finder', 'slack', 'claude', 'chatgpt', 'notes']
+  const MRU0 = ['terminal', 'chrome', 'finder', 'slack', 'claude', 'chatgpt', 'notes', 'wechat']
   const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
   const groups0 = () => [
     { id: 'u', name: T.ungrouped, items: ['finder', 'notes'] },
     { id: 'c', name: T.code, items: ['terminal', 'chrome', 'claude', 'chatgpt'] },
-    { id: 't', name: T.team, items: ['slack'] },
+    { id: 't', name: T.team, items: ['slack', 'wechat'] },
   ]
   const badges0 = () => ({ slack: '3', claude: '' }) // '' = dot, as DockBadgeState does for non-numeric badges
 
-  const rowHTML = (id, badges, tag = 'div') => {
+  const rowHTML = (id, badges, tag = 'div', active = false) => {
     const b = id in badges ? `<i class="badge${badges[id] ? ' num' : ''}">${badges[id]}</i>` : ''
     const t = esc(APPS[id].title)
     const attrs = tag === 'button' ? ` draggable="true" data-id="${id}" aria-label="${esc(APPS[id].name)}, ${t}"` : ''
-    return `<${tag} class="row"${attrs} title="${t}"><span class="ico">${ICON[id]}${b}</span><span class="t">${t}</span></${tag}>`
+    return `<${tag} class="row"${attrs}${active ? ' aria-current="true"' : ''} title="${t}"><span class="ico">${ICON[id]}${b}</span><span class="t">${t}</span></${tag}>`
   }
   const sidebarDefaults = { pos: 'left', display: 'title', mode: 'always', align: 'center', width: 188,
-    showUngrouped: true, showCreateGroup: true, page: 'sidebar' }
+    showUngrouped: true, showCreateGroup: true, page: 'sidebar',
+    allDesktops: false, desktop: 1, front: 'terminal', sidebarShortcut: true }
   const barHTML = (groups, badges, tag, settings = sidebarDefaults) =>
-    groups.filter(g => g.id !== 'u' || settings.showUngrouped && g.items.length)
-      .map(g => `<div class="grp" data-g="${g.id}">${esc(g.name)}</div>` + g.items.map(id => rowHTML(id, badges, tag)).join('')).join('')
+    groups.map(g => ({ ...g, items: g.items.filter(id => APPS[id].desktop === settings.desktop) }))
+      .filter(g => g.id !== 'u' || settings.showUngrouped && g.items.length)
+      .map(g => `<div class="grp" data-g="${g.id}">${esc(g.name)}</div>` + g.items.map(id => rowHTML(id, badges, tag, id === settings.front)).join('')).join('')
     + (settings.showCreateGroup ? `<${tag === 'button' ? 'button' : 'div'} class="newgrp" title="${T.newGroupName}">＋<span class="t"> ${T.newGroupName}</span></${tag === 'button' ? 'button' : 'div'}>` : '')
+  // shortcut: only demo sample characters need transliteration; extend this map when adding Chinese samples.
+  const PINYIN = { 微: 'wei', 信: 'xin', 项: 'xiang', 目: 'mu', 讨: 'tao', 论: 'lun', 发: 'fa', 布: 'bu', 清: 'qing', 单: 'dan' }
+  function matchText(text, token) {
+    const at = text.toLowerCase().indexOf(token)
+    if (at >= 0) return { start: at, end: at + token.length, score: text.length === token.length ? 1000 : at === 0 ? 700
+      : /[^\p{L}\p{N}]/u.test(text[at - 1]) || /[a-z]/.test(text[at - 1]) && /[A-Z]/.test(text[at]) ? 600 : 500 }
+    if (!/^[\x20-\x7e]+$/.test(token)) return null
+    const chars = Array.from(text), syllables = chars.map(c => PINYIN[c] || c.toLowerCase())
+    let start = 0
+    for (let i = 0; i < chars.length; start += chars[i++].length) {
+      if (!syllables.slice(i).join('').startsWith(token)) continue
+      let length = 0, end = start, j = i
+      while (length < token.length) { length += syllables[j].length; end += chars[j++].length }
+      return { start, end, score: start === 0 && end === text.length && length === token.length ? 950
+        : start === 0 ? 650 : PINYIN[chars[i]] || /[^\p{L}\p{N}]/u.test(chars[i - 1]) ? 550 : 450 }
+    }
+    return null
+  }
   function searchWindows(list, query) {
     const tokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean)
     return list.map(id => {
       let score = 0
       for (const token of tokens) {
-        const scores = [APPS[id].name, APPS[id].title].map(text => {
-          const at = text.toLowerCase().indexOf(token)
-          if (at < 0) return -1
-          return text.length === token.length ? 1000 : at === 0 ? 700
-            : /[^\p{L}\p{N}]/u.test(text[at - 1]) || /[a-z]/.test(text[at - 1]) && /[A-Z]/.test(text[at]) ? 600 : 500
-        })
+        const scores = [APPS[id].name, APPS[id].title].map(text => matchText(text, token)?.score ?? -1)
         if (Math.max(...scores) < 0) return null
         score += Math.max(...scores)
       }
@@ -88,8 +109,8 @@
   }
   function highlight(text, query) {
     const ranges = query.toLowerCase().trim().split(/\s+/).filter(Boolean).map(token => {
-      const at = text.toLowerCase().indexOf(token)
-      return [at, at + token.length]
+      const match = matchText(text, token)
+      return match ? [match.start, match.end] : [-1, -1]
     }).filter(([at]) => at >= 0)
     let html = '', marked = false
     for (let i = 0; i < text.length; i++) {
@@ -99,8 +120,18 @@
     }
     return html + (marked ? '</mark>' : '')
   }
-  const swRows = (list, sel, tag = 'div', query = '') => list.map((id, i) =>
-    `<${tag} class="srow" role="option" data-i="${i}" aria-selected="${i === sel}"><span class="app">${highlight(APPS[id].name, query)}</span>${ICON[id]}<span class="t">${highlight(APPS[id].title, query)}</span></${tag}>`).join('')
+  function switcherWindows(mru, query, allDesktops, desktop) {
+    const desktops = allDesktops ? [desktop, ...[...new Set(mru.map(id => APPS[id].desktop))].filter(d => d !== desktop).sort((a, b) => a - b)] : [desktop]
+    return desktops.flatMap(d => {
+      const windows = mru.filter(id => APPS[id].desktop === d)
+      if (d !== desktop) windows.sort((a, b) => APPS[a].name.localeCompare(APPS[b].name) || APPS[a].title.localeCompare(APPS[b].title))
+      return searchWindows(windows, query)
+    })
+  }
+  const swRows = (list, sel, tag = 'div', query = '', allDesktops = false, desktop = 1) => list.map((id, i) =>
+    (allDesktops && (i === 0 || APPS[list[i - 1]].desktop !== APPS[id].desktop)
+      ? `<div class="desktop-heading" role="presentation">${T.desktop} ${APPS[id].desktop}${APPS[id].desktop === desktop ? ` · ${T.current}` : ''}</div>` : '')
+    + `<${tag} class="srow" role="option" data-i="${i}" aria-selected="${i === sel}"><span class="app">${highlight(APPS[id].name, query)}</span>${ICON[id]}<span class="t">${highlight(APPS[id].title, query)}</span></${tag}>`).join('')
   const seg = (k, opts, cur, mock) => `<div class="seg" role="radiogroup" aria-label="${T[{ mode: 'sidebar', pos: 'position', align: 'alignment', display: 'display' }[k]]}">${opts.map(([v, label]) =>
     `<label><input class="bc-input" type="radio" name="${mock ? 'mock' : 'demo'}-${k}" data-k="${k}" data-v="${v}" value="${v}" ${v === cur ? 'checked' : ''}>${label}</label>`).join('')}</div>`
   const settingsForm = s => `<div class="form"><nav class="settings-nav" aria-label="${T.settings}">
@@ -109,9 +140,12 @@
     ${[['sidebar', T.sidebar], ['shortcuts', T.shortcuts]].map(([page, title]) => `<button class="bc-button" data-variant="ghost" data-size="sm" type="button" data-k="page" data-v="${page}" aria-current="${s.page === page ? 'page' : 'false'}">${title}</button>`).join('')}
     </nav><div class="settings-content">${s.page === 'general' ? `
     <div class="frow"><span>${T.language}</span><span class="val">${zh ? '中文' : 'English'}</span></div>
-    <div class="frow"><span>${T.access}</span><span class="val">${T.granted}</span></div>` : s.page === 'shortcuts' ? `
+    <div class="frow"><span>${T.access}</span><span class="val">${T.granted}</span></div>
+    <div class="frow"><div class="group-options"><label><input class="bc-input" type="checkbox" data-setting="allDesktops" ${s.allDesktops ? 'checked' : ''}>${T.allDesktops}</label></div></div>` : s.page === 'shortcuts' ? `
     <div class="frow"><span>${T.allWin}</span><span class="val">⌘Tab</span></div>
-    <div class="frow"><span>${T.curWin}</span><span class="val">⌘\`</span></div>` : `
+    <div class="frow"><span>${T.curWin}</span><span class="val">⌘\`</span></div>
+    <div class="frow"><span>${T.sidebarShortcut}</span><span class="val">⌃⌘B</span></div>
+    <div class="frow"><div class="group-options"><label><input class="bc-input" type="checkbox" data-setting="sidebarShortcut" ${s.sidebarShortcut ? 'checked' : ''}>${T.enableShortcut}</label></div></div>` : `
     <div class="frow"><span>${T.sidebar}</span>${seg('mode', [['always', T.always], ['hover', T.hover], ['hidden', T.off]], s.mode, s.mock)}</div>
     <div class="frow"><span>${T.position}</span>${seg('pos', [['left', T.left], ['right', T.right], ['bottom', T.bottom]], s.pos, s.mock)}</div>
     ${s.pos !== 'bottom' ? `<div class="frow"><span>${T.alignment}</span>${seg('align', [['top', T.top], ['center', T.center], ['bottom', T.bottom]], s.align, s.mock)}</div>` : ''}
@@ -141,16 +175,17 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
       <div class="omni">github.com/zshnb/open-contexts</div><div class="wbody page">zshnb / <b>open-contexts</b><span class="pill-tag">Public</span>
       <h5>Open Contexts</h5><div class="sk" style="width:92%"></div><div class="sk" style="width:84%"></div><div class="sk" style="width:60%"></div>
       <div class="sk" style="width:88%;margin-top:22px"></div><div class="sk" style="width:74%"></div><div class="sk" style="width:80%"></div><div class="sk" style="width:40%"></div></div>`,
-    notes: () => titlebar(zh ? '全部 iCloud — 12 个备忘录' : APPS.notes.title) + `<div class="wbody notes"><aside><p class="on"><b>${zh ? '发版检查清单' : 'Release checklist'}</b><small>${zh ? '今天 · 4 项' : 'Today · 4 items'}</small></p><p><b>${zh ? '窗口分组灵感' : 'Group ideas'}</b><small>${zh ? '昨天' : 'Yesterday'}</small></p><p><b>${zh ? '快捷键配置' : 'Shortcuts'}</b><small>${zh ? '周一' : 'Monday'}</small></p></aside>
-      <main><h6>${zh ? '发版检查清单' : 'Release checklist'}</h6>☑ ${zh ? '更新 VERSION 至 0.3.5' : 'Bump VERSION to 0.3.5'}<br>☑ ${zh ? '更新 CHANGELOG' : 'Update CHANGELOG'}<br>☐ ${zh ? '打标签 v0.3.5 并推送' : 'Tag v0.3.5 and push'}<br>☐ ${zh ? '检查 appcast.xml' : 'Check appcast.xml'}</main></div>`,
+    notes: () => titlebar(APPS.notes.title) + `<div class="wbody notes"><aside><p class="on"><b>${zh ? '发版检查清单' : 'Release checklist'}</b><small>${zh ? '今天 · 4 项' : 'Today · 4 items'}</small></p><p><b>${zh ? '窗口分组灵感' : 'Group ideas'}</b><small>${zh ? '昨天' : 'Yesterday'}</small></p><p><b>${zh ? '快捷键配置' : 'Shortcuts'}</b><small>${zh ? '周一' : 'Monday'}</small></p></aside>
+      <main><h6>${zh ? '发版检查清单' : 'Release checklist'}</h6>☑ ${zh ? '更新 VERSION 至 0.5.1' : 'Bump VERSION to 0.5.1'}<br>☑ ${zh ? '更新 CHANGELOG' : 'Update CHANGELOG'}<br>☑ ${zh ? '发布 v0.5.1' : 'Release v0.5.1'}<br>☑ ${zh ? '检查 appcast.xml' : 'Check appcast.xml'}</main></div>`,
     chatgpt: () => titlebar('ChatGPT') + `<div class="wbody chat"><div class="bubble me">${zh ? '如何在 Mac 上按窗口而不是按应用切换？' : 'How do I switch between windows, not apps, on a Mac?'}</div>
       <div>${zh ? 'macOS 自带的 ⌘Tab 只切换应用。窗口切换器按最近使用顺序列出每个独立窗口，按一次键即可回到刚才的窗口。' : 'macOS ⌘Tab switches apps. A window switcher lists every window in most-recently-used order, so one keystroke gets you back to where you were.'}</div><div class="sk" style="width:70%"></div><div class="sk" style="width:55%"></div></div>`,
     claude: () => titlebar('Claude') + `<div class="wbody chat" style="background:#faf9f5;height:100%"><div class="bubble me" style="background:#ece9df">${zh ? '为什么按 ⌘Tab 默认选中第二个窗口？' : 'Why does ⌘Tab start on the second window?'}</div>
       <div>${zh ? '列表第一项是你当前正在使用的窗口。默认选中第二项意味着轻按一次 ⌘Tab 就能立即切回上一个窗口。' : "The first window in the list is the one you're already in. Starting on the second one means a quick ⌘Tab always takes you back to the previous window."}</div><div class="sk" style="width:66%;background:#ece9df"></div></div>`,
     slack: () => titlebar(APPS.slack.title) + `<div class="wbody slack"><aside><b>Open Contexts</b># general<div class="on"># releases</div># design<br># support</aside><main>
-      <div class="msg"><span class="av" style="background:#e8a33d"></span><div><b>Mia</b><br>${zh ? 'v0.3.5 已发布：支持五种界面语言 🎉' : 'v0.3.5 is out: five interface languages 🎉'}</div></div>
-      <div class="msg"><span class="av" style="background:#5b8def"></span><div><b>Leo</b><br>${zh ? '底部应用栏现已支持均匀缩放，所有窗口一行排开。' : 'Bottom bar now shrinks items evenly. Every window fits on one line.'}</div></div>
+      <div class="msg"><span class="av" style="background:#e8a33d"></span><div><b>Mia</b><br>${zh ? 'v0.5.1 已发布：支持中文拼音搜索 🎉' : 'Find your window by app name or title 🎉'}</div></div>
+      <div class="msg"><span class="av" style="background:#5b8def"></span><div><b>Leo</b><br>${zh ? '开启所有桌面，就能按桌面分组选择窗口。' : 'Enable all desktops to choose windows in desktop groups.'}</div></div>
       <div class="msg"><span class="av" style="background:#3fb68b"></span><div style="flex:1"><b>Ana</b><div class="sk" style="width:80%"></div><div class="sk" style="width:50%"></div></div></div></main></div>`,
+    wechat: () => titlebar(APPS.wechat.title) + `<div class="wbody chat"><div class="bubble me">${zh ? '发布清单准备好了吗？' : 'Is the release checklist ready?'}</div><div>${zh ? '准备好了，窗口已按任务分组。输入 weixin 或 weix 就能找到这个窗口。' : 'Ready. Related windows are together in the same task group.'}</div></div>`,
   }
 
   function mountDemo(viewport) {
@@ -161,8 +196,8 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
 
     let st
     const reset = () => {
-      st = { mru: [...MRU0], min: new Set(['slack', 'claude', 'chatgpt', 'notes']), badges: badges0(), groups: groups0(),
-        ...sidebarDefaults, front: 'terminal', settings: false, sw: null, menu: false, drag: null }
+      st = { mru: [...MRU0], min: new Set(['slack', 'claude', 'chatgpt', 'notes', 'wechat']), badges: badges0(), groups: groups0(),
+        ...sidebarDefaults, settings: false, sw: null, menu: false, drag: null, sidebarExpanded: false, sidebarEntered: false }
     }
     reset()
 
@@ -187,16 +222,21 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
           w.classList.toggle('is-min', !st.settings)
           w.style.zIndex = st.front === 'settings' ? 900 : 90
         } else {
-          w.classList.toggle('is-min', st.min.has(id))
+          w.classList.toggle('is-min', st.min.has(id) || APPS[id].desktop !== st.desktop)
           w.style.zIndex = 100 + order.length - order.indexOf(id)
         }
         w.classList.toggle('is-inactive', id !== st.front)
       })
       $('[data-front]').textContent = st.front === 'settings' ? 'OpenContexts' : APPS[st.front].name
       Object.assign(bar.dataset, { pos: st.pos, display: st.display, mode: st.mode, align: st.align })
+      bar.toggleAttribute('data-shortcut-expanded', st.sidebarExpanded)
       bar.style.setProperty('--sidebar-width', `${st.width}px`)
       bar.innerHTML = barHTML(st.groups, st.badges, 'button', st)
-      bar.hidden = st.mode === 'hidden' || !bar.innerHTML
+      bar.hidden = st.mode === 'hidden' && !st.sidebarExpanded || !bar.innerHTML
+      viewport.closest('.demo').querySelectorAll('[data-act="sidebar"]').forEach(b => {
+        b.disabled = !st.sidebarShortcut
+        b.setAttribute('aria-pressed', st.sidebarExpanded)
+      })
       $('[data-form]').innerHTML = settingsForm(st)
       menu.hidden = !st.menu
       statusBtn.setAttribute('aria-expanded', st.menu)
@@ -210,7 +250,7 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
         + `<div role="listbox" aria-label="${T.allWin}"></div><div class="search-query" role="status"></div>`
       const input = sw.querySelector('input')
       if (input.value !== st.sw.query) input.value = st.sw.query
-      sw.querySelector('[role="listbox"]').innerHTML = swRows(st.sw.list, st.sw.sel, 'button', st.sw.query)
+      sw.querySelector('[role="listbox"]').innerHTML = swRows(st.sw.list, st.sw.sel, 'button', st.sw.query, st.allDesktops, st.desktop)
       const status = sw.querySelector('[role="status"]')
       status.textContent = st.sw.list.length ? '' : T.noMatches
       status.hidden = !!st.sw.list.length
@@ -223,11 +263,12 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
       delete st.badges[id]
       st.mru = [id, ...st.mru.filter(x => x !== id)]
       st.front = id
+      st.desktop = APPS[id].desktop
       render()
     }
     // AppController: first ⌘Tab selects index 1 (the previous window), ⇧ starts from the end
     function openSw(reverse, held) {
-      const list = [...st.mru]
+      const list = switcherWindows(st.mru, '', st.allDesktops, st.desktop)
       st.sw = { list, query: '', sel: reverse ? list.length - 1 : Math.min(1, list.length - 1), held }
       st.menu = false
       render()
@@ -237,6 +278,17 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
     const cancel = () => { st.sw = null; renderSw() }
     const cmdTab = () => st.sw ? step(1) : openSw(false, false)
     const openSettings = () => { st.settings = true; st.front = 'settings'; st.menu = false; render() }
+    const toggleSidebar = () => {
+      if (!st.sidebarShortcut) return
+      st.sidebarExpanded = !st.sidebarExpanded
+      st.sidebarEntered = false
+      st.sw = null
+      render()
+    }
+    bar.addEventListener('pointerenter', () => { if (st.sidebarExpanded) st.sidebarEntered = true })
+    bar.addEventListener('pointerleave', () => {
+      if (st.sidebarExpanded && st.sidebarEntered) { st.sidebarExpanded = false; st.sidebarEntered = false; render() }
+    })
 
     function moveWindow(id, gid, beforeId) {
       st.groups.forEach(g => { g.items = g.items.filter(x => x !== id) })
@@ -277,8 +329,9 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
         st[k] = v
         render()
         screen.querySelector(`input[data-k="${k}"][data-v="${v}"]`).focus({ preventScroll: true })
-      } else if (['showUngrouped', 'showCreateGroup'].includes(e.target.dataset.setting)) {
+      } else if (['showUngrouped', 'showCreateGroup', 'allDesktops', 'sidebarShortcut'].includes(e.target.dataset.setting)) {
         st[e.target.dataset.setting] = e.target.checked
+        if (!st.sidebarShortcut) st.sidebarExpanded = false
         render()
         screen.querySelector(`input[data-setting="${e.target.dataset.setting}"]`).focus({ preventScroll: true })
       }
@@ -289,7 +342,7 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
     })
     sw.addEventListener('input', e => {
       if (/^[\x20-\x7e]*$/.test(e.target.value)) {
-        st.sw.query = e.target.value; st.sw.list = searchWindows(st.mru, st.sw.query); st.sw.sel = 0
+        st.sw.query = e.target.value; st.sw.list = switcherWindows(st.mru, st.sw.query, st.allDesktops, st.desktop); st.sw.sel = 0
       }
       renderSw()
     })
@@ -315,7 +368,11 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
 
     // Keyboard. Browsers never see ⌘Tab (macOS takes it), so ⌥Tab stands in for the held-modifier flow.
     window.addEventListener('keydown', e => {
+      if (e.ctrlKey && e.metaKey && !e.altKey && !e.shiftKey && e.code === 'KeyB' && st.sidebarShortcut) {
+        e.preventDefault(); e.stopPropagation(); toggleSidebar(); return
+      }
       if (e.metaKey || e.ctrlKey) return
+      if (e.key === 'Escape' && !st.sw && st.sidebarExpanded) { e.preventDefault(); st.sidebarExpanded = false; render(); return }
       if (e.key === 'Tab' && e.altKey) { e.preventDefault(); e.stopPropagation(); st.sw ? step(e.shiftKey ? -1 : 1) : openSw(e.shiftKey, true); return }
       if (!st.sw) return
       // Option-letter keys produce accented characters on macOS; use the letter for the held-modifier demo.
@@ -328,7 +385,7 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
       else if ((e.altKey || !e.target.matches('input.search-query'))
         && (k === 'Backspace' || !e.isComposing && /^[\x20-\x7e]$/.test(k))) {
         st.sw.query = k === 'Backspace' ? st.sw.query.slice(0, -1) : st.sw.query + k
-        st.sw.list = searchWindows(st.mru, st.sw.query)
+        st.sw.list = switcherWindows(st.mru, st.sw.query, st.allDesktops, st.desktop)
         st.sw.sel = 0
         renderSw()
       }
@@ -342,6 +399,7 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
       const a = e.target.closest('.demo-bar [data-act]'); if (!a) return
       if (a.dataset.act === 'cmdtab') cmdTab()
       if (a.dataset.act === 'settings') openSettings()
+      if (a.dataset.act === 'sidebar') toggleSidebar()
       if (a.dataset.act === 'reset') { reset(); render() }
     })
     render()
@@ -349,14 +407,17 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
 
   // Static illustrations for the feature sections
   const MOCKS = {
-    search: () => `<div class="mac switcher static"><div class="search-query">chr context</div>${swRows(searchWindows(MRU0, 'chr context'), 0, 'div', 'chr context')}</div>`,
-    switcher: () => `<div class="mac switcher static">${swRows(MRU0, 1)}</div>`,
+    search: () => {
+      const query = zh ? 'weix' : 'chr context'
+      return `<div class="mac switcher static"><div class="search-query">${query}</div>${swRows(searchWindows(MRU0, query), 0, 'div', query)}</div>`
+    },
+    switcher: () => `<div class="mac switcher static">${swRows(switcherWindows(MRU0, '', true, 1), 1, 'div', '', true)}</div>`,
     appbar: () => `<div class="mac desk-mock">
       <div class="appbar static edge" data-pos="left" data-display="title" data-mode="always">${barHTML(groups0(), badges0(), 'div')}</div>
       <div class="appbar static" data-pos="bottom" data-display="title" data-mode="always">${barHTML(groups0(), badges0(), 'div')}</div></div>`,
     groups: () => `<div class="mac groups-mock"><div class="appbar static" data-pos="left" data-display="title" data-mode="always">${barHTML([
       { name: T.ungrouped, items: ['finder'] }, { name: T.code, items: ['terminal', 'chrome', 'claude'] },
-      { name: 'AI', items: ['chatgpt'] }, { name: T.team, items: ['slack', 'notes'] }], badges0(), 'div').replace('class="row" title="zsh', 'class="row drop-before" title="zsh')}</div>
+      { name: 'AI', items: ['chatgpt'] }, { name: T.team, items: ['slack', 'notes'] }], badges0(), 'div')}</div>
       <div class="menu static"><button type="button" tabindex="-1">${T.pin}</button><hr><button type="button" tabindex="-1">${T.hideApp}</button><button type="button" tabindex="-1">${T.quitApp}</button></div></div>`,
     settings: () => `<div class="mac settings-mock"><div class="win static"><div class="titlebar">${lights()}<span class="ttl">${T.settingsTitle}</span></div>${settingsForm({ ...sidebarDefaults, mock: true })}</div>
       <div class="appbar static" data-pos="bottom" data-display="title" data-mode="always">${barHTML(groups0().slice(1), badges0(), 'div')}</div></div>`,
