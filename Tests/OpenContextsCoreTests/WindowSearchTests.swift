@@ -77,6 +77,34 @@ final class WindowSearchTests: XCTestCase {
         XCTAssertEqual(match.titleRanges.map { title.substring(with: $0) }, ["Café", "Open"])
     }
 
+    func testPinyinMatchesChineseAppNamesAndTitles() throws {
+        let wechat = window("1", app: "微信", title: "文件传输助手")
+        let full = try XCTUnwrap(WindowSearch.match(wechat, query: "WeiXin"))
+        XCTAssertEqual(full.appRanges, [NSRange(location: 0, length: 2)])
+        XCTAssertTrue(full.titleRanges.isEmpty)
+        XCTAssertEqual(try XCTUnwrap(WindowSearch.match(wechat, query: "weix")).appRanges,
+                       [NSRange(location: 0, length: 2)])
+        XCTAssertEqual(try XCTUnwrap(WindowSearch.match(wechat, query: "xin")).appRanges,
+                       [NSRange(location: 1, length: 1)])
+        let title = try XCTUnwrap(WindowSearch.match(wechat, query: "weixin chuanshu"))
+        XCTAssertEqual(title.titleRanges, [NSRange(location: 2, length: 2)])
+
+        let music = window("2", app: "QQ音乐", title: "")
+        XCTAssertEqual(try XCTUnwrap(WindowSearch.match(music, query: "qqyinle")).appRanges,
+                       [NSRange(location: 0, length: 4)])
+    }
+
+    func testPinyinStartsAtACharacterAndRanksBelowLiteralMatches() {
+        let windows = [window("pinyin", app: "微信", title: ""),
+                       window("literal", app: "Weixin", title: "")]
+        XCTAssertEqual(WindowSearch.filter(windows, query: "weixin").map(\.window.id), ["literal", "pinyin"])
+        XCTAssertEqual(WindowSearch.filter(windows, query: "weix").map(\.window.id), ["literal", "pinyin"])
+        XCTAssertEqual(WindowSearch.filter(windows.reversed(), query: "weix").map(\.window.id), ["literal", "pinyin"])
+        XCTAssertNil(WindowSearch.match(window("3", app: "微信", title: ""), query: "eixin"))
+        XCTAssertNil(WindowSearch.match(window("4", app: "微信", title: ""), query: "wx"))
+        XCTAssertNil(WindowSearch.match(window("5", app: "微 信", title: ""), query: "weixin"))
+    }
+
     func testNoResultsAndNoTypoCorrection() {
         let windows = [window("1", app: "Chrome", title: "GitHub")]
         XCTAssertTrue(WindowSearch.filter(windows, query: "zzzz").isEmpty)

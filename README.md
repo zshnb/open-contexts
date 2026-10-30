@@ -92,7 +92,7 @@ xattr -dr com.apple.quarantine "/Applications/OpenContexts.app"
 
 - `⌘Tab`: Open the switcher for all windows. Press `Tab` again or `↓` to move forward; press `⇧Tab` or `↑` to move backward.
 - `Command + backtick`: Open the switcher for windows of the current app.
-- Search: Open the switcher, hold its modifier, type an app name or window title, then release to switch. Matching ignores case and uses contiguous text. Combine terms with spaces, such as `chr context`. `Backspace` deletes characters; clearing the query restores the list. With no matches, releasing only closes the switcher. Input supports English letters, numbers and symbols (printable ASCII); Chinese input and pinyin are not supported.
+- Search: Open the switcher, hold its modifier, type an app name or window title, then release to switch. Matching ignores case and uses contiguous text. Combine terms with spaces, such as `chr context`. `Backspace` deletes characters; clearing the query restores the list. With no matches, releasing only closes the switcher. Input supports English letters, numbers and symbols (printable ASCII). Chinese names and titles match full toneless pinyin, such as `weixin` or `weix` for 微信; initials such as `wx` and Chinese input are not supported.
 - `Esc`: Cancel switching. Release a modifier key of the shortcut to activate the selected window (`⌘` by default).
 - Custom shortcuts: Click either shortcut in Settings, then press a combination using Command, Option, or Control and a key. Shift is reserved for reverse switching; Esc cancels recording. Changes take effect immediately and persist after restarting. “Restore defaults” restores `⌘Tab` and `Command + backtick`.
 - `＋` in the sidebar: Create a group.

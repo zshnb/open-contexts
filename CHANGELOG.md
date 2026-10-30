@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- Search Chinese app names and window titles by toneless pinyin, such as `weixin` or `weix` for 微信.
+
+### 新增
+
+- 支持用不带声调的拼音搜索中文应用名和窗口标题，如输入 `weixin` 或 `weix` 匹配“微信”。
+
 ## [0.5.0] - 2026-10-25
 
 ### Added
