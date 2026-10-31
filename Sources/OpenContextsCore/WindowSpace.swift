@@ -41,3 +41,9 @@ public enum WindowSwitcher {
         return results + WindowSearch.filter(group, query: query)
     }
 }
+
+public extension Sequence where Element == WindowInfo {
+    func onVisibleSpaces(allSpaces: Bool) -> [WindowInfo] {
+        allSpaces ? Array(self) : filter(\.isOnCurrentSpace)
+    }
+}
