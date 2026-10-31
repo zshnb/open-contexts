@@ -35,6 +35,7 @@ final class WindowService: ObservableObject {
         let element: AXUIElement
         var info: WindowInfo
         var windowID: CGWindowID? = nil
+        var frame: CGRect? = nil
     }
 
     private struct ApplicationSnapshot: Sendable {
@@ -51,6 +52,7 @@ final class WindowService: ObservableObject {
         let badgeReads: [String: DockBadgeRead]?
         var discoveries: [pid_t: WindowSpaces.DiscoveryState] = [:]
         var spaceSnapshot: WindowSpaces.Snapshot?
+        var pendingTabs: Set<CGWindowID> = []
     }
 
     private enum AttributeRead<Value> {
@@ -75,6 +77,7 @@ final class WindowService: ObservableObject {
     private var includeAllSpaces = false
     private var discoveries: [pid_t: WindowSpaces.DiscoveryState] = [:]
     private var discoveryPass = 0
+    private var pendingTabs: Set<CGWindowID> = []
     private var spaceSnapshot: WindowSpaces.Snapshot?
     private var lastBadgeScanAt = -Double.infinity
     private var badgeState = DockBadgeState()
@@ -130,13 +133,15 @@ final class WindowService: ObservableObject {
         let allSpaces = includeAllSpaces
         let discoveryState = discoveries
         let pass = discoveryPass
+        let pending = pendingTabs
         discoveryPass &+= 1
         scanInFlight = true
         scanQueue.async { [weak self] in
             let result = Self.scan(applications: applications, previous: previous,
                                    frontmostPID: frontmostPID,
                                    badgeReads: scanBadges ? dockPID.flatMap(Self.scanDockBadges) : nil,
-                                   allSpaces: allSpaces, discoveries: discoveryState, discoveryPass: pass)
+                                   allSpaces: allSpaces, discoveries: discoveryState, discoveryPass: pass,
+                                   pendingTabs: pending)
             Task { @MainActor [weak self] in self?.apply(result) }
         }
     }
@@ -169,6 +174,7 @@ final class WindowService: ObservableObject {
 
         externalFocusedID = result.focusedID
         discoveries = result.discoveries
+        pendingTabs = result.pendingTabs
         spaceSnapshot = result.spaceSnapshot
         if let externalFocusedID, let index = orderedIDs.firstIndex(of: externalFocusedID), index != 0 {
             orderedIDs.remove(at: index)
@@ -329,7 +335,7 @@ final class WindowService: ObservableObject {
 
     static func selfCheck() -> Bool {
         _ = NSApplication.shared
-        guard orderingSelfCheck(), closingSelfCheck(), fullscreenSelfCheck() else { return false }
+        guard orderingSelfCheck(), closingSelfCheck(), fullscreenSelfCheck(), tabSelfCheck() else { return false }
         let service = WindowService()
         let id = "local:self-check"
         let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: false)
@@ -424,6 +430,52 @@ final class WindowService: ObservableObject {
         return true
     }
 
+    static func tabSelfCheck() -> Bool {
+        let frame = CGRect(x: 10, y: 20, width: 800, height: 600)
+        func tab(_ id: String, element: pid_t, processID: pid_t = 1, frame: CGRect?) -> TrackedWindow {
+            TrackedWindow(id: id, element: AXUIElementCreateApplication(element),
+                          info: WindowInfo(id: id, appID: "check", appName: "Check", title: id,
+                                           processID: processID),
+                          frame: frame)
+        }
+        func resolve(_ frame: CGRect?, windowID: CGWindowID? = 7, listed: [TrackedWindow] = [],
+                     previous: [TrackedWindow], usedIDs: Set<String> = [],
+                     pending: Set<CGWindowID> = []) -> (id: String?, deferred: Set<CGWindowID>) {
+            var deferred: Set<CGWindowID> = []
+            let id = newWindowID(frame: frame, windowID: windowID, processID: 1, listed: listed.map(\.element),
+                                 previous: previous, usedIDs: usedIDs, pendingTabs: pending,
+                                 deferredTabs: &deferred)
+            return (id, deferred)
+        }
+        func isFresh(_ result: (id: String?, deferred: Set<CGWindowID>)) -> Bool {
+            result.deferred.isEmpty && result.id.flatMap(UUID.init(uuidString:)) != nil
+        }
+        let old = tab("old", element: 9001, frame: frame)
+        let twin = tab("twin", element: 9002, frame: frame)
+        let moved = tab("moved", element: 9003, frame: frame.offsetBy(dx: 1, dy: 0))
+        let resized = tab("resized", element: 9004, frame: frame.insetBy(dx: 0, dy: 1))
+        let otherApp = tab("other-app", element: 9005, processID: 2, frame: frame)
+        let unknown = tab("unknown", element: 9006, frame: nil)
+        let empty = CGRect(x: 5, y: 5, width: 0, height: 100)
+
+        let inherited = resolve(frame, previous: [moved, old, unknown, otherApp])
+        let incoming = resolve(frame, listed: [old], previous: [old])
+        let ambiguousIncoming = resolve(frame, listed: [twin], previous: [old, twin, tab("third", element: 9007, frame: frame)])
+        return inherited.id == "old" && inherited.deferred.isEmpty
+            && incoming.id == nil && incoming.deferred == [7]
+            && ambiguousIncoming.id == nil && ambiguousIncoming.deferred == [7]
+            && isFresh(resolve(frame, listed: [old], previous: [old], pending: [7]))
+            && isFresh(resolve(frame, windowID: nil, listed: [old], previous: [old]))
+            && isFresh(resolve(frame, previous: [old], usedIDs: ["old"]))
+            && isFresh(resolve(frame, previous: [old, twin]))
+            && isFresh(resolve(frame, previous: [moved, resized, otherApp, unknown]))
+            && isFresh(resolve(frame, previous: []))
+            && isFresh(resolve(nil, listed: [unknown], previous: [unknown]))
+            && isFresh(resolve(.zero, listed: [tab("zero", element: 9008, frame: .zero)],
+                               previous: [tab("zero", element: 9008, frame: .zero)]))
+            && isFresh(resolve(empty, previous: [tab("empty", element: 9009, frame: empty)]))
+    }
+
     static func focusSelfCheck() -> Bool {
         _ = NSApplication.shared
         let service = WindowService()
@@ -451,12 +503,15 @@ final class WindowService: ObservableObject {
         }
         var previous: [TrackedWindow] = []
         var discoveryState: [pid_t: WindowSpaces.DiscoveryState] = [:]
+        var pendingTabs: Set<CGWindowID> = []
         for pass in 0..<30 {
             let result = scan(applications: applications, previous: previous,
                               frontmostPID: NSWorkspace.shared.frontmostApplication?.processIdentifier,
-                              badgeReads: nil, allSpaces: true, discoveries: discoveryState, discoveryPass: pass)
+                              badgeReads: nil, allSpaces: true, discoveries: discoveryState, discoveryPass: pass,
+                              pendingTabs: pendingTabs)
             previous = result.windows
             discoveryState = result.discoveries
+            pendingTabs = result.pendingTabs
         }
         let counts = Dictionary(grouping: previous, by: { $0.info.space?.index ?? 0 }).mapValues(\.count)
         let known = Set(previous.compactMap(\.windowID))
@@ -489,7 +544,8 @@ final class WindowService: ObservableObject {
         var result = scan(applications: apps, previous: [], frontmostPID: nil, badgeReads: nil, allSpaces: true)
         for pass in 1..<30 where result.windows.isEmpty {
             result = scan(applications: apps, previous: result.windows, frontmostPID: nil,
-                          badgeReads: nil, allSpaces: true, discoveries: result.discoveries, discoveryPass: pass)
+                          badgeReads: nil, allSpaces: true, discoveries: result.discoveries, discoveryPass: pass,
+                          pendingTabs: result.pendingTabs)
         }
         guard (simulateCancellation ? result.windows.count >= 2 : result.windows.count == 1), var target = result.windows.first else {
             print("Activation check requires \(simulateCancellation ? "two or more" : "exactly one") eligible windows; found \(result.windows.count)")
@@ -600,9 +656,11 @@ final class WindowService: ObservableObject {
         previous: [TrackedWindow],
         frontmostPID: pid_t?,
         badgeReads: [String: DockBadgeRead]?,
-        allSpaces: Bool = false, discoveries: [pid_t: WindowSpaces.DiscoveryState] = [:], discoveryPass: Int = 0
+        allSpaces: Bool = false, discoveries: [pid_t: WindowSpaces.DiscoveryState] = [:], discoveryPass: Int = 0,
+        pendingTabs: Set<CGWindowID> = []
     ) -> ScanResult {
         var discovered: [TrackedWindow] = []
+        var deferredTabs: Set<CGWindowID> = []
         var focusedElement: AXUIElement?
         var usedIDs: Set<String> = []
         let topology = WindowSpaces.query()
@@ -774,8 +832,13 @@ final class WindowService: ObservableObject {
                     previouslyTracked: existing != nil
                 ) else { continue }
 
-                let id = existing?.id ?? UUID().uuidString
+                let windowFrame = frame(of: element)
                 let windowID = existing?.windowID ?? WindowSpaces.windowID(of: element)
+                guard let id = existing?.id ?? newWindowID(
+                    frame: windowFrame, windowID: windowID, processID: application.processID,
+                    listed: appWindows, previous: previous, usedIDs: usedIDs,
+                    pendingTabs: pendingTabs, deferredTabs: &deferredTabs
+                ) else { continue }
                 usedIDs.insert(id)
                 discovered.append(TrackedWindow(
                     id: id,
@@ -789,7 +852,8 @@ final class WindowService: ObservableObject {
                         processID: application.processID,
                         space: topology?.space(for: windowID)
                     ),
-                    windowID: windowID
+                    windowID: windowID,
+                    frame: windowFrame
                 ))
             }
         }
@@ -804,8 +868,37 @@ final class WindowService: ObservableObject {
             activeAppIDs: Set(applications.map(\.appID)),
             badgeReads: badgeReads,
             discoveries: discoveryState,
-            spaceSnapshot: topology
+            spaceSnapshot: topology,
+            pendingTabs: deferredTabs
         )
+    }
+
+    /// Picks the ID for a window the previous scan did not track.
+    ///
+    /// Slightly tricky as it has to work around native macOS tabs: each native tab is a separate
+    /// window, but only the selected tab is listed in `kAXWindowsAttribute`, hence switching tabs
+    /// looks like one window closing and a new one opening. With a new ID, the sidebar would drop the
+    /// row and append the new one at the end of its group.
+    /// Instead, a new window inherits the ID of the one window of the same app that stopped being
+    /// listed if it had exactly the same frame.
+    ///
+    /// Switching tabs is not atomic: we can briefly, have both listed. To work around that, the new
+    /// window is held back for one scan.
+    nonisolated private static func newWindowID(
+        frame: CGRect?, windowID: CGWindowID?, processID: pid_t, listed: [AXUIElement],
+        previous: [TrackedWindow], usedIDs: Set<String>, pendingTabs: Set<CGWindowID>,
+        deferredTabs: inout Set<CGWindowID>
+    ) -> String? {
+        guard let frame, !frame.isEmpty else { return UUID().uuidString }
+        let siblings = previous.filter { $0.info.processID == processID && $0.frame == frame }
+        let isListed = { (sibling: TrackedWindow) in listed.contains { CFEqual($0, sibling.element) } }
+        let vanished = siblings.filter { !usedIDs.contains($0.id) && !isListed($0) }
+        if vanished.count == 1 { return vanished[0].id }
+        guard let windowID, !pendingTabs.contains(windowID), siblings.contains(where: isListed) else {
+            return UUID().uuidString
+        }
+        deferredTabs.insert(windowID)
+        return nil
     }
 
     nonisolated private static func scanDockBadges(processID: pid_t) -> [String: DockBadgeRead]? {
