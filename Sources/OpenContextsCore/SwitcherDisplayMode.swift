@@ -4,18 +4,27 @@ public enum SwitcherDisplayMode: String, CaseIterable, Identifiable, Sendable {
     case allDisplays
     case primaryDisplay
     case focusedDisplay
+    case pointerDisplay
 
     public var id: String { rawValue }
 
+    /// Whether the mode shows the switcher on one display resolved when it opens.
+    public var usesAnchorDisplay: Bool {
+        switch self {
+        case .allDisplays, .primaryDisplay: false
+        case .focusedDisplay, .pointerDisplay: true
+        }
+    }
+
     /// `displays` must follow `NSScreen.screens` order, where the first entry is the primary display.
-    public func targetDisplays<ID: Equatable>(from displays: [ID], focused: ID? = nil) -> [ID] {
+    public func targetDisplays<ID: Equatable>(from displays: [ID], anchor: ID? = nil) -> [ID] {
         switch self {
         case .allDisplays:
             displays
         case .primaryDisplay:
             Array(displays.prefix(1))
-        case .focusedDisplay:
-            if let focused, displays.contains(focused) { [focused] } else { Array(displays.prefix(1)) }
+        case .focusedDisplay, .pointerDisplay:
+            if let anchor, displays.contains(anchor) { [anchor] } else { Array(displays.prefix(1)) }
         }
     }
 

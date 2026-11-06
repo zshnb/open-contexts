@@ -34,7 +34,7 @@ final class SwitcherDisplayModeTests: XCTestCase {
     }
 
     func testFocusedDisplaySelectsTheFocusedScreen() {
-        XCTAssertEqual(SwitcherDisplayMode.focusedDisplay.targetDisplays(from: [42, 7, 99], focused: 7), [7])
+        XCTAssertEqual(SwitcherDisplayMode.focusedDisplay.targetDisplays(from: [42, 7, 99], anchor: 7), [7])
     }
 
     func testFocusedDisplayFallsBackToPrimaryWithoutFocus() {
@@ -42,19 +42,19 @@ final class SwitcherDisplayModeTests: XCTestCase {
     }
 
     func testFocusedDisplayFallsBackToPrimaryWhenFocusedScreenWasRemoved() {
-        XCTAssertEqual(SwitcherDisplayMode.focusedDisplay.targetDisplays(from: [42, 7], focused: 99), [42])
+        XCTAssertEqual(SwitcherDisplayMode.focusedDisplay.targetDisplays(from: [42, 7], anchor: 99), [42])
     }
 
     func testFocusedDisplayHandlesNoScreensEvenWithFocus() {
-        XCTAssertEqual(SwitcherDisplayMode.focusedDisplay.targetDisplays(from: [Int](), focused: 7), [])
+        XCTAssertEqual(SwitcherDisplayMode.focusedDisplay.targetDisplays(from: [Int](), anchor: 7), [])
     }
 
     func testAllDisplaysIgnoresFocusedScreen() {
-        XCTAssertEqual(SwitcherDisplayMode.allDisplays.targetDisplays(from: [42, 7, 99], focused: 7), [42, 7, 99])
+        XCTAssertEqual(SwitcherDisplayMode.allDisplays.targetDisplays(from: [42, 7, 99], anchor: 7), [42, 7, 99])
     }
 
     func testPrimaryDisplayIgnoresFocusedScreen() {
-        XCTAssertEqual(SwitcherDisplayMode.primaryDisplay.targetDisplays(from: [42, 7, 99], focused: 7), [42])
+        XCTAssertEqual(SwitcherDisplayMode.primaryDisplay.targetDisplays(from: [42, 7, 99], anchor: 7), [42])
     }
 
     func testFocusedDisplayPersistedRawValueRemainsStable() {
@@ -111,6 +111,74 @@ final class SwitcherDisplayModeTests: XCTestCase {
         XCTAssertNil(SwitcherDisplayMode.display(
             containing: CGRect(x: 0, y: 0, width: 50, height: 50), in: displays
         ))
+    }
+
+    func testPointerDisplaySelectsAnchorOnThirdScreen() {
+        XCTAssertEqual(SwitcherDisplayMode.pointerDisplay.targetDisplays(from: [42, 7, 99], anchor: 99), [99])
+    }
+
+    func testPointerDisplayFallsBackToPrimaryWithoutAnchor() {
+        XCTAssertEqual(SwitcherDisplayMode.pointerDisplay.targetDisplays(from: [42, 7, 99]), [42])
+    }
+
+    func testPointerDisplayFallsBackToPrimaryWhenAnchorScreenWasRemoved() {
+        XCTAssertEqual(SwitcherDisplayMode.pointerDisplay.targetDisplays(from: [42, 7, 99], anchor: 123), [42])
+    }
+
+    func testPointerDisplayHandlesNoScreensEvenWithAnchor() {
+        XCTAssertEqual(SwitcherDisplayMode.pointerDisplay.targetDisplays(from: [Int](), anchor: 99), [])
+    }
+
+    func testPointerDisplayPersistedRawValueRemainsStable() {
+        XCTAssertEqual(SwitcherDisplayMode.pointerDisplay.rawValue, "pointerDisplay")
+        XCTAssertEqual(SwitcherDisplayMode(rawValue: "pointerDisplay"), .pointerDisplay)
+    }
+
+    func testOnlyFocusedAndPointerModesUseAnAnchorDisplay() {
+        XCTAssertFalse(SwitcherDisplayMode.allDisplays.usesAnchorDisplay)
+        XCTAssertFalse(SwitcherDisplayMode.primaryDisplay.usesAnchorDisplay)
+        XCTAssertTrue(SwitcherDisplayMode.focusedDisplay.usesAnchorDisplay)
+        XCTAssertTrue(SwitcherDisplayMode.pointerDisplay.usesAnchorDisplay)
+    }
+
+    func testDisplayModeOrderMatchesSettingsOptions() {
+        XCTAssertEqual(SwitcherDisplayMode.allCases, [.allDisplays, .primaryDisplay, .focusedDisplay, .pointerDisplay])
+    }
+
+    func testPointerRectangleInsideThirdDisplaySelectsIt() {
+        XCTAssertEqual(SwitcherDisplayMode.display(
+            containing: CGRect(x: 250, y: 50, width: 1, height: 1), in: threeDisplays
+        ), "third")
+    }
+
+    func testPointerRectangleAtDisplayTopLeftSelectsIt() {
+        XCTAssertEqual(SwitcherDisplayMode.display(
+            containing: CGRect(x: 100, y: 0, width: 1, height: 1), in: threeDisplays
+        ), "external")
+    }
+
+    func testPointerRectangleAtDisplayBottomRightPixelSelectsIt() {
+        XCTAssertEqual(SwitcherDisplayMode.display(
+            containing: CGRect(x: 199, y: 99, width: 1, height: 1), in: threeDisplays
+        ), "external")
+    }
+
+    func testPointerRectangleCanMatchDisplaysAtNegativeCoordinates() {
+        let displays = [
+            (id: "primary", bounds: CGRect(x: 0, y: 0, width: 100, height: 100)),
+            (id: "left", bounds: CGRect(x: -100, y: 0, width: 100, height: 100)),
+            (id: "above", bounds: CGRect(x: 0, y: -100, width: 100, height: 100))
+        ]
+        XCTAssertEqual(SwitcherDisplayMode.display(
+            containing: CGRect(x: -1, y: 0, width: 1, height: 1), in: displays
+        ), "left")
+        XCTAssertEqual(SwitcherDisplayMode.display(
+            containing: CGRect(x: 0, y: -1, width: 1, height: 1), in: displays
+        ), "above")
+    }
+
+    private var threeDisplays: [(id: String, bounds: CGRect)] {
+        sideBySideDisplays + [(id: "third", bounds: CGRect(x: 200, y: 0, width: 100, height: 100))]
     }
 
     private var sideBySideDisplays: [(id: String, bounds: CGRect)] {

@@ -78,3 +78,5 @@
 "The primary display is the one set as Main display in System Settings → Displays." = "The primary display is the one set as Main display in System Settings → Displays.";
 "Focused display" = "Focused display";
 "Shows on the display with the focused window, or under the pointer if there is none." = "Shows on the display with the focused window, or under the pointer if there is none.";
+"Pointer display" = "Pointer display";
+"Shows on the display under the pointer." = "Shows on the display under the pointer.";

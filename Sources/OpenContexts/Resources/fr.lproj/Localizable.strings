@@ -78,3 +78,5 @@
 "The primary display is the one set as Main display in System Settings → Displays." = "L’écran principal est celui défini comme moniteur principal dans Réglages Système → Moniteurs.";
 "Focused display" = "Écran de la fenêtre active";
 "Shows on the display with the focused window, or under the pointer if there is none." = "S’affiche sur l’écran de la fenêtre active, ou sur celui du pointeur s’il n’y en a pas.";
+"Pointer display" = "Écran du pointeur";
+"Shows on the display under the pointer." = "S’affiche sur l’écran où se trouve le pointeur.";

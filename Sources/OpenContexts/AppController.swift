@@ -28,7 +28,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var selectedIndex = 0
     private var currentAppOnly: Bool?
     private var currentAppPID: pid_t?
-    private var switcherFocusDisplayID: CGDirectDisplayID?
+    private var switcherAnchorDisplayID: CGDirectDisplayID?
     private var didRestoreGroups = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -99,10 +99,14 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         // objectWillChange fires before the new value is stored, so read settings on the next turn.
         settings.objectWillChange.sink { [weak self] _ in
+            let previousSwitcherDisplayMode = self?.settings.switcherDisplayMode
             DispatchQueue.main.async {
                 self?.updateSidebars()
                 self?.configureMenuBar()
                 if let self {
+                    if previousSwitcherDisplayMode != self.settings.switcherDisplayMode {
+                        self.switcherAnchorDisplayID = nil
+                    }
                     self.shortcuts.configure(allWindows: self.settings.allWindowsShortcut,
                                              currentApp: self.settings.currentAppShortcut,
                                              sidebar: self.settings.sidebarShortcut)
@@ -214,7 +218,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
             let firstIsFocused = switchingResults.first?.window.id == windowService.focusedWindowID
             selectedIndex = reverse ? switchingResults.count - 1
                 : firstIsFocused ? min(1, switchingResults.count - 1) : 0
-            switcherFocusDisplayID = nil
+            switcherAnchorDisplayID = nil
             showSwitchers()
         case let .step(amount):
             guard !switchingResults.isEmpty else { return }
@@ -274,23 +278,26 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func switcherTargetDisplayIDs() -> Set<CGDirectDisplayID> {
         let displays = NSScreen.screens.map(Self.displayID)
-        if settings.switcherDisplayMode == .focusedDisplay {
-            if switcherFocusDisplayID.map(displays.contains) != true {
-                switcherFocusDisplayID = currentFocusDisplayID() ?? displays.first
+        let mode = settings.switcherDisplayMode
+        if mode.usesAnchorDisplay {
+            if switcherAnchorDisplayID.map(displays.contains) != true {
+                switcherAnchorDisplayID = currentAnchorDisplayID(for: mode) ?? displays.first
             }
         } else {
-            switcherFocusDisplayID = nil
+            switcherAnchorDisplayID = nil
         }
-        return Set(settings.switcherDisplayMode.targetDisplays(from: displays, focused: switcherFocusDisplayID))
+        return Set(mode.targetDisplays(from: displays, anchor: switcherAnchorDisplayID))
     }
 
-    private func currentFocusDisplayID() -> CGDirectDisplayID? {
+    private func currentAnchorDisplayID(for mode: SwitcherDisplayMode) -> CGDirectDisplayID? {
         let displays = NSScreen.screens.map(Self.displayID).map { (id: $0, bounds: CGDisplayBounds($0)) }
-        if let frame = windowService.frontmostWindowFrame(),
+        if mode == .focusedDisplay, let frame = windowService.frontmostWindowFrame(),
            let id = SwitcherDisplayMode.display(containing: frame, in: displays) {
             return id
         }
-        return NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }).map(Self.displayID)
+        guard let pointer = CGEvent(source: nil)?.location else { return nil }
+        return SwitcherDisplayMode.display(containing: CGRect(origin: pointer, size: CGSize(width: 1, height: 1)),
+                                           in: displays)
     }
 
     private func showSwitchers() {
@@ -329,7 +336,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         selectedIndex = 0
         currentAppOnly = nil
         currentAppPID = nil
-        switcherFocusDisplayID = nil
+        switcherAnchorDisplayID = nil
         if let id { windowService.activate(id) }
     }
 
