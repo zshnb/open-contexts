@@ -72,3 +72,7 @@
 "Full screen %@" = "Pantalla completa %@";
 "Current" = "Actual";
 "Current desktop" = "Escritorio actual";
+"Show switcher on" = "Mostrar el selector en";
+"All displays" = "Todas las pantallas";
+"Primary display" = "Pantalla principal";
+"The primary display is the one set as Main display in System Settings → Displays." = "La pantalla principal es la definida como tal en Ajustes del Sistema → Pantallas.";

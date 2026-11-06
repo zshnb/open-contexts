@@ -2,6 +2,15 @@ import AppKit
 import OpenContextsCore
 import SwiftUI
 
+extension SwitcherDisplayMode {
+    func title(_ language: AppLanguage) -> String {
+        switch self {
+        case .allDisplays: L10n.text("All displays", language: language)
+        case .primaryDisplay: L10n.text("Primary display", language: language)
+        }
+    }
+}
+
 enum SidebarVisibilityMode: String, CaseIterable, Identifiable {
     case always
     case hover
@@ -72,12 +81,14 @@ final class AppSettings: ObservableObject {
     @Published private(set) var currentAppShortcut: KeyboardShortcut
     @Published private(set) var sidebarShortcut: KeyboardShortcut?
     @Published private(set) var showWindowsFromAllDesktops: Bool
+    @Published private(set) var switcherDisplayMode: SwitcherDisplayMode
 
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         showWindowsFromAllDesktops = defaults.object(forKey: "showWindowsFromAllDesktops") as? Bool ?? false
+        switcherDisplayMode = SwitcherDisplayMode(rawValue: defaults.string(forKey: "switcherDisplayMode") ?? "") ?? .allDisplays
         func loadShortcut(_ key: String, fallback: KeyboardShortcut) -> KeyboardShortcut {
             guard let data = defaults.data(forKey: key),
                   let shortcut = try? JSONDecoder().decode(KeyboardShortcut.self, from: data),
@@ -120,6 +131,11 @@ final class AppSettings: ObservableObject {
     func setSidebarMode(_ mode: SidebarVisibilityMode) {
         sidebarMode = mode
         defaults.set(mode.rawValue, forKey: "sidebarMode")
+    }
+
+    func setSwitcherDisplayMode(_ mode: SwitcherDisplayMode) {
+        switcherDisplayMode = mode
+        defaults.set(mode.rawValue, forKey: "switcherDisplayMode")
     }
 
     func setSidebarPosition(_ position: SidebarPosition) {
@@ -207,6 +223,13 @@ final class AppSettings: ObservableObject {
         guard let defaults = UserDefaults(suiteName: suite) else { return false }
         defer { defaults.removePersistentDomain(forName: suite) }
         let initial = AppSettings(defaults: defaults)
+        guard initial.switcherDisplayMode == .allDisplays else { return false }
+        initial.setSwitcherDisplayMode(.primaryDisplay)
+        guard initial.switcherDisplayMode == .primaryDisplay,
+              AppSettings(defaults: defaults).switcherDisplayMode == .primaryDisplay else { return false }
+        defaults.set("invalid", forKey: "switcherDisplayMode")
+        guard AppSettings(defaults: defaults).switcherDisplayMode == .allDisplays else { return false }
+        initial.setSwitcherDisplayMode(.allDisplays)
         guard !initial.showWindowsFromAllDesktops else { return false }
         initial.setShowWindowsFromAllDesktops(true)
         guard AppSettings(defaults: defaults).showWindowsFromAllDesktops else { return false }
@@ -394,6 +417,22 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
                 .toggleStyle(.checkbox)
+            }
+            settingsRow("Show switcher on") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Picker(L10n.text("Show switcher on", language: language), selection: Binding(
+                        get: { settings.switcherDisplayMode }, set: settings.setSwitcherDisplayMode
+                    )) {
+                        ForEach(SwitcherDisplayMode.allCases) { mode in
+                            Text(mode.title(language)).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.radioGroup)
+                    .horizontalRadioGroupLayout()
+                    .labelsHidden()
+                    Text(L10n.text("The primary display is the one set as Main display in System Settings → Displays.", language: language))
+                        .foregroundStyle(.secondary)
+                }
             }
             settingsRow("Language") {
                 Picker(L10n.text("Language", language: language), selection: Binding(

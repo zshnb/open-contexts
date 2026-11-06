@@ -152,11 +152,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
         updateSidebars()
         if currentAppOnly != nil {
-            switchers.values.forEach {
-                $0.show(results: switchingResults, selectedIndex: selectedIndex, query: searchQuery,
-                        groupBySpace: settings.showWindowsFromAllDesktops,
-                        totalWindowCount: switchingWindowCount, language: settings.language)
-            }
+            showSwitchers()
         }
     }
 
@@ -217,11 +213,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
             let firstIsFocused = switchingResults.first?.window.id == windowService.focusedWindowID
             selectedIndex = reverse ? switchingResults.count - 1
                 : firstIsFocused ? min(1, switchingResults.count - 1) : 0
-            switchers.values.forEach {
-                $0.show(results: switchingResults, selectedIndex: selectedIndex,
-                        groupBySpace: settings.showWindowsFromAllDesktops,
-                        totalWindowCount: switchingWindowCount, language: settings.language)
-            }
+            showSwitchers()
         case let .step(amount):
             guard !switchingResults.isEmpty else { return }
             selectedIndex = (selectedIndex + amount % switchingResults.count + switchingResults.count)
@@ -278,11 +270,33 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         updateSwitchers()
     }
 
+    private var switcherDisplayIDs: Set<CGDirectDisplayID> {
+        Set(settings.switcherDisplayMode.targetDisplays(from: NSScreen.screens.map(Self.displayID)))
+    }
+
+    private func showSwitchers() {
+        let targets = switcherDisplayIDs
+        for (id, panel) in switchers {
+            guard targets.contains(id) else { panel.hideSwitcher(); continue }
+            panel.show(results: switchingResults, selectedIndex: selectedIndex, query: searchQuery,
+                       groupBySpace: settings.showWindowsFromAllDesktops,
+                       totalWindowCount: switchingWindowCount, language: settings.language)
+        }
+    }
+
     private func updateSwitchers(resetHover: Bool = false) {
-        switchers.values.forEach {
-            $0.update(results: switchingResults, selectedIndex: selectedIndex, resetHover: resetHover,
-                      groupBySpace: settings.showWindowsFromAllDesktops,
-                      query: searchQuery, totalWindowCount: switchingWindowCount, language: settings.language)
+        let targets = switcherDisplayIDs
+        for (id, panel) in switchers {
+            guard targets.contains(id) else { panel.hideSwitcher(); continue }
+            guard panel.isVisible else {
+                panel.show(results: switchingResults, selectedIndex: selectedIndex, query: searchQuery,
+                           groupBySpace: settings.showWindowsFromAllDesktops,
+                           totalWindowCount: switchingWindowCount, language: settings.language)
+                continue
+            }
+            panel.update(results: switchingResults, selectedIndex: selectedIndex, resetHover: resetHover,
+                         groupBySpace: settings.showWindowsFromAllDesktops,
+                         query: searchQuery, totalWindowCount: switchingWindowCount, language: settings.language)
         }
     }
 

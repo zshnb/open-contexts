@@ -72,3 +72,7 @@
 "Full screen %@" = "全屏 %@";
 "Current" = "当前";
 "Current desktop" = "当前桌面";
+"Show switcher on" = "切换器显示位置";
+"All displays" = "所有显示器";
+"Primary display" = "主显示器";
+"The primary display is the one set as Main display in System Settings → Displays." = "主显示器是在系统设置 → 显示器中设为主显示器的屏幕。";

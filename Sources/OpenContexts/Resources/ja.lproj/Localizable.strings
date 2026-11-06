@@ -72,3 +72,7 @@
 "Full screen %@" = "フルスクリーン %@";
 "Current" = "現在";
 "Current desktop" = "現在のデスクトップ";
+"Show switcher on" = "切替の表示先";
+"All displays" = "すべてのディスプレイ";
+"Primary display" = "主ディスプレイ";
+"The primary display is the one set as Main display in System Settings → Displays." = "主ディスプレイは、システム設定 → ディスプレイで主ディスプレイに設定した画面です。";
