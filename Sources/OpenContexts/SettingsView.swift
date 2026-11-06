@@ -7,6 +7,17 @@ extension SwitcherDisplayMode {
         switch self {
         case .allDisplays: L10n.text("All displays", language: language)
         case .primaryDisplay: L10n.text("Primary display", language: language)
+        case .focusedDisplay: L10n.text("Focused display", language: language)
+        }
+    }
+
+    func caption(_ language: AppLanguage) -> String? {
+        switch self {
+        case .allDisplays: nil
+        case .primaryDisplay:
+            L10n.text("The primary display is the one set as Main display in System Settings → Displays.", language: language)
+        case .focusedDisplay:
+            L10n.text("Shows on the display with the focused window, or under the pointer if there is none.", language: language)
         }
     }
 }
@@ -224,9 +235,11 @@ final class AppSettings: ObservableObject {
         defer { defaults.removePersistentDomain(forName: suite) }
         let initial = AppSettings(defaults: defaults)
         guard initial.switcherDisplayMode == .allDisplays else { return false }
-        initial.setSwitcherDisplayMode(.primaryDisplay)
-        guard initial.switcherDisplayMode == .primaryDisplay,
-              AppSettings(defaults: defaults).switcherDisplayMode == .primaryDisplay else { return false }
+        for mode in SwitcherDisplayMode.allCases {
+            initial.setSwitcherDisplayMode(mode)
+            guard initial.switcherDisplayMode == mode,
+                  AppSettings(defaults: defaults).switcherDisplayMode == mode else { return false }
+        }
         defaults.set("invalid", forKey: "switcherDisplayMode")
         guard AppSettings(defaults: defaults).switcherDisplayMode == .allDisplays else { return false }
         initial.setSwitcherDisplayMode(.allDisplays)
@@ -427,11 +440,11 @@ struct SettingsView: View {
                             Text(mode.title(language)).tag(mode)
                         }
                     }
-                    .pickerStyle(.radioGroup)
-                    .horizontalRadioGroupLayout()
                     .labelsHidden()
-                    Text(L10n.text("The primary display is the one set as Main display in System Settings → Displays.", language: language))
-                        .foregroundStyle(.secondary)
+                    .frame(width: 200)
+                    if let caption = settings.switcherDisplayMode.caption(language) {
+                        Text(caption).foregroundStyle(.secondary)
+                    }
                 }
             }
             settingsRow("Language") {

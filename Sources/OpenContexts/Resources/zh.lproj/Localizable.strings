@@ -76,3 +76,5 @@
 "All displays" = "所有显示器";
 "Primary display" = "主显示器";
 "The primary display is the one set as Main display in System Settings → Displays." = "主显示器是在系统设置 → 显示器中设为主显示器的屏幕。";
+"Focused display" = "焦点所在显示器";
+"Shows on the display with the focused window, or under the pointer if there is none." = "显示在焦点窗口所在的屏幕;没有焦点窗口时显示在鼠标所在的屏幕。";

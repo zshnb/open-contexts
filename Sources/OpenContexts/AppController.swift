@@ -28,6 +28,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var selectedIndex = 0
     private var currentAppOnly: Bool?
     private var currentAppPID: pid_t?
+    private var switcherFocusDisplayID: CGDirectDisplayID?
     private var didRestoreGroups = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -213,6 +214,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
             let firstIsFocused = switchingResults.first?.window.id == windowService.focusedWindowID
             selectedIndex = reverse ? switchingResults.count - 1
                 : firstIsFocused ? min(1, switchingResults.count - 1) : 0
+            switcherFocusDisplayID = nil
             showSwitchers()
         case let .step(amount):
             guard !switchingResults.isEmpty else { return }
@@ -270,12 +272,29 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         updateSwitchers()
     }
 
-    private var switcherDisplayIDs: Set<CGDirectDisplayID> {
-        Set(settings.switcherDisplayMode.targetDisplays(from: NSScreen.screens.map(Self.displayID)))
+    private func switcherTargetDisplayIDs() -> Set<CGDirectDisplayID> {
+        let displays = NSScreen.screens.map(Self.displayID)
+        if settings.switcherDisplayMode == .focusedDisplay {
+            if switcherFocusDisplayID.map(displays.contains) != true {
+                switcherFocusDisplayID = currentFocusDisplayID() ?? displays.first
+            }
+        } else {
+            switcherFocusDisplayID = nil
+        }
+        return Set(settings.switcherDisplayMode.targetDisplays(from: displays, focused: switcherFocusDisplayID))
+    }
+
+    private func currentFocusDisplayID() -> CGDirectDisplayID? {
+        let displays = NSScreen.screens.map(Self.displayID).map { (id: $0, bounds: CGDisplayBounds($0)) }
+        if let frame = windowService.frontmostWindowFrame(),
+           let id = SwitcherDisplayMode.display(containing: frame, in: displays) {
+            return id
+        }
+        return NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }).map(Self.displayID)
     }
 
     private func showSwitchers() {
-        let targets = switcherDisplayIDs
+        let targets = switcherTargetDisplayIDs()
         for (id, panel) in switchers {
             guard targets.contains(id) else { panel.hideSwitcher(); continue }
             panel.show(results: switchingResults, selectedIndex: selectedIndex, query: searchQuery,
@@ -285,7 +304,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func updateSwitchers(resetHover: Bool = false) {
-        let targets = switcherDisplayIDs
+        let targets = switcherTargetDisplayIDs()
         for (id, panel) in switchers {
             guard targets.contains(id) else { panel.hideSwitcher(); continue }
             guard panel.isVisible else {
@@ -310,6 +329,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         selectedIndex = 0
         currentAppOnly = nil
         currentAppPID = nil
+        switcherFocusDisplayID = nil
         if let id { windowService.activate(id) }
     }
 
