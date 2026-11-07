@@ -72,3 +72,15 @@
 "Full screen %@" = "Pantalla completa %@";
 "Current" = "Actual";
 "Current desktop" = "Escritorio actual";
+"Show switcher on" = "Mostrar el selector en";
+"All displays" = "Todas las pantallas";
+"Primary display" = "Pantalla principal";
+"The primary display is the one set as Main display in System Settings → Displays." = "La pantalla principal es la definida como tal en Ajustes del Sistema → Pantallas.";
+"Focused display" = "Pantalla de la ventana activa";
+"Shows on the display with the focused window, or under the pointer if there is none." = "Se muestra en la pantalla de la ventana activa o, si no hay ninguna, en la del puntero.";
+"Pointer display" = "Pantalla del puntero";
+"Shows on the display under the pointer." = "Se muestra en la pantalla donde está el puntero.";
+"Search windows" = "Buscar en las ventanas";
+"Open the switcher with a shortcut to search" = "Abrir el selector con un atajo para buscar";
+"Press %@, type to filter, then press Return to switch. Esc cancels." = "Pulsa %@, escribe para filtrar y pulsa Retorno para cambiar. Esc cancela.";
+"This shortcut is already in use. Change it in Shortcuts." = "Este atajo ya está en uso. Cámbialo en Atajos.";

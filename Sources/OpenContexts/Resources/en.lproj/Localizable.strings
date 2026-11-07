@@ -72,3 +72,15 @@
 "Full screen %@" = "Full screen %@";
 "Current" = "Current";
 "Current desktop" = "Current desktop";
+"Show switcher on" = "Show switcher on";
+"All displays" = "All displays";
+"Primary display" = "Primary display";
+"The primary display is the one set as Main display in System Settings → Displays." = "The primary display is the one set as Main display in System Settings → Displays.";
+"Focused display" = "Focused display";
+"Shows on the display with the focused window, or under the pointer if there is none." = "Shows on the display with the focused window, or under the pointer if there is none.";
+"Pointer display" = "Pointer display";
+"Shows on the display under the pointer." = "Shows on the display under the pointer.";
+"Search windows" = "Search windows";
+"Open the switcher with a shortcut to search" = "Open the switcher with a shortcut to search";
+"Press %@, type to filter, then press Return to switch. Esc cancels." = "Press %@, type to filter, then press Return to switch. Esc cancels.";
+"This shortcut is already in use. Change it in Shortcuts." = "This shortcut is already in use. Change it in Shortcuts.";
