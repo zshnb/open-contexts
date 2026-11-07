@@ -30,6 +30,10 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var currentAppPID: pid_t?
     private var switcherAnchorDisplayID: CGDirectDisplayID?
     private var didRestoreGroups = false
+    private var isSearchSession = false
+    private var searchDismissMonitors: [Any] = []
+    private var searchDismissObserver: NSObjectProtocol?
+    private var searchSessionID: UUID?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -43,6 +47,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        stopSearchDismissal()
         shortcuts.stop()
         windowService.stop()
         sidebars.values.forEach { $0.close() }
@@ -51,7 +56,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func configureShortcuts() {
         shortcuts.configure(allWindows: settings.allWindowsShortcut, currentApp: settings.currentAppShortcut,
-                            sidebar: settings.sidebarShortcut)
+                            sidebar: settings.sidebarShortcut, search: settings.activeSearchShortcut)
         shortcuts.canBegin = { [weak self] currentAppOnly in
             self?.availableWindows(currentAppOnly: currentAppOnly).isEmpty == false
         }
@@ -109,7 +114,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     }
                     self.shortcuts.configure(allWindows: self.settings.allWindowsShortcut,
                                              currentApp: self.settings.currentAppShortcut,
-                                             sidebar: self.settings.sidebarShortcut)
+                                             sidebar: self.settings.sidebarShortcut,
+                                             search: self.settings.activeSearchShortcut)
                     self.windowService.setIncludeAllSpaces(self.settings.showWindowsFromAllDesktops)
                     if self.settings.sidebarShortcut == nil { self.dismissSidebar() }
                     self.settingsWindow?.title = L10n.text("OpenContexts Settings", language: self.settings.language)
@@ -205,21 +211,10 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
             panel.setShortcutExpanded(expanded)
         case .dismissSidebar:
             dismissSidebar()
+        case .beginSearch:
+            beginSwitcher(currentAppOnly: false, reverse: false, searchSession: true)
         case let .begin(currentAppOnly, reverse):
-            dismissSidebar()
-            searchQuery = ""
-            selectionBeforeSearch = nil
-            self.currentAppOnly = currentAppOnly
-            currentAppPID = currentAppOnly ? NSWorkspace.shared.frontmostApplication?.processIdentifier : nil
-            switchingResults = WindowSwitcher.filter(availableWindows(currentAppOnly: currentAppOnly, pid: currentAppPID),
-                                                     query: "", allSpaces: settings.showWindowsFromAllDesktops)
-            switchingWindowCount = switchingResults.count
-            guard !switchingResults.isEmpty else { return }
-            let firstIsFocused = switchingResults.first?.window.id == windowService.focusedWindowID
-            selectedIndex = reverse ? switchingResults.count - 1
-                : firstIsFocused ? min(1, switchingResults.count - 1) : 0
-            switcherAnchorDisplayID = nil
-            showSwitchers()
+            beginSwitcher(currentAppOnly: currentAppOnly, reverse: reverse, searchSession: false)
         case let .step(amount):
             guard !switchingResults.isEmpty else { return }
             selectedIndex = (selectedIndex + amount % switchingResults.count + switchingResults.count)
@@ -247,6 +242,62 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         case .cancel:
             finishSwitcher(activating: nil)
         }
+    }
+
+    private func beginSwitcher(currentAppOnly: Bool, reverse: Bool, searchSession: Bool) {
+        stopSearchDismissal()
+        isSearchSession = false
+        dismissSidebar()
+        searchQuery = ""
+        selectionBeforeSearch = nil
+        self.currentAppOnly = currentAppOnly
+        currentAppPID = currentAppOnly ? NSWorkspace.shared.frontmostApplication?.processIdentifier : nil
+        switchingResults = WindowSwitcher.filter(availableWindows(currentAppOnly: currentAppOnly, pid: currentAppPID),
+                                                 query: "", allSpaces: settings.showWindowsFromAllDesktops)
+        switchingWindowCount = switchingResults.count
+        guard !switchingResults.isEmpty else { finishSwitcher(activating: nil); return }
+        let firstIsFocused = switchingResults.first?.window.id == windowService.focusedWindowID
+        selectedIndex = reverse ? switchingResults.count - 1
+            : firstIsFocused ? min(1, switchingResults.count - 1) : 0
+        switcherAnchorDisplayID = nil
+        isSearchSession = searchSession
+        if searchSession { startSearchDismissal() }
+        showSwitchers()
+    }
+
+    private func startSearchDismissal() {
+        let sessionID = UUID()
+        searchSessionID = sessionID
+        let mask: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
+        if let monitor = NSEvent.addGlobalMonitorForEvents(matching: mask, handler: { [weak self] _ in
+            DispatchQueue.main.async { self?.dismissSearchSession(sessionID) }
+        }) { searchDismissMonitors.append(monitor) }
+        if let monitor = NSEvent.addLocalMonitorForEvents(matching: mask, handler: { [weak self] event in
+            if !(event.window is SwitcherPanel) {
+                DispatchQueue.main.async { self?.dismissSearchSession(sessionID) }
+            }
+            return event
+        }) { searchDismissMonitors.append(monitor) }
+        searchDismissObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.dismissSearchSession(sessionID) }
+        }
+    }
+
+    private func dismissSearchSession(_ sessionID: UUID) {
+        guard isSearchSession, searchSessionID == sessionID else { return }
+        finishSwitcher(activating: nil)
+    }
+
+    private func stopSearchDismissal() {
+        searchDismissMonitors.forEach(NSEvent.removeMonitor)
+        searchDismissMonitors = []
+        if let searchDismissObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(searchDismissObserver)
+        }
+        searchDismissObserver = nil
+        searchSessionID = nil
     }
 
     private func refreshVisibleSwitcher() {
@@ -306,7 +357,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
             guard targets.contains(id) else { panel.hideSwitcher(); continue }
             panel.show(results: switchingResults, selectedIndex: selectedIndex, query: searchQuery,
                        groupBySpace: settings.showWindowsFromAllDesktops,
-                       totalWindowCount: switchingWindowCount, language: settings.language)
+                       totalWindowCount: switchingWindowCount, language: settings.language, searchFocused: isSearchSession)
         }
     }
 
@@ -317,16 +368,19 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
             guard panel.isVisible else {
                 panel.show(results: switchingResults, selectedIndex: selectedIndex, query: searchQuery,
                            groupBySpace: settings.showWindowsFromAllDesktops,
-                           totalWindowCount: switchingWindowCount, language: settings.language)
+                           totalWindowCount: switchingWindowCount, language: settings.language, searchFocused: isSearchSession)
                 continue
             }
             panel.update(results: switchingResults, selectedIndex: selectedIndex, resetHover: resetHover,
                          groupBySpace: settings.showWindowsFromAllDesktops,
-                         query: searchQuery, totalWindowCount: switchingWindowCount, language: settings.language)
+                         query: searchQuery, totalWindowCount: switchingWindowCount, language: settings.language,
+                         searchFocused: isSearchSession)
         }
     }
 
     private func finishSwitcher(activating id: String?) {
+        stopSearchDismissal()
+        isSearchSession = false
         shortcuts.resetState()
         switchers.values.forEach { $0.hideSwitcher() }
         switchingResults = []

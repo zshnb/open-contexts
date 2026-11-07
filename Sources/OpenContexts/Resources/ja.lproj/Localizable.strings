@@ -80,3 +80,7 @@
 "Shows on the display with the focused window, or under the pointer if there is none." = "フォーカスのあるウインドウの画面に表示します。ウインドウがない場合はポインタのある画面に表示します。";
 "Pointer display" = "ポインタのあるディスプレイ";
 "Shows on the display under the pointer." = "ポインタのある画面に表示します。";
+"Search windows" = "ウインドウを検索";
+"Open the switcher with a shortcut to search" = "ショートカットで切替を開いて検索";
+"Press %@, type to filter, then press Return to switch. Esc cancels." = "%@ を押して入力で絞り込み、Return で切り替えます。Esc でキャンセルします。";
+"This shortcut is already in use. Change it in Shortcuts." = "このショートカットは使用中です。「ショートカット」で変更してください。";

@@ -80,3 +80,7 @@
 "Shows on the display with the focused window, or under the pointer if there is none." = "Shows on the display with the focused window, or under the pointer if there is none.";
 "Pointer display" = "Pointer display";
 "Shows on the display under the pointer." = "Shows on the display under the pointer.";
+"Search windows" = "Search windows";
+"Open the switcher with a shortcut to search" = "Open the switcher with a shortcut to search";
+"Press %@, type to filter, then press Return to switch. Esc cancels." = "Press %@, type to filter, then press Return to switch. Esc cancels.";
+"This shortcut is already in use. Change it in Shortcuts." = "This shortcut is already in use. Change it in Shortcuts.";

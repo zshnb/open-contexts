@@ -80,3 +80,7 @@
 "Shows on the display with the focused window, or under the pointer if there is none." = "S’affiche sur l’écran de la fenêtre active, ou sur celui du pointeur s’il n’y en a pas.";
 "Pointer display" = "Écran du pointeur";
 "Shows on the display under the pointer." = "S’affiche sur l’écran où se trouve le pointeur.";
+"Search windows" = "Rechercher des fenêtres";
+"Open the switcher with a shortcut to search" = "Ouvrir le sélecteur avec un raccourci pour rechercher";
+"Press %@, type to filter, then press Return to switch. Esc cancels." = "Appuyez sur %@, saisissez pour filtrer, puis appuyez sur Retour pour basculer. Échap annule.";
+"This shortcut is already in use. Change it in Shortcuts." = "Ce raccourci est déjà utilisé. Modifiez-le dans Raccourcis.";
