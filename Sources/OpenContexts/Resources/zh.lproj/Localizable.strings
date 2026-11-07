@@ -77,3 +77,6 @@
 "Toggle switcher groups" = "进入或退出切换器分组模式";
 "Choose a key other than Shift or the window navigation keys." = "请选择 Shift 和窗口导航键之外的按键。";
 "No windows in this group" = "此分组没有可切换的窗口";
+"Menu bar" = "菜单栏";
+"Hide menu bar icon" = "隐藏菜单栏图标";
+"While the icon is hidden, open OpenContexts again from Applications or Spotlight to show Settings." = "图标隐藏时，从“应用程序”文件夹或聚焦搜索再次打开 OpenContexts 即可显示设置。";

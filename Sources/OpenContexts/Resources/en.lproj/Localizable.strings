@@ -77,3 +77,6 @@
 "Toggle switcher groups" = "Toggle switcher groups";
 "Choose a key other than Shift or the window navigation keys." = "Choose a key other than Shift or the window navigation keys.";
 "No windows in this group" = "No windows in this group";
+"Menu bar" = "Menu bar";
+"Hide menu bar icon" = "Hide menu bar icon";
+"While the icon is hidden, open OpenContexts again from Applications or Spotlight to show Settings." = "While the icon is hidden, open OpenContexts again from Applications or Spotlight to show Settings.";
