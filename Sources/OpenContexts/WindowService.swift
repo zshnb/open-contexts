@@ -34,7 +34,7 @@ final class WindowService: ObservableObject {
         let id: String
         let element: AXUIElement
         var info: WindowInfo
-        var windowID: CGWindowID? = nil
+        var windowID: CGWindowID?
     }
 
     private struct ApplicationSnapshot: Sendable {
@@ -68,6 +68,7 @@ final class WindowService: ObservableObject {
     private var tracked: [TrackedWindow] = []
     private var localWindows: [String: WeakWindow] = [:]
     private var externalFocusedID: String?
+    private var recentOrder = RecentWindowOrder()
     private var timer: Timer?
     private var scanInFlight = false
     private var activationTask: Task<Void, Never>?
@@ -198,8 +199,20 @@ final class WindowService: ObservableObject {
         let knownWindowIDs = Set(tracked.compactMap(\.windowID))
         let request = ActivationRequest()
         activationRequest = request
+        recentOrder.beginActivation(id)
+        publishWindows()
         activationTask = Task { @MainActor [weak self] in
-            guard let self, !Task.isCancelled else { return }
+            guard let self else { return }
+            defer {
+                if self.activationRequest === request {
+                    if Task.isCancelled || request.isCancelled {
+                        self.recentOrder.cancelActivation()
+                    } else {
+                        self.recentOrder.finishActivation(now: ProcessInfo.processInfo.systemUptime)
+                    }
+                }
+            }
+            guard !Task.isCancelled else { return }
             let task = self.activationTask
             let inputMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown]) { _ in
                 request.cancel()
@@ -256,6 +269,7 @@ final class WindowService: ObservableObject {
     func cancelActivation() {
         activationRequest?.cancel()
         activationTask?.cancel()
+        recentOrder.cancelActivation()
     }
 
     private func raise(_ window: TrackedWindow, request: ActivationRequest) async {
@@ -580,18 +594,13 @@ final class WindowService: ObservableObject {
         }
         let allInfos = tracked.map(\.info) + localInfos
         let byID = Dictionary(uniqueKeysWithValues: allInfos.map { ($0.id, $0) })
-        var orderedIDs = windows.map(\.id).filter { byID[$0] != nil }
-        orderedIDs.append(contentsOf: allInfos.map(\.id).filter { !orderedIDs.contains($0) })
         let localFocusedID = NSApp.isActive
             ? localWindows.first { $0.value.value?.isKeyWindow == true }?.key
             : nil
-        let focusedID = localFocusedID ?? externalFocusedID
-        if focusedWindowID != focusedID { focusedWindowID = focusedID }
-        if let focusedID, let index = orderedIDs.firstIndex(of: focusedID), index != 0 {
-            orderedIDs.remove(at: index)
-            orderedIDs.insert(focusedID, at: 0)
-        }
-        let published = orderedIDs.compactMap { byID[$0] }
+        recentOrder.update(windowIDs: allInfos.map(\.id), focusedID: localFocusedID ?? externalFocusedID,
+                           now: ProcessInfo.processInfo.systemUptime)
+        if focusedWindowID != recentOrder.focusedID { focusedWindowID = recentOrder.focusedID }
+        let published = recentOrder.ids.compactMap { byID[$0] }
         if windows != published { windows = published }
     }
 

@@ -218,10 +218,14 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return windows
     }
 
-    private func filterSwitcherWindows(_ windows: [WindowInfo]) {
-        let scopedWindows = switchingGroupID.map { groupID in
+    private func scopedSwitcherWindows(_ windows: [WindowInfo]) -> [WindowInfo] {
+        switchingGroupID.map { groupID in
             windows.filter { switchingGroupIDs[$0.id] == groupID }
         } ?? windows
+    }
+
+    private func filterSwitcherWindows(_ windows: [WindowInfo]) {
+        let scopedWindows = scopedSwitcherWindows(windows)
         switchingWindowCount = scopedWindows.count
         switchingResults = WindowSwitcher.filter(scopedWindows, query: searchQuery,
                                                  allSpaces: settings.showWindowsFromAllDesktops)
@@ -276,10 +280,12 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 ? windowService.focusedWindowID.flatMap { switchingGroupIDs[$0] }
                     ?? windows.first.flatMap { switchingGroupIDs[$0.id] }
                 : nil
-            filterSwitcherWindows(windows)
-            let firstIsFocused = switchingResults.first?.window.id == windowService.focusedWindowID
-            selectedIndex = reverse ? switchingResults.count - 1
-                : firstIsFocused ? min(1, switchingResults.count - 1) : 0
+            let scopedWindows = scopedSwitcherWindows(windows)
+            let start = WindowSwitcher.start(scopedWindows, allSpaces: settings.showWindowsFromAllDesktops,
+                                             focusedID: windowService.focusedWindowID, reverse: reverse)
+            switchingResults = start.results
+            switchingWindowCount = scopedWindows.count
+            selectedIndex = start.selectedIndex
             showSwitchers()
         case let .step(amount):
             guard !switchingResults.isEmpty else { return }
