@@ -77,3 +77,8 @@
 "Toggle switcher groups" = "Basculer le mode groupe du sélecteur";
 "Choose a key other than Shift or the window navigation keys." = "Choisissez une touche autre que Maj ou les touches de navigation.";
 "No windows in this group" = "Aucune fenêtre dans ce groupe";
+"Startup" = "Démarrage";
+"Open at login" = "Ouvrir à l’ouverture de session";
+"Allow OpenContexts in System Settings to finish turning this on." = "Autorisez OpenContexts dans Réglages Système pour terminer l’activation.";
+"Open System Settings" = "Ouvrir Réglages Système";
+"Could not change the login setting: %@" = "Impossible de modifier le réglage d’ouverture de session : %@";

@@ -77,3 +77,8 @@
 "Toggle switcher groups" = "切り替え画面のグループモードを切り替える";
 "Choose a key other than Shift or the window navigation keys." = "Shift キーとウィンドウ移動に使うキー以外を選んでください。";
 "No windows in this group" = "このグループにウィンドウはありません";
+"Startup" = "起動";
+"Open at login" = "ログイン時に開く";
+"Allow OpenContexts in System Settings to finish turning this on." = "設定を完了するには、システム設定で OpenContexts を許可してください。";
+"Open System Settings" = "システム設定を開く";
+"Could not change the login setting: %@" = "ログイン時の起動設定を変更できませんでした: %@";
