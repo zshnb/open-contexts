@@ -72,3 +72,8 @@
 "Full screen %@" = "Pantalla completa %@";
 "Current" = "Actual";
 "Current desktop" = "Escritorio actual";
+"Enable window switcher groups" = "Activar los grupos en el selector de ventanas";
+"Open switcher in group mode" = "Abrir el selector en modo de grupos";
+"Toggle switcher groups" = "Alternar el modo de grupos del selector";
+"Choose a key other than Shift or the window navigation keys." = "Elige una tecla distinta de Mayús y de las teclas de navegación.";
+"No windows in this group" = "No hay ventanas en este grupo";

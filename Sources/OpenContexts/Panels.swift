@@ -1144,8 +1144,28 @@ final class SidebarPanel: NSPanel, NSMenuDelegate {
 
 @MainActor
 final class SwitcherPanel: NSPanel {
+    struct GroupTab: Equatable {
+        let group: WindowGroup
+        let count: Int
+    }
+
+    struct GroupScope {
+        let selectedID: String?
+        let tabs: [GroupTab]
+        let windowGroupNames: [String: String]
+        let shortcut: String?
+    }
+
     private let stack = FlippedStackView()
     private let scroll = NSScrollView()
+    private let groupStack = NSStackView()
+    private let groupScroll = NSScrollView()
+    private var groupBarHeight: NSLayoutConstraint!
+    private var displayedGroupTabs: [GroupTab] = []
+    private var displayedGroupID: String?
+    private var groupLanguage: AppLanguage?
+    private weak var selectedGroupTab: NSButton?
+    private let groupModeButton: CallbackButton
     private let queryLabel = NSTextField(labelWithString: "")
     private let countLabel = NSTextField(labelWithString: "")
     private let emptyTitle = NSTextField(labelWithString: "")
@@ -1153,15 +1173,21 @@ final class SwitcherPanel: NSPanel {
     private let emptyState = NSStackView()
     private let onActivate: (String) -> Void
     private let onSelect: (String) -> Void
+    private let onSelectGroup: (String) -> Void
     private let displayScreen: NSScreen
     private weak var selectedRow: SwitcherRow?
     private var hoverOrigin = NSEvent.mouseLocation
 
     init(screen: NSScreen, onActivate: @escaping (String) -> Void,
-         onSelect: @escaping (String) -> Void) {
+         onSelect: @escaping (String) -> Void,
+         onSelectGroup: @escaping (String) -> Void = { _ in },
+         onToggleGroups: @escaping () -> Void = {}) {
         self.displayScreen = screen
         self.onActivate = onActivate
         self.onSelect = onSelect
+        self.onSelectGroup = onSelectGroup
+        groupModeButton = CallbackButton(title: "", height: SwitcherRow.height, horizontalPadding: 16,
+                                         callback: onToggleGroups)
         super.init(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel],
                    backing: .buffered, defer: false)
 
@@ -1193,7 +1219,12 @@ final class SwitcherPanel: NSPanel {
         countLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         let divider = NSBox()
         divider.boxType = .separator
-        for view in [searchIcon, queryLabel, countLabel, divider] {
+        divider.translatesAutoresizingMaskIntoConstraints = false
+        groupModeButton.isHidden = true
+        let controls = NSStackView(views: [countLabel, groupModeButton])
+        controls.alignment = .centerY
+        controls.spacing = 8
+        for view in [searchIcon, queryLabel, controls] {
             view.translatesAutoresizingMaskIntoConstraints = false
             header.addSubview(view)
         }
@@ -1221,6 +1252,19 @@ final class SwitcherPanel: NSPanel {
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
         scroll.translatesAutoresizingMaskIntoConstraints = false
+        groupScroll.drawsBackground = false
+        groupScroll.hasHorizontalScroller = true
+        groupScroll.scrollerStyle = .overlay
+        groupScroll.autohidesScrollers = true
+        groupScroll.translatesAutoresizingMaskIntoConstraints = false
+        groupScroll.isHidden = true
+        groupStack.orientation = .horizontal
+        groupStack.alignment = .centerY
+        groupStack.spacing = 4
+        groupStack.edgeInsets = NSEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
+        groupScroll.documentView = groupStack
+        background.addSubview(groupScroll)
+        groupBarHeight = groupScroll.heightAnchor.constraint(equalToConstant: 0)
 
         stack.orientation = .vertical
         stack.alignment = .leading
@@ -1229,6 +1273,7 @@ final class SwitcherPanel: NSPanel {
         stack.translatesAutoresizingMaskIntoConstraints = false
         scroll.documentView = stack
         background.addSubview(scroll)
+        background.addSubview(divider)
         NSLayoutConstraint.activate([
             header.leadingAnchor.constraint(equalTo: background.leadingAnchor),
             header.trailingAnchor.constraint(equalTo: background.trailingAnchor),
@@ -1240,17 +1285,21 @@ final class SwitcherPanel: NSPanel {
             searchIcon.heightAnchor.constraint(equalToConstant: 16),
             queryLabel.leadingAnchor.constraint(equalTo: searchIcon.trailingAnchor, constant: 10),
             queryLabel.centerYAnchor.constraint(equalTo: header.centerYAnchor),
-            queryLabel.trailingAnchor.constraint(lessThanOrEqualTo: countLabel.leadingAnchor, constant: -12),
-            countLabel.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
-            countLabel.centerYAnchor.constraint(equalTo: header.centerYAnchor),
-            divider.leadingAnchor.constraint(equalTo: header.leadingAnchor),
-            divider.trailingAnchor.constraint(equalTo: header.trailingAnchor),
-            divider.bottomAnchor.constraint(equalTo: header.bottomAnchor),
+            queryLabel.trailingAnchor.constraint(lessThanOrEqualTo: controls.leadingAnchor, constant: -12),
+            controls.centerYAnchor.constraint(equalTo: header.centerYAnchor),
+            controls.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -12),
+            divider.leadingAnchor.constraint(equalTo: background.leadingAnchor),
+            divider.trailingAnchor.constraint(equalTo: background.trailingAnchor),
+            divider.bottomAnchor.constraint(equalTo: groupScroll.bottomAnchor),
             emptyState.centerXAnchor.constraint(equalTo: scroll.centerXAnchor),
             emptyState.centerYAnchor.constraint(equalTo: scroll.centerYAnchor),
             scroll.leadingAnchor.constraint(equalTo: background.leadingAnchor),
             scroll.trailingAnchor.constraint(equalTo: background.trailingAnchor),
-            scroll.topAnchor.constraint(equalTo: header.bottomAnchor),
+            groupScroll.leadingAnchor.constraint(equalTo: background.leadingAnchor),
+            groupScroll.trailingAnchor.constraint(equalTo: background.trailingAnchor),
+            groupScroll.topAnchor.constraint(equalTo: header.bottomAnchor),
+            groupBarHeight,
+            scroll.topAnchor.constraint(equalTo: groupScroll.bottomAnchor),
             scroll.bottomAnchor.constraint(equalTo: background.bottomAnchor),
             stack.widthAnchor.constraint(equalTo: scroll.contentView.widthAnchor)
         ])
@@ -1266,6 +1315,10 @@ final class SwitcherPanel: NSPanel {
               totalWindowCount: Int? = nil, language: AppLanguage = .system) {
         update(results: results, selectedIndex: selectedIndex, resetHover: true,
                groupBySpace: groupBySpace, query: query, totalWindowCount: totalWindowCount, language: language)
+        present()
+    }
+
+    func present() {
         orderFrontRegardless()
         layoutDocumentView()
         revealSelectedRow()
@@ -1273,18 +1326,22 @@ final class SwitcherPanel: NSPanel {
 
     func update(results: [WindowSearch.Match], selectedIndex: Int, resetHover: Bool = false,
                 groupBySpace: Bool = false,
-                query: String = "", totalWindowCount: Int? = nil, language: AppLanguage = .system) {
+                query: String = "", totalWindowCount: Int? = nil, language: AppLanguage = .system,
+                scope: GroupScope? = nil) {
         if resetHover {
             hoverOrigin = NSEvent.mouseLocation
         }
         let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let groupChanged = updateGroupBar(scope, language: language)
         queryLabel.stringValue = query.isEmpty ? L10n.text("Type an app name or window title", language: language) : query
         queryLabel.textColor = query.isEmpty ? .secondaryLabelColor : .labelColor
         queryLabel.setAccessibilityLabel(L10n.text("Window search", language: language))
         countLabel.stringValue = L10n.format(query.isEmpty ? "%@ windows" : "%@ results",
                                             String(results.count), language: language)
-        emptyTitle.stringValue = L10n.text("No matching windows", language: language)
+        let emptyGroup = scope?.selectedID != nil && totalWindowCount == 0
+        emptyTitle.stringValue = L10n.text(emptyGroup ? "No windows in this group" : "No matching windows", language: language)
         emptyHint.stringValue = L10n.text("Try an app name or window title", language: language)
+        emptyHint.isHidden = emptyGroup
         emptyState.isHidden = !results.isEmpty
         stack.arrangedSubviews.forEach {
             stack.removeArrangedSubview($0)
@@ -1323,6 +1380,7 @@ final class SwitcherPanel: NSPanel {
             previousSpaceID = window.space?.id
             let row = SwitcherRow(
                 match: match, selected: index == selectedIndex,
+                groupName: scope?.selectedID == nil ? scope?.windowGroupNames[window.id] : nil,
                 onPointerMove: { [weak self] pointer in
                     guard self?.canHover(at: pointer) == true else { return }
                     self?.onSelect(window.id)
@@ -1336,11 +1394,17 @@ final class SwitcherPanel: NSPanel {
 
         let area = displayScreen.visibleFrame
         let width = max(320, min(600, area.width - 48))
-        let height = min(max(CGFloat(totalWindowCount ?? results.count) * 28 + CGFloat(sectionCount) * 26 + 16, 100) + 40,
+        let minimumListHeight: CGFloat = scope?.selectedID == nil ? 100 : 76
+        let height = min(max(CGFloat(totalWindowCount ?? results.count) * SwitcherRow.height
+                             + CGFloat(sectionCount) * 26 + 16, minimumListHeight)
+                         + 40 + groupBarHeight.constant,
                          max(140, area.height - 80))
         setFrame(NSRect(x: area.midX - width / 2, y: area.midY - height / 2,
                         width: width, height: height), display: true)
         layoutDocumentView()
+        if groupChanged, let selectedGroupTab {
+            selectedGroupTab.scrollToVisible(selectedGroupTab.bounds)
+        }
         self.selectedRow = selectedRow
         revealSelectedRow()
     }
@@ -1357,11 +1421,69 @@ final class SwitcherPanel: NSPanel {
 
     private func layoutDocumentView() {
         contentView?.layoutSubtreeIfNeeded()
+        if !groupScroll.isHidden {
+            groupStack.setFrameSize(groupStack.fittingSize)
+            groupStack.layoutSubtreeIfNeeded()
+        }
         scroll.layoutSubtreeIfNeeded()
         let fitting = stack.fittingSize
         stack.setFrameSize(NSSize(width: max(scroll.contentSize.width, 1),
                                   height: max(fitting.height, scroll.contentSize.height)))
         stack.layoutSubtreeIfNeeded()
+    }
+
+    private func updateGroupBar(_ scope: GroupScope?, language: AppLanguage) -> Bool {
+        let selectedID = scope?.selectedID
+        groupModeButton.isHidden = scope == nil
+        let mode = L10n.text(selectedID == nil ? "Groups" : "All windows", language: language)
+        let keys = scope?.shortcut ?? (selectedID == nil ? "← / →" : "⇧← / ⇧→")
+        styleGroupButton(groupModeButton, name: mode, detail: keys)
+        groupScroll.isHidden = selectedID == nil
+        groupBarHeight.constant = selectedID == nil ? 0 : SwitcherRow.height + 8
+        let tabs = selectedID == nil ? [] : scope?.tabs ?? []
+        guard tabs != displayedGroupTabs || selectedID != displayedGroupID || language != groupLanguage else { return false }
+        displayedGroupTabs = tabs
+        displayedGroupID = selectedID
+        groupLanguage = language
+        selectedGroupTab = nil
+        for tab in groupStack.arrangedSubviews {
+            groupStack.removeArrangedSubview(tab)
+            tab.removeFromSuperview()
+        }
+        for tab in tabs {
+            let groupID = tab.group.id
+            let name = groupID == GroupStore.ungroupedID ? L10n.text("Ungrouped", language: language) : tab.group.name
+            let button = CallbackButton(title: name, height: SwitcherRow.height, horizontalPadding: 16) { [weak self] in
+                self?.onSelectGroup(groupID)
+            }
+            let selected = groupID == selectedID
+            button.isEnabled = tab.count > 0
+            button.toolTip = name
+            styleGroupButton(button, name: name, detail: String(tab.count), selected: selected)
+            button.widthAnchor.constraint(lessThanOrEqualToConstant: 200).isActive = true
+            button.setAccessibilitySelected(selected)
+            if selected { selectedGroupTab = button }
+            groupStack.addArrangedSubview(button)
+        }
+        return true
+    }
+
+    private func styleGroupButton(_ button: NSButton, name: String, detail: String, selected: Bool = false) {
+        button.alignment = .center
+        button.cell?.lineBreakMode = .byTruncatingTail
+        button.wantsLayer = true
+        button.layer?.cornerRadius = SwitcherRow.cornerRadius
+        button.layer?.backgroundColor = selected ? appAccentColor.cgColor : nil
+        let title = NSMutableAttributedString(string: name, attributes: [
+            .font: NSFont.systemFont(ofSize: 13, weight: selected ? .medium : .regular),
+            .foregroundColor: selected ? NSColor.white : .labelColor
+        ])
+        title.append(NSAttributedString(string: "  \(detail)", attributes: [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .medium),
+            .foregroundColor: selected ? NSColor.white : .secondaryLabelColor
+        ]))
+        button.attributedTitle = title
+        button.setAccessibilityLabel("\(name), \(detail)")
     }
 
     private func revealSelectedRow() {
@@ -1421,6 +1543,23 @@ final class SwitcherPanel: NSPanel {
     fileprivate var smokeTextLayouts: [[NSRect]] {
         stack.arrangedSubviews.compactMap { ($0 as? SwitcherRow)?.smokeTextLayout }
     }
+
+    fileprivate var smokeGroupButtons: [NSButton] {
+        groupScroll.isHidden ? [] : groupStack.arrangedSubviews.compactMap { $0 as? NSButton }
+    }
+
+    fileprivate var smokeSelectedGroupIsVisible: Bool {
+        guard let selectedGroupTab else { return false }
+        return groupScroll.contentView.bounds.intersects(
+            selectedGroupTab.convert(selectedGroupTab.bounds, to: groupScroll.contentView)
+        )
+    }
+
+    fileprivate var smokeModeControlIsVisible: Bool {
+        !groupModeButton.isHidden && groupModeButton.frame.width >= groupModeButton.attributedTitle.size().width
+    }
+
+    fileprivate var smokeSelectedWindowLabel: String? { selectedRow?.accessibilityLabel() }
 }
 
 @MainActor
@@ -1734,6 +1873,9 @@ private final class SidebarItemView: NSView, NSDraggingSource {
 
 @MainActor
 private final class SwitcherRow: NSButton {
+    static let height: CGFloat = 28
+    static let cornerRadius: CGFloat = 6
+
     private let callback: () -> Void
     private let appLabel: NSTextField
     private let iconView: NSImageView
@@ -1742,7 +1884,8 @@ private final class SwitcherRow: NSButton {
     private let onPointerMove: (NSPoint) -> Void
     private var trackingArea: NSTrackingArea?
 
-    init(match: WindowSearch.Match, selected: Bool, onPointerMove: @escaping (NSPoint) -> Void,
+    init(match: WindowSearch.Match, selected: Bool, groupName: String? = nil,
+         onPointerMove: @escaping (NSPoint) -> Void,
          action: @escaping () -> Void) {
         let window = match.window
         callback = action
@@ -1755,7 +1898,7 @@ private final class SwitcherRow: NSButton {
         title = ""
         isBordered = false
         wantsLayer = true
-        layer?.cornerRadius = 6
+        layer?.cornerRadius = Self.cornerRadius
         layer?.backgroundColor = selected ? appAccentColor.cgColor : NSColor.clear.cgColor
         let textColor = selected ? NSColor.white : NSColor.labelColor
         appLabel.alignment = .right
@@ -1780,6 +1923,25 @@ private final class SwitcherRow: NSButton {
             $0.translatesAutoresizingMaskIntoConstraints = false
             addSubview($0)
         }
+        let trailingView: NSLayoutXAxisAnchor
+        if let groupName {
+            let groupLabel = NSTextField(labelWithString: groupName)
+            groupLabel.font = .systemFont(ofSize: 11, weight: .medium)
+            groupLabel.textColor = selected ? .white : .secondaryLabelColor
+            groupLabel.lineBreakMode = .byTruncatingTail
+            groupLabel.setContentHuggingPriority(.required, for: .horizontal)
+            groupLabel.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(groupLabel)
+            NSLayoutConstraint.activate([
+                groupLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
+                groupLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+                groupLabel.widthAnchor.constraint(lessThanOrEqualToConstant: 86),
+                titleLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 32)
+            ])
+            trailingView = groupLabel.leadingAnchor
+        } else {
+            trailingView = trailingAnchor
+        }
         NSLayoutConstraint.activate([
             appLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
             appLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
@@ -1789,13 +1951,13 @@ private final class SwitcherRow: NSButton {
             iconView.widthAnchor.constraint(equalToConstant: 24),
             iconView.heightAnchor.constraint(equalToConstant: 24),
             titleLabel.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 12),
-            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
+            titleLabel.trailingAnchor.constraint(equalTo: trailingView, constant: -12),
             titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor)
         ])
         target = self
         self.action = #selector(invoke)
-        heightAnchor.constraint(equalToConstant: 28).isActive = true
-        setAccessibilityLabel("\(window.appName), \(window.displayTitle)")
+        heightAnchor.constraint(equalToConstant: Self.height).isActive = true
+        setAccessibilityLabel([window.appName, window.displayTitle, groupName].compactMap { $0 }.joined(separator: ", "))
     }
 
     required init?(coder: NSCoder) { nil }
@@ -1929,9 +2091,11 @@ private final class GroupEndDropView: NSView {
 @MainActor
 private final class CallbackButton: NSButton {
     private let callback: () -> Void
+    private let horizontalPadding: CGFloat
 
-    init(title: String, callback: @escaping () -> Void) {
+    init(title: String, height: CGFloat = 30, horizontalPadding: CGFloat = 0, callback: @escaping () -> Void) {
         self.callback = callback
+        self.horizontalPadding = horizontalPadding
         super.init(frame: .zero)
         self.title = title
         bezelStyle = .recessed
@@ -1939,11 +2103,17 @@ private final class CallbackButton: NSButton {
         alignment = .left
         target = self
         action = #selector(invoke)
-        heightAnchor.constraint(equalToConstant: 30).isActive = true
+        heightAnchor.constraint(equalToConstant: height).isActive = true
         setAccessibilityLabel(title)
     }
 
     required init?(coder: NSCoder) { nil }
+
+    override var intrinsicContentSize: NSSize {
+        var size = super.intrinsicContentSize
+        size.width += horizontalPadding
+        return size
+    }
 
     @objc private func invoke() { callback() }
 }
@@ -2592,8 +2762,10 @@ enum PanelSmokeCheck {
         let switcherWindows = windows
         let switcherResults = WindowSearch.filter(switcherWindows, query: "")
         var selectedIDs: [String] = []
+        var selectedGroup: String?
         let switcher = SwitcherPanel(screen: screen, onActivate: { _ in },
-                                      onSelect: { selectedIDs.append($0) })
+                                      onSelect: { selectedIDs.append($0) },
+                                      onSelectGroup: { selectedGroup = $0 })
         let initialIndex = switcherWindows.count - 1
         switcher.show(results: switcherResults, selectedIndex: initialIndex)
         switcher.contentView?.layoutSubtreeIfNeeded()
@@ -2695,6 +2867,45 @@ enum PanelSmokeCheck {
             switcher.close()
             sidebar.close()
             return fail("desktop labels remained after disabling grouping")
+        }
+        let tabs = (0..<15).map {
+            let name = $0 == 0 ? String(repeating: "Long group name ", count: 10) : "Group \($0)"
+            return SwitcherPanel.GroupTab(group: WindowGroup(id: "group-\($0)", name: name), count: $0 == 2 ? 0 : 2)
+        }
+        let scope = SwitcherPanel.GroupScope(selectedID: tabs.last?.group.id, tabs: tabs,
+                                              windowGroupNames: [:], shortcut: nil)
+        switcher.update(results: grouped, selectedIndex: 1, scope: scope)
+        let groupButtons = switcher.smokeGroupButtons
+        guard groupButtons.count == tabs.count, !groupButtons[2].isEnabled, groupButtons[0].frame.width <= 200.5,
+              switcher.smokeSelectedGroupIsVisible, switcher.smokeModeControlIsVisible,
+              groupButtons.last?.layer?.backgroundColor == appAccentColor.cgColor,
+              switcher.smokeHighlightedIndices == [1] else {
+            switcher.close()
+            sidebar.close()
+            return fail("switcher group strip did not show the selected and empty groups")
+        }
+        groupButtons.first?.performClick(nil)
+        guard selectedGroup == tabs.first?.group.id else {
+            switcher.close()
+            sidebar.close()
+            return fail("switcher group selection did not reach the controller callback")
+        }
+        let groupName = "Smoke group"
+        switcher.update(results: grouped, selectedIndex: 1, language: .zh,
+                        scope: SwitcherPanel.GroupScope(selectedID: nil, tabs: tabs,
+                                                       windowGroupNames: [grouped[1].window.id: groupName], shortcut: nil))
+        guard switcher.smokeGroupButtons.isEmpty, switcher.smokeModeControlIsVisible,
+              switcher.smokeSelectedWindowLabel?.hasSuffix(groupName) == true else {
+            switcher.close()
+            sidebar.close()
+            return fail("all-windows view did not show the group control and window label")
+        }
+        switcher.update(results: grouped, selectedIndex: 1, language: .zh)
+        guard switcher.smokeGroupButtons.isEmpty, !switcher.smokeModeControlIsVisible,
+              switcher.smokeSelectedWindowLabel?.hasSuffix(groupName) == false else {
+            switcher.close()
+            sidebar.close()
+            return fail("switcher showed group controls or labels with groups disabled")
         }
         switcher.hideSwitcher()
         switcher.close()

@@ -72,3 +72,8 @@
 "Full screen %@" = "Full screen %@";
 "Current" = "Current";
 "Current desktop" = "Current desktop";
+"Enable window switcher groups" = "Enable window switcher groups";
+"Open switcher in group mode" = "Open switcher in group mode";
+"Toggle switcher groups" = "Toggle switcher groups";
+"Choose a key other than Shift or the window navigation keys." = "Choose a key other than Shift or the window navigation keys.";
+"No windows in this group" = "No windows in this group";

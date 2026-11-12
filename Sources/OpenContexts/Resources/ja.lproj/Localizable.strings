@@ -72,3 +72,8 @@
 "Full screen %@" = "フルスクリーン %@";
 "Current" = "現在";
 "Current desktop" = "現在のデスクトップ";
+"Enable window switcher groups" = "ウィンドウ切り替えのグループ機能を有効にする";
+"Open switcher in group mode" = "切り替え画面をグループモードで開く";
+"Toggle switcher groups" = "切り替え画面のグループモードを切り替える";
+"Choose a key other than Shift or the window navigation keys." = "Shift キーとウィンドウ移動に使うキー以外を選んでください。";
+"No windows in this group" = "このグループにウィンドウはありません";
