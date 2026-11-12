@@ -9,7 +9,7 @@ const sandbox = {
 }
 const demoSource = source.slice(0, source.indexOf("  document.querySelectorAll('[data-mock]')"))
 vm.runInNewContext(demoSource
-  + 'globalThis.search = { searchWindows, highlight, MRU0, APPS, barHTML, sidebarDefaults, settingsForm, switcherWindows, swRows, MOCKS, BODY }; })()', sandbox)
+  + 'globalThis.search = { searchWindows, highlight, MRU0, APPS, barHTML, sidebarDefaults, settingsForm, switcherWindows, swRows, groups0, switcherGroupCounts, swGroupBar, MOCKS, BODY }; })()', sandbox)
 const { searchWindows, highlight, MRU0, APPS } = sandbox.search
 const results = query => Array.from(searchWindows(MRU0, query))
 
@@ -83,6 +83,17 @@ assert.ok(!settingsForm({ ...sidebarDefaults, pos: 'bottom' }).includes('type="r
 assert.match(settingsForm({ ...sidebarDefaults, display: 'icon' }), /data-setting="width" disabled/)
 assert.ok(!settingsForm({ ...sidebarDefaults, page: 'general' }).includes('type="range"'))
 assert.match(settingsForm({ ...sidebarDefaults, page: 'general', allDesktops: true }), /data-setting="allDesktops" checked/)
+assert.match(settingsForm({ ...sidebarDefaults, page: 'general' }), /data-setting="switcherGroups" checked/)
+assert.match(settingsForm({ ...sidebarDefaults, page: 'general', switcherGroups: false, startsInGroupMode: true }),
+  /data-setting="startsInGroupMode" checked disabled/)
+const { groups0, switcherGroupCounts, swGroupBar } = sandbox.search
+const groups = groups0()
+assert.deepEqual(Array.from(switcherWindows(MRU0, 'context', true, 1, groups[1])), ['terminal', 'chrome'])
+assert.match(swRows(['chrome'], 0, 'div', '', false, 1, groups), /class="sw-group-label"[^>]*>Code/)
+assert.doesNotMatch(swRows(['chrome'], 0), /sw-group-label/)
+const tabs = switcherGroupCounts([...groups, { id: 'empty', name: '<empty>', items: [] }], windows('', false, 1))
+assert.match(swGroupBar(tabs, 'c'), /data-sw-group="c" aria-pressed="true">Code <small>2/)
+assert.match(swGroupBar(tabs, 'c'), /data-sw-group="empty" aria-pressed="false" disabled>&lt;empty&gt;/)
 assert.match(settingsForm({ ...sidebarDefaults, page: 'shortcuts' }), /⌃⌘B/)
 assert.match(settingsForm({ ...sidebarDefaults, page: 'shortcuts', sidebarShortcut: false }), /data-setting="sidebarShortcut" >/)
 assert.match(barHTML([{ id: 'c', name: 'Code', items: ['terminal', 'chrome'] }], {}, 'button'), /data-id="terminal"[^>]*aria-current="true"/)
@@ -131,12 +142,14 @@ sidebarSandbox.toggle()
 assert.equal(sidebarState.sidebarExpanded, false)
 
 // Execute the real key listener so native editing and the held-Option demo cannot regress.
-let keydown
+let keydown, groupStep
 const state = { ...sidebarDefaults, sw: { query: 'chr', list: [], sel: 0 }, mru: MRU0 }
 vm.runInNewContext(source.slice(source.indexOf("    window.addEventListener('keydown'"),
   source.indexOf("    document.addEventListener('keyup'")), {
   window: { addEventListener: (_, callback) => { keydown = callback } }, st: state,
-  switcherWindows, renderSw() {}, render() {}, step() {}, commit() {}, cancel() {}, openSw() {},
+  switcherList: query => switcherWindows(state.mru, query, state.allDesktops, state.desktop),
+  renderSw() {}, render() {}, step() {}, commit() {}, cancel() {}, openSw() {},
+  stepGroup(direction, shifted) { groupStep = [direction, shifted] },
   toggleSidebar() { state.sidebarExpanded = !state.sidebarExpanded },
 })
 function press(key, modifiers = {}) {
@@ -154,6 +167,11 @@ for (const modifier of ['metaKey', 'ctrlKey']) {
 assert.equal(press('x'), false)
 assert.equal(press('Backspace'), false)
 assert.equal(state.sw.query, 'chr')
+assert.equal(press('ArrowLeft'), false)
+assert.equal(press('ArrowRight', { altKey: true, shiftKey: true }), true)
+assert.deepEqual(groupStep, [1, true])
+state.switcherGroups = false
+assert.equal(press('ArrowRight', { altKey: true }), false)
 assert.equal(press('c', { altKey: true }), true)
 assert.equal(state.sw.query, 'chrc')
 assert.equal(press('Backspace', { altKey: true }), true)

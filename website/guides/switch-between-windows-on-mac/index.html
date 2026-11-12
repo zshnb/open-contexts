@@ -56,7 +56,7 @@
     "url": "https://opencontexts.app/"
   },
   "datePublished": "2026-10-05",
-  "dateModified": "2026-10-10",
+  "dateModified": "2026-11-12",
   "author": {
     "@type": "Organization",
     "name": "Open Contexts",
@@ -193,12 +193,15 @@
 <p>In Settings → General, enable Show windows from all desktops. The switcher groups windows by desktop, with the current desktop first. Recent-use order applies only to the current desktop. Other desktops follow in desktop order, with windows sorted by app name and title. Search keeps these desktop groups and hides groups with no results. Choosing a window on another desktop switches to that desktop and brings the window forward; it does not move the window to your current desktop.</p>
 <h2 id="window-search">How to search Mac windows by app name and title</h2>
 <p>Open Contexts searches Mac windows by app name or title. Hold the switcher modifier, type, then release to switch.</p>
-<ol><li>Open the all-window switcher with <kbd>⌘</kbd><kbd>Tab</kbd>, or use Command-backtick for the current app. Keep holding the shortcut modifier.</li><li>Type part of an app name or window title. Matching is case-insensitive: <code>CHROME</code> can match Google Chrome. Each term matches contiguous text in the app name or window title.</li><li>Combine terms with spaces: <code>chr context</code> can match Google Chrome as the app and context in the window title. Every term must match either the app name or title.</li><li>Matching characters have a yellow background. Use Tab, Shift-Tab or the arrow keys to choose a result. <kbd>Backspace</kbd> edits the query; clearing it restores the full list.</li><li>Release the modifier to activate the selected window. If there are no matches, the switcher closes without changing windows. <kbd>Esc</kbd> cancels.</li></ol>
+<ol><li>Open the all-window switcher with <kbd>⌘</kbd><kbd>Tab</kbd>, or use Command-backtick for the current app. Keep holding the shortcut modifier.</li><li>Type part of an app name or window title. Matching is case-insensitive: <code>CHROME</code> can match Google Chrome. Each term matches contiguous text in the app name or window title.</li><li>Combine terms with spaces: <code>chr context</code> can match Google Chrome as the app and context in the window title. Every term must match either the app name or title.</li><li>Matching characters have a yellow background. Use Tab, Shift-Tab or the up and down arrows to choose a result. <kbd>Backspace</kbd> edits the query; clearing it restores the full list.</li><li>Release the modifier to activate the selected window. If there are no matches, the switcher closes without changing windows. <kbd>Esc</kbd> cancels.</li></ol>
 <p>Chinese app names and window titles also match toneless pinyin: <code>weixin</code> or <code>weix</code> finds 微信, and <code>fabu</code> can match 发布 in a title. A match can end partway through the last syllable; the corresponding Chinese characters are highlighted. Literal text matches rank above equivalent pinyin matches. Search covers app names and window titles in the keyboard switcher.</p>
 <p>In the <a href="/#demo">online demo</a>, click ⌘ Tab and type <code>chr context</code>, <code>weix</code> or <code>fabu</code>; Return confirms and Esc cancels. Browsers cannot receive macOS ⌘Tab, so Option-Tab also demonstrates holding a modifier, typing and releasing to switch.</p>
 <p>To try cross-desktop switching in the demo, open Settings → General and enable Show windows from all desktops. Select a window under Desktop 2 or Desktop 3, then reopen the switcher: the newly current desktop appears first.</p>
-<h3>Saved window groups.</h3>
+<h3>Saved window groups</h3>
 <p>A persistent app bar sits on the left, right, or bottom edge of every display and lists each window by title next to its Dock badge. Click a row to bring that window forward, even when it is minimized or hidden. From there you can sort windows into groups - code, chat, research - and they return to the same place after a restart. Saved groups keep related windows together across apps.</p>
+<h3 id="saved-window-groups">Switch within saved window groups</h3>
+<p>The all-windows list shows saved group names next to their windows. Open the switcher with <kbd>⌘ Tab</kbd> and keep holding <kbd>⌘</kbd>. Press <kbd>←</kbd> or <kbd>→</kbd> to enter the highlighted window’s group. Use <kbd>Tab</kbd> and <kbd>⇧ Tab</kbd> to cycle through its windows. Use the horizontal arrows or click a group tab to change groups. Press <kbd>⇧ ←</kbd> or <kbd>⇧ →</kbd> to return to all windows.</p>
+<p>Choose the default view or turn off <strong>Enable window switcher groups</strong> in Settings → General. The sidebar keeps its saved groups. To use a different key to enter and leave group mode, set <strong>Toggle switcher groups</strong> in Settings → Shortcuts. <a href="/#demo">Try groups in the online demo</a>.</p>
 <h3>Open the sidebar from the keyboard</h3>
 <p>The sidebar highlights the active window in blue with white text. Press <kbd>⌃⌘B</kbd> to temporarily open it on the display under the pointer, even when its visibility is Off. Move the pointer into the sidebar and away, press the shortcut again or press Esc to dismiss the temporary view. Change or disable this shortcut in Settings → Shortcuts. The online demo also has a ⌃⌘B button.</p>
 <h3>Set it up in two minutes.</h3>

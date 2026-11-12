@@ -13,7 +13,7 @@
   gtag('config', 'G-2DX33ZMFCV');
 </script>
 <title>Free Mac Window Switcher &amp; Search | Open Contexts</title>
-<meta name="description" content="Free Mac window switcher with app-name and window-title search. Switch across desktops, use a sidebar and save window groups.">
+<meta name="description" content="Free Mac window switcher with app-name and window-title search. Switch within saved window groups, across desktops, or from a sidebar.">
 <link rel="canonical" href="https://opencontexts.app/">
 <link rel="alternate" hreflang="en" href="https://opencontexts.app/">
 <link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.app/zh/">
@@ -25,7 +25,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Open Contexts">
 <meta property="og:title" content="Open Contexts: the free Mac window switcher">
-<meta property="og:description" content="Free Mac window switcher with app-name and window-title search. Switch across desktops, use a sidebar and save window groups.">
+<meta property="og:description" content="Free Mac window switcher with app-name and window-title search. Switch within saved window groups, across desktops, or from a sidebar.">
 <meta property="og:url" content="https://opencontexts.app/">
 <meta property="og:image" content="https://opencontexts.app/assets/og.png">
 <meta property="og:locale" content="en_US">
@@ -35,7 +35,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap">
 <link rel="stylesheet" href="assets/vendor/basecoat/settings.css?v=1.0.2">
-<link rel="stylesheet" href="assets/site.css?v=features-051-copy">
+<link rel="stylesheet" href="assets/site.css?v=features-060-groups">
 <script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <script type="application/ld+json">
 {
@@ -43,10 +43,10 @@
   "@type": "SoftwareApplication",
   "name": "Open Contexts",
   "alternateName": "OpenContexts",
-  "description": "Free Mac window switcher with app-name and window-title search. Switch across desktops, use a sidebar and save window groups.",
+  "description": "Free Mac window switcher with app-name and window-title search. Switch within saved window groups, across desktops, or from a sidebar.",
   "applicationCategory": "UtilitiesApplication",
   "operatingSystem": "macOS 13.0 or later",
-  "softwareVersion": "0.5.1",
+  "softwareVersion": "0.6.0",
   "url": "https://opencontexts.app/",
   "downloadUrl": "https://github.com/zshnb/open-contexts/releases/latest",
   "image": "https://opencontexts.app/assets/og.png",
@@ -106,7 +106,7 @@
         <div class="demo-viewport"><div class="screen mac" role="application" aria-label="Interactive Open Contexts demo"></div></div>
       </div>
       <div class="demo-bar">
-        <p>Click <kbd>⌘ Tab</kbd> and search <code>chr context</code>. Use Tab, arrow keys, Return or Esc. In Settings → General, enable all desktops to try grouped switching. The ⌃⌘B button temporarily opens the sidebar, even when it is off; move into the bar and away to dismiss it. Drag windows between groups.</p>
+        <p>Click <kbd>⌘ Tab</kbd>, then click <strong>Groups</strong> or press <kbd>←</kbd> or <kbd>→</kbd> to try switching by group. Use <kbd>Tab</kbd> within a group, or click <strong>All windows</strong> to go back. Try searching <code>chr context</code>. <kbd>Return</kbd> switches windows and <kbd>Esc</kbd> closes the switcher.</p>
         <div class="actions">
           <button class="btn btn-primary btn-sm" type="button" data-act="cmdtab">⌘ Tab</button>
           <button class="btn btn-secondary btn-sm" type="button" data-act="sidebar" aria-pressed="false">⌃⌘B Sidebar</button>
@@ -123,6 +123,7 @@
         <h2 class="display">Every window,<br>one ⌘Tab.</h2>
         <p class="lede">The built-in ⌘Tab shows one icon per app. Open Contexts shows every window, so two Chrome windows are two choices. On the current desktop, windows follow most-recently-used order, so a quick ⌘Tab takes you back to the previous window. The app bar and window switcher both support multiple displays.</p>
         <p>Enable Settings → General → Show windows from all desktops to reach windows in other Spaces. The switcher groups windows by desktop, with the current desktop first. Recent-use order applies only to the current desktop; other desktops follow in desktop order, with windows sorted by app and title.</p>
+        <p>Switch between windows from the same project, even across apps. Press <kbd>⌘ Tab</kbd>, keep holding <kbd>⌘</kbd>, and press either horizontal arrow to enter the highlighted window’s group. Use <kbd>Tab</kbd> within the group and the horizontal arrows to change groups. <a class="text-link" href="guides/switch-between-windows-on-mac/#saved-window-groups">See all group shortcuts →</a></p>
       </div>
       <div data-reveal data-mock="switcher" data-nosnippet></div>
       <div class="shortcut-row" data-reveal>
@@ -168,7 +169,7 @@
           <li>Create, rename, and delete groups right from the app bar</li>
           <li>Drag windows or whole groups to reorder them</li>
           <li>Pin a window to keep its place while the list updates</li>
-          <li>Windows return to their place in groups after a restart</li>
+          <li>Choose the default switcher view or turn off grouping in the switcher under Settings → General. Groups remain available in the sidebar.</li>
           <li>Hide Ungrouped or the New Group button; empty Ungrouped groups hide automatically</li>
         </ul>
       </div>
@@ -293,6 +294,6 @@
 </footer>
 <script src="assets/vendor/basecoat/basecoat.min.js" defer></script>
 <script src="assets/vendor/basecoat/range.min.js" defer></script>
-<script src="assets/site.js?v=features-051-copy" defer></script>
+<script src="assets/site.js?v=features-060-groups" defer></script>
 </body>
 </html>

@@ -13,7 +13,7 @@
   gtag('config', 'G-2DX33ZMFCV');
 </script>
 <title>免费 Mac 窗口切换器与搜索 | Open Contexts</title>
-<meta name="description" content="免费开源的 Mac 窗口切换器，按应用名、窗口标题或中文拼音搜索，跨桌面快速定位窗口。支持 ⌘Tab 切换、侧边栏、底部 Dock 和保存窗口分组。">
+<meta name="description" content="免费开源的 Mac 窗口切换器，支持按应用名、窗口标题或中文拼音搜索，也可在保存的分组内或跨桌面切换窗口。">
 <link rel="canonical" href="https://opencontexts.app/zh/">
 <link rel="alternate" hreflang="en" href="https://opencontexts.app/">
 <link rel="alternate" hreflang="zh-Hans" href="https://opencontexts.app/zh/">
@@ -25,7 +25,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Open Contexts">
 <meta property="og:title" content="Open Contexts：免费的 Mac 窗口切换器">
-<meta property="og:description" content="免费开源的 Mac 窗口切换器，按应用名、窗口标题或中文拼音搜索，跨桌面快速定位窗口。支持 ⌘Tab 切换、侧边栏、底部 Dock 和保存窗口分组。">
+<meta property="og:description" content="免费开源的 Mac 窗口切换器，支持按应用名、窗口标题或中文拼音搜索，也可在保存的分组内或跨桌面切换窗口。">
 <meta property="og:url" content="https://opencontexts.app/zh/">
 <meta property="og:image" content="https://opencontexts.app/assets/og.png">
 <meta property="og:locale" content="zh_CN">
@@ -35,7 +35,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap">
 <link rel="stylesheet" href="../assets/vendor/basecoat/settings.css?v=1.0.2">
-<link rel="stylesheet" href="../assets/site.css?v=features-051-copy">
+<link rel="stylesheet" href="../assets/site.css?v=features-060-groups">
 <script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <script type="application/ld+json">
 {
@@ -44,10 +44,10 @@
   "name": "Open Contexts",
   "alternateName": "OpenContexts",
   "inLanguage": "zh-Hans",
-  "description": "免费开源的 Mac 窗口切换器，按应用名、窗口标题或中文拼音搜索，跨桌面快速定位窗口。支持 ⌘Tab 切换、侧边栏、底部 Dock 和保存窗口分组。",
+  "description": "免费开源的 Mac 窗口切换器，支持按应用名、窗口标题或中文拼音搜索，也可在保存的分组内或跨桌面切换窗口。",
   "applicationCategory": "UtilitiesApplication",
   "operatingSystem": "macOS 13.0 or later",
-  "softwareVersion": "0.5.1",
+  "softwareVersion": "0.6.0",
   "url": "https://opencontexts.app/zh/",
   "downloadUrl": "https://github.com/zshnb/open-contexts/releases/latest",
   "image": "https://opencontexts.app/assets/og.png",
@@ -106,7 +106,7 @@
         <div class="demo-viewport"><div class="screen mac" role="application" aria-label="Open Contexts 交互演示"></div></div>
       </div>
       <div class="demo-bar">
-        <p>点击 <kbd>⌘ Tab</kbd>，输入 <code>chr context</code>，或用 <code>weix</code> 搜索“微信”。用 Tab、方向键、Return 或 Esc 操作。在“设置 → 通用”开启所有桌面，体验按桌面分组切换。点击 ⌃⌘B 按钮可临时唤起已关闭的侧边栏，鼠标移入再移出即可收起。拖动窗口可在分组间移动。</p>
+        <p>点击 <kbd>⌘ Tab</kbd>，再点击<strong>分组</strong>或按 <kbd>←</kbd>、<kbd>→</kbd> 试用分组切换。用 <kbd>Tab</kbd> 在组内循环，点击<strong>所有窗口</strong>返回。也可以输入 <code>chr context</code> 或 <code>weix</code> 搜索，按 <kbd>Return</kbd> 切换，按 <kbd>Esc</kbd> 关闭。</p>
         <div class="actions">
           <button class="btn btn-primary btn-sm" type="button" data-act="cmdtab">⌘ Tab</button>
           <button class="btn btn-secondary btn-sm" type="button" data-act="sidebar" aria-pressed="false">⌃⌘B 侧边栏</button>
@@ -123,6 +123,7 @@
         <h2 class="display">每一个窗口，<br>一个 ⌘Tab。</h2>
         <p class="lede">系统自带的 ⌘Tab 每个应用只显示一个图标。Open Contexts 显示每一个窗口，两个 Chrome 窗口就是两个选项。当前桌面的窗口按最近使用排序，轻按一次 ⌘Tab 即可回到上一个窗口。Dock 栏和窗口切换器均支持多显示器。</p>
         <p>在“设置 → 通用”开启“显示所有桌面的窗口”，即可直接选择其他桌面的窗口。切换器按桌面分组，当前桌面置顶；最近使用排序仅影响当前桌面，其他桌面按桌面顺序排列，组内按应用名和标题排序。</p>
+        <p>可以在同一个项目的窗口之间切换，即使它们属于不同应用。按 <kbd>⌘ Tab</kbd> 后继续按住 <kbd>⌘</kbd>，再按任意左右方向键进入高亮窗口所在的组。用 <kbd>Tab</kbd> 在组内循环，用左右方向键切组。<a class="text-link" href="guides/switch-between-windows-on-mac/#saved-window-groups">查看分组切换快捷键 →</a></p>
       </div>
       <div data-reveal data-mock="switcher" data-nosnippet></div>
       <div class="shortcut-row" data-reveal>
@@ -168,7 +169,7 @@
           <li>直接在应用栏中新建、重命名和删除分组</li>
           <li>拖动窗口或整个分组来调整顺序</li>
           <li>固定窗口，让它在列表更新时保持原位</li>
-          <li>重启后自动恢复窗口在分组中的位置</li>
+          <li>在「设置 → 通用」选择切换器的默认视图，也可关闭切换器分组，继续在侧边栏使用分组。</li>
           <li>可隐藏未分组或新建分组按钮；空未分组自动隐藏</li>
         </ul>
       </div>
@@ -293,6 +294,6 @@
 </footer>
 <script src="../assets/vendor/basecoat/basecoat.min.js" defer></script>
 <script src="../assets/vendor/basecoat/range.min.js" defer></script>
-<script src="../assets/site.js?v=features-051-copy" defer></script>
+<script src="../assets/site.js?v=features-060-groups" defer></script>
 </body>
 </html>
