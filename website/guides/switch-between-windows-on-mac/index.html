@@ -56,7 +56,7 @@
     "url": "https://opencontexts.app/"
   },
   "datePublished": "2026-10-05",
-  "dateModified": "2026-11-12",
+  "dateModified": "2026-11-13",
   "author": {
     "@type": "Organization",
     "name": "Open Contexts",
@@ -105,8 +105,12 @@
 <li><a href="#why-command-tab-falls-short">Why ⌘Tab falls short</a></li>
 <li><a href="#same-app-windows">Same-app windows</a></li>
 <li><a href="#comparison">Compare the methods</a></li>
-<li><a href="#window-search">How to search Mac windows by app name and title</a></li>
 <li><a href="#open-contexts">Switch with Open Contexts</a></li>
+<li><a href="#window-search">How to search Mac windows by app name and title</a></li>
+<li><a href="#saved-window-groups">Saved window groups</a></li>
+<li><a href="#sidebar">Sidebar shortcut</a></li>
+<li><a href="#setup">Set it up</a></li>
+<li><a href="#compact-list">Compact window list</a></li>
 <li><a href="#faq">FAQ</a></li>
 <li><a href="#give-your-mac-every-window">Give your Mac every window</a></li>
 <li><a href="#sources">Useful sources</a></li></ul>
@@ -197,21 +201,21 @@
 <p>Chinese app names and window titles also match toneless pinyin: <code>weixin</code> or <code>weix</code> finds 微信, and <code>fabu</code> can match 发布 in a title. A match can end partway through the last syllable; the corresponding Chinese characters are highlighted. Literal text matches rank above equivalent pinyin matches. Search covers app names and window titles in the keyboard switcher.</p>
 <p>In the <a href="/#demo">online demo</a>, click ⌘ Tab and type <code>chr context</code>, <code>weix</code> or <code>fabu</code>; Return confirms and Esc cancels. Browsers cannot receive macOS ⌘Tab, so Option-Tab also demonstrates holding a modifier, typing and releasing to switch.</p>
 <p>To try cross-desktop switching in the demo, open Settings → General and enable Show windows from all desktops. Select a window under Desktop 2 or Desktop 3, then reopen the switcher: the newly current desktop appears first.</p>
-<h3>Saved window groups</h3>
+<h2 id="saved-window-groups">Saved window groups and how to switch within them</h2>
 <p>A persistent app bar sits on the left, right, or bottom edge of every display and lists each window by title next to its Dock badge. Click a row to bring that window forward, even when it is minimized or hidden. From there you can sort windows into groups - code, chat, research - and they return to the same place after a restart. Saved groups keep related windows together across apps.</p>
-<h3 id="saved-window-groups">Switch within saved window groups</h3>
+<h3>Switch window by window inside a group</h3>
 <p>The all-windows list shows saved group names next to their windows. Open the switcher with <kbd>⌘ Tab</kbd> and keep holding <kbd>⌘</kbd>. Press <kbd>←</kbd> or <kbd>→</kbd> to enter the highlighted window’s group. Use <kbd>Tab</kbd> and <kbd>⇧ Tab</kbd> to cycle through its windows. Use the horizontal arrows or click a group tab to change groups. Press <kbd>⇧ ←</kbd> or <kbd>⇧ →</kbd> to return to all windows.</p>
 <p>Choose the default view or turn off <strong>Enable window switcher groups</strong> in Settings → General. The sidebar keeps its saved groups. To use a different key to enter and leave group mode, set <strong>Toggle switcher groups</strong> in Settings → Shortcuts. <a href="/#demo">Try groups in the online demo</a>.</p>
-<h3>Open the sidebar from the keyboard</h3>
+<h2 id="sidebar">Open the sidebar from the keyboard</h2>
 <p>The sidebar highlights the active window in blue with white text. Press <kbd>⌃⌘B</kbd> to temporarily open it on the display under the pointer, even when its visibility is Off. Move the pointer into the sidebar and away, press the shortcut again or press Esc to dismiss the temporary view. Change or disable this shortcut in Settings → Shortcuts. The online demo also has a ⌃⌘B button.</p>
-<h3>Set it up in two minutes.</h3>
+<h2 id="setup">Set it up in two minutes.</h2>
 <ol>
 <li>Download the DMG from the GitHub releases page.</li>
 <li>Drag Open Contexts to Applications and open it.</li>
 <li>Grant Accessibility access when macOS asks.</li>
 <li>Press ⌘Tab. Current-desktop windows appear in the order you last used them.</li>
 </ol>
-<h3>A compact window list for keyboard switching</h3>
+<h2 id="compact-list">A compact window list for keyboard switching</h2>
 <p>Open Contexts combines app-name and title search with a compact window title list and saved groups. It needs Accessibility access; without it, or while the app is closed, ⌘Tab is left exactly as macOS shipped it. Use the keyboard to choose a window by title, return to a recently used window or find a saved task group.</p>
 <h2 id="faq">FAQ</h2>
 <p><strong>How do I switch between windows on Mac with the keyboard alone?</strong> Use ⌘Tab to change apps. For windows within the current app, check your assigned "Move focus to next window" shortcut; on a US layout it is commonly <kbd>⌘`</kbd>. Open Contexts uses ⌘Tab by default for a titled list of individual windows across apps.</p>

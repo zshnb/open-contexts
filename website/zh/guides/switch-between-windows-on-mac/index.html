@@ -56,7 +56,7 @@
     "url": "https://opencontexts.app/"
   },
   "datePublished": "2026-10-05",
-  "dateModified": "2026-11-12",
+  "dateModified": "2026-11-13",
   "author": {
     "@type": "Organization",
     "name": "Open Contexts",
@@ -106,8 +106,12 @@
           <li><a href="#why-command-tab-falls-short">为什么 ⌘Tab 不够用</a></li>
           <li><a href="#same-app-windows">同一应用的多个窗口</a></li>
           <li><a href="#comparison">五种方式对比</a></li>
+          <li><a href="#open-contexts">使用 Open Contexts</a></li>
           <li><a href="#window-search">如何搜索 Mac 窗口：应用名与标题</a></li>
-<li><a href="#open-contexts">使用 Open Contexts</a></li>
+          <li><a href="#saved-window-groups">保存窗口分组</a></li>
+          <li><a href="#sidebar">侧边栏快捷键</a></li>
+          <li><a href="#setup">安装与设置</a></li>
+          <li><a href="#compact-list">紧凑窗口列表</a></li>
           <li><a href="#faq">常见问题</a></li>
           <li><a href="#give-your-mac-every-window">让每个窗口都可直接选择</a></li>
           <li><a href="#sources">参考资料</a></li>
@@ -169,21 +173,21 @@
 <p>中文应用名和窗口标题可用无声调拼音匹配：<code>weixin</code> 或 <code>weix</code> 可找到“微信”，<code>fabu</code> 可匹配标题中的“发布”。最后一个音节可只输入一部分，对应汉字会整体高亮；同等情况下，字面匹配优先于拼音匹配。在键盘切换器中，可搜索窗口的应用名与标题。</p>
 <p><a href="/zh/#demo">在线演示</a>中可先点击 ⌘ Tab，再输入 <code>chr context</code>、<code>weix</code> 或 <code>fabu</code>；用 Return 确认或 Esc 取消。浏览器收不到 macOS 的 ⌘Tab，因此也可用 Option-Tab 演示按住修饰键、输入、松开切换的过程。</p>
 <p>要体验演示中的跨桌面切换，可在“设置 → 通用”开启所有桌面，选择“桌面 2”或“桌面 3”下的窗口，再打开切换器：新的当前桌面会显示在最前。</p>
-<h3>保存窗口分组</h3>
+<h2 id="saved-window-groups">保存窗口分组，并在组内切换</h2>
         <p>常驻应用栏可以放在每个显示器的左侧、右侧或底部，在应用图标与 Dock 标记旁列出窗口标题。点击一行即可激活对应窗口，即使它已经最小化或隐藏。你也可以把窗口整理到“代码”“聊天”“资料”等分组，重启后仍然保留分组位置。可保存的自定义窗口分组，让不同应用中的相关窗口保持在一起。</p>
-        <h3 id="saved-window-groups">按保存的分组切换窗口</h3>
+        <h3>在组内按窗口切换</h3>
 <p>全部窗口列表会显示窗口所属的分组。按 <kbd>⌘ Tab</kbd> 打开切换器后，继续按住 <kbd>⌘</kbd>，按 <kbd>←</kbd> 或 <kbd>→</kbd> 进入高亮窗口所在的组。用 <kbd>Tab</kbd> 和 <kbd>⇧ Tab</kbd> 在组内循环，用左右方向键或点击分组标签切组。按 <kbd>⇧ ←</kbd> 或 <kbd>⇧ →</kbd> 返回全部窗口。</p>
 <p>在「设置 → 通用」可以选择默认视图，或关闭<strong>启用窗口切换器分组</strong>。侧边栏仍可使用原有分组。在「设置 → 快捷键」可自定义<strong>进入或退出切换器分组模式</strong>的按键。<a href="/zh/#demo">在在线演示中试用分组</a>。</p>
-<h3>用快捷键临时唤起侧边栏</h3>
+<h2 id="sidebar">用快捷键临时唤起侧边栏</h2>
         <p>侧边栏以蓝底白字高亮当前窗口。按 <kbd>⌃⌘B</kbd> 可在鼠标所在屏幕临时唤起侧边栏，即使显示方式已设为“关闭”。鼠标移入侧边栏再移出、再次按快捷键或按 Esc，即可结束临时显示。在“设置 → 快捷键”中可修改或禁用此快捷键。在线演示也提供了 ⌃⌘B 按钮。</p>
-        <h3>两分钟完成设置</h3>
+        <h2 id="setup">两分钟完成设置</h2>
         <ol>
           <li>从 GitHub Releases 页面下载 DMG。</li>
           <li>将 Open Contexts 拖到“应用程序”目录并打开。</li>
           <li>在 macOS 提示时授予辅助功能权限。</li>
           <li>按下默认快捷键 ⌘Tab，即可看到按最近使用顺序排列的窗口列表。</li>
         </ol>
-        <h3>用紧凑列表快速选择窗口</h3>
+        <h2 id="compact-list">用紧凑列表快速选择窗口</h2>
         <p>Open Contexts 将应用名与窗口标题搜索、紧凑的标题列表和可保存分组结合起来。它需要辅助功能权限；未授权或应用关闭时，不会接管系统的 ⌘Tab。可以用键盘按标题选择窗口、回到最近使用的窗口，或从保存的任务分组中找到目标。</p>
         <h2 id="faq">常见问题</h2>
         <p><strong>如何只用键盘在 Mac 上切换窗口？</strong> 用 ⌘Tab 切换应用。同一应用内的窗口，请查看系统分配的“将焦点移到下一个窗口”快捷键，美式布局上通常是 <kbd>⌘`</kbd>。Open Contexts 默认用 ⌘Tab 打开跨应用的窗口标题列表。</p>
