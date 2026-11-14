@@ -1,13 +1,19 @@
 import AppKit
 
 MainActor.assumeIsolated {
-    if let index = CommandLine.arguments.firstIndex(where: { $0 == "--activation-self-check" || $0 == "--activation-repair-self-check" || $0 == "--activation-cancel-self-check" }),
+    if let index = CommandLine.arguments.firstIndex(where: { $0 == "--activation-self-check" || $0 == "--activation-repair-self-check" || $0 == "--activation-cancel-self-check"
+        || $0 == "--activation-busy-scan-self-check" }),
        CommandLine.arguments.indices.contains(index + 1) {
         let appID = CommandLine.arguments[index + 1]
         let application = NSApplication.shared
         let simulateRestoration = CommandLine.arguments[index] == "--activation-repair-self-check"
         let simulateCancellation = CommandLine.arguments[index] == "--activation-cancel-self-check"
-        Task { @MainActor in exit(await WindowService.activationSelfCheck(appID: appID, simulateRestoration: simulateRestoration, simulateCancellation: simulateCancellation) ? 0 : 1) }
+        let simulateBusyScan = CommandLine.arguments[index] == "--activation-busy-scan-self-check"
+        Task { @MainActor in
+            exit(await WindowService.activationSelfCheck(appID: appID, simulateRestoration: simulateRestoration,
+                                                         simulateCancellation: simulateCancellation,
+                                                         simulateBusyScan: simulateBusyScan) ? 0 : 1)
+        }
         application.run()
     }
     if CommandLine.arguments.contains("--spaces-self-check") {

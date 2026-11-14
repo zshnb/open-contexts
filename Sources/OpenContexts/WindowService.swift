@@ -79,6 +79,8 @@ final class WindowService: ObservableObject {
     private var lastBadgeScanAt = -Double.infinity
     private var badgeState = DockBadgeState()
     private let scanQueue = DispatchQueue(label: "OpenContexts.WindowScan", qos: .userInitiated)
+    /// Kept apart from `scanQueue` so a switch never waits for a background scan to finish.
+    private let activationQueue = DispatchQueue(label: "OpenContexts.WindowActivation", qos: .userInteractive)
 
     func start() {
         guard timer == nil else { return }
@@ -228,7 +230,7 @@ final class WindowService: ObservableObject {
                     guard !Task.isCancelled, !application.isTerminated else { return }
                     guard ProcessInfo.processInfo.systemUptime < deadline else { break }
                     let outcome: (current: Bool, focused: Bool) = await withCheckedContinuation { continuation in
-                        self.scanQueue.async {
+                        self.activationQueue.async {
                             let current = WindowSpaces.query()?.space(for: windowID)?.isCurrent == true
                             let app = AXUIElementCreateApplication(window.info.processID)
                             AXUIElementSetMessagingTimeout(app, 0.2)
@@ -261,7 +263,7 @@ final class WindowService: ObservableObject {
     private func raise(_ window: TrackedWindow, request: ActivationRequest) async {
         let logger = logger
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            scanQueue.async {
+            activationQueue.async {
                 defer { continuation.resume() }
                 guard !request.isCancelled else { return }
                 let app = AXUIElementCreateApplication(window.info.processID)
@@ -483,7 +485,9 @@ final class WindowService: ObservableObject {
         return !topology.spaces.filter(\.isCurrent).isEmpty && !previous.isEmpty
     }
 
-    static func activationSelfCheck(appID: String, simulateRestoration: Bool, simulateCancellation: Bool = false) async -> Bool {
+    static func activationSelfCheck(appID: String, simulateRestoration: Bool, simulateCancellation: Bool = false,
+                                    simulateBusyScan: Bool = false) async -> Bool {
+        let needsTwoWindows = simulateCancellation || simulateBusyScan
         guard AXIsProcessTrusted(), let app = NSRunningApplication.runningApplications(withBundleIdentifier: appID).first else { return false }
         let apps = [ApplicationSnapshot(processID: app.processIdentifier, appID: appID, appName: appID)]
         var result = scan(applications: apps, previous: [], frontmostPID: nil, badgeReads: nil, allSpaces: true)
@@ -491,8 +495,8 @@ final class WindowService: ObservableObject {
             result = scan(applications: apps, previous: result.windows, frontmostPID: nil,
                           badgeReads: nil, allSpaces: true, discoveries: result.discoveries, discoveryPass: pass)
         }
-        guard (simulateCancellation ? result.windows.count >= 2 : result.windows.count == 1), var target = result.windows.first else {
-            print("Activation check requires \(simulateCancellation ? "two or more" : "exactly one") eligible windows; found \(result.windows.count)")
+        guard (needsTwoWindows ? result.windows.count >= 2 : result.windows.count == 1), var target = result.windows.first else {
+            print("Activation check requires \(needsTwoWindows ? "two or more" : "exactly one") eligible windows; found \(result.windows.count)")
             return false
         }
         let service = WindowService()
@@ -529,6 +533,31 @@ final class WindowService: ObservableObject {
             }
         }
         service.apply(result)
+        if simulateBusyScan {
+            guard let newer = result.windows.last, newer.id != target.id else { return false }
+            service.activate(newer.id)
+            await service.activationTask?.value
+            let appElement = AXUIElementCreateApplication(target.info.processID)
+            let before: AXUIElement? = attribute(kAXFocusedWindowAttribute, of: appElement)
+            guard before.flatMap(WindowSpaces.windowID) == newer.windowID else { return false }
+            // A slow background scan must not hold the user's switch back.
+            let gate = DispatchSemaphore(value: 0)
+            service.scanQueue.async { gate.wait() }
+            defer { gate.signal() }
+            service.activate(target.id)
+            var raised = false
+            for _ in 0..<50 {
+                try? await Task.sleep(for: .milliseconds(10))
+                let focused: AXUIElement? = attribute(kAXFocusedWindowAttribute, of: appElement)
+                if focused.flatMap(WindowSpaces.windowID) == target.windowID,
+                   NSWorkspace.shared.frontmostApplication?.processIdentifier == target.info.processID {
+                    raised = true
+                    break
+                }
+            }
+            print("Activation completed while a scan was in progress=\(raised)")
+            return raised
+        }
         if simulateCancellation {
             guard let newer = result.windows.last, newer.id != target.id else { return false }
             service.activate(newer.id)
@@ -538,7 +567,7 @@ final class WindowService: ObservableObject {
             guard before.flatMap(WindowSpaces.windowID) == newer.windowID,
                   NSWorkspace.shared.frontmostApplication?.processIdentifier == newer.info.processID else { return false }
             let gate = DispatchSemaphore(value: 0)
-            service.scanQueue.async { gate.wait() }
+            service.activationQueue.async { gate.wait() }
             service.activate(target.id)
             try? await Task.sleep(for: .milliseconds(50))
             service.cancelActivation()
