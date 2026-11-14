@@ -84,3 +84,8 @@
 "Open the switcher with a shortcut to search" = "Open the switcher with a shortcut to search";
 "Press %@, type to filter, then press Return to switch. Esc cancels." = "Press %@, type to filter, then press Return to switch. Esc cancels.";
 "This shortcut is already in use. Change it in Shortcuts." = "This shortcut is already in use. Change it in Shortcuts.";
+"Enable window switcher groups" = "Enable window switcher groups";
+"Open switcher in group mode" = "Open switcher in group mode";
+"Toggle switcher groups" = "Toggle switcher groups";
+"Choose a key other than Shift or the window navigation keys." = "Choose a key other than Shift or the window navigation keys.";
+"No windows in this group" = "No windows in this group";

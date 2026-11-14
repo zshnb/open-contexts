@@ -113,6 +113,15 @@ public final class GroupStore: ObservableObject {
         activeWindowOrder += windows.map(\.id).filter { !known.contains($0) }
     }
 
+    public var groupIDsByWindowID: [String: String] {
+        let groupBySavedID = Dictionary(uniqueKeysWithValues: windowsByGroup.flatMap { groupID, windows in
+            windows.map { ($0.id, groupID) }
+        })
+        return activeWindows.keys.reduce(into: [:]) { result, id in
+            result[id] = savedIDByWindowID[id].flatMap { groupBySavedID[$0] }
+        }
+    }
+
     public func windows(in groupID: String) -> [WindowInfo] {
         guard groups.contains(where: { $0.id == groupID }) else { return [] }
         let windowIDBySavedID = Dictionary(uniqueKeysWithValues: savedIDByWindowID.map { ($0.value, $0.key) })

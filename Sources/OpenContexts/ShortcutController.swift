@@ -20,10 +20,14 @@ struct KeyboardShortcut: Codable, Equatable {
     }
 
     var modifiers: CGEventFlags { CGEventFlags(rawValue: modifierRawValue) }
-    var isValid: Bool {
+    private var hasValidKey: Bool {
         keyCode < 128 && keyCode != 53 && !(54...63).contains(keyCode)
-            && !modifiers.isEmpty && modifiers.subtracting(Self.modifierMask).isEmpty
+            && modifiers.subtracting(Self.modifierMask).isEmpty
             && !keyLabel.isEmpty && keyLabel.count <= 20
+    }
+    var isValid: Bool { hasValidKey && !modifiers.isEmpty }
+    var isValidGroupMode: Bool {
+        hasValidKey && ![48, 50, 51, 123, 124, 125, 126].contains(keyCode)
     }
     var display: String {
         (modifiers.contains(.maskControl) ? "⌃" : "")
@@ -39,7 +43,7 @@ struct KeyboardShortcut: Codable, Equatable {
         keyCode == other.keyCode && modifierRawValue == other.modifierRawValue
     }
 
-    init?(event: NSEvent) {
+    init?(event: NSEvent, groupMode: Bool = false) {
         let flags = CGEventFlags(rawValue: UInt64(event.modifierFlags.rawValue))
         guard !flags.contains(.maskShift) else { return nil }
         let names: [UInt16: String] = [
@@ -53,12 +57,12 @@ struct KeyboardShortcut: Codable, Equatable {
         let label = names[event.keyCode] ?? functionKeys[event.keyCode].map { "F\($0)" }
             ?? event.characters(byApplyingModifiers: [])?.uppercased() ?? ""
         self.init(keyCode: event.keyCode, modifiers: flags.intersection(Self.modifierMask), keyLabel: label)
-        guard isValid else { return nil }
+        guard groupMode ? isValidGroupMode : isValid else { return nil }
     }
 }
 
 enum ShortcutTarget: String, CaseIterable {
-    case allWindows, currentApp, sidebar, search
+    case allWindows, currentApp, sidebar, search, groupMode
 
     var title: String {
         switch self {
@@ -66,6 +70,7 @@ enum ShortcutTarget: String, CaseIterable {
         case .currentApp: "Current app windows"
         case .sidebar: "Show or hide sidebar"
         case .search: "Search windows"
+        case .groupMode: "Toggle switcher groups"
         }
     }
 }
@@ -76,6 +81,8 @@ enum SwitcherAction: Equatable {
     case begin(currentAppOnly: Bool, reverse: Bool)
     case beginSearch
     case step(Int)
+    case groupArrow(Int, shifted: Bool)
+    case toggleGroups
     case search(String)
     case commit
     case cancel
@@ -145,6 +152,8 @@ final class ShortcutController: ObservableObject {
     private(set) var currentAppShortcut = KeyboardShortcut.currentApp
     private(set) var sidebarShortcut: KeyboardShortcut? = .sidebar
     private(set) var searchShortcut: KeyboardShortcut?
+    private var groupModeShortcut: KeyboardShortcut?
+    private var switcherGroupsEnabled = true
 
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
@@ -154,18 +163,22 @@ final class ShortcutController: ObservableObject {
     private var saveRecording: ((KeyboardShortcut) -> Bool)?
 
     func configure(allWindows: KeyboardShortcut, currentApp: KeyboardShortcut,
-                   sidebar: KeyboardShortcut? = .sidebar, search: KeyboardShortcut? = nil) {
+                   sidebar: KeyboardShortcut? = .sidebar, search: KeyboardShortcut? = nil,
+                   groupMode: KeyboardShortcut? = nil, switcherGroupsEnabled: Bool = true) {
         guard allWindows.isValid, currentApp.isValid, !allWindows.conflicts(with: currentApp),
               sidebar.map({ $0.isValid && !$0.conflicts(with: allWindows) && !$0.conflicts(with: currentApp) }) ?? true,
               search.map({ $0.isValid && !$0.conflicts(with: allWindows) && !$0.conflicts(with: currentApp)
-                  && !(sidebar?.conflicts(with: $0) ?? false) }) ?? true,
+                  && !(sidebar?.conflicts(with: $0) ?? false) && groupMode?.keyCode != $0.keyCode }) ?? true,
               allWindows != allWindowsShortcut || currentApp != currentAppShortcut
-                || sidebar != sidebarShortcut || search != searchShortcut else { return }
+                || sidebar != sidebarShortcut || search != searchShortcut || groupMode != groupModeShortcut
+                || switcherGroupsEnabled != self.switcherGroupsEnabled else { return }
         if let action = state.finish(commit: false) { onAction?(action) }
         allWindowsShortcut = allWindows
         currentAppShortcut = currentApp
         sidebarShortcut = sidebar
         searchShortcut = search
+        groupModeShortcut = groupMode
+        self.switcherGroupsEnabled = switcherGroupsEnabled
     }
 
     func beginRecording(target: ShortcutTarget, onSave: @escaping (KeyboardShortcut) -> Bool) {
@@ -194,17 +207,19 @@ final class ShortcutController: ObservableObject {
     }
 
     private func record(_ event: NSEvent) {
-        guard recordingTarget != nil, !event.isARepeat else { return }
+        guard let recordingTarget, !event.isARepeat else { return }
         if event.keyCode == 53 {
             cancelRecording()
-        } else if let shortcut = KeyboardShortcut(event: event) {
+        } else if let shortcut = KeyboardShortcut(event: event, groupMode: recordingTarget == .groupMode) {
             if saveRecording?(shortcut) == true {
                 cancelRecording()
             } else {
                 recordingErrorKey = "Shortcuts must be different."
             }
         } else {
-            recordingErrorKey = "Use Command, Option or Control with a key; Shift is reserved for reverse switching."
+            recordingErrorKey = recordingTarget == .groupMode
+                ? "Choose a key other than Shift or the window navigation keys."
+                : "Use Command, Option or Control with a key; Shift is reserved for reverse switching."
         }
     }
 
@@ -302,7 +317,7 @@ final class ShortcutController: ObservableObject {
                 && searchShortcut?.matches(keyCode: keyCode, flags: flags) == true
             return state.isSwitching || repeatingSearchShortcut ? nil : Unmanaged.passUnretained(event)
         }
-        if action != .toggleSidebar || event.getIntegerValueField(.keyboardEventAutorepeat) == 0 {
+        if action != .toggleSidebar || !isRepeat {
             emit(action, deferred: true)
         }
         return nil
@@ -319,7 +334,12 @@ final class ShortcutController: ObservableObject {
 
     private func keyAction(keyCode: UInt16, flags: CGEventFlags, characters: String? = nil,
                            isRepeat: Bool = false) -> SwitcherAction? {
-        if !flags.contains(.maskShift), sidebarShortcut?.matches(keyCode: keyCode, flags: flags) == true {
+        let shifted = flags.contains(.maskShift)
+        let modifiers = flags.intersection(KeyboardShortcut.modifierMask)
+        if switcherGroupsEnabled, state.isSwitching, modifiers == state.heldModifiers, keyCode == 123 || keyCode == 124 {
+            return isRepeat ? nil : .groupArrow(keyCode == 123 ? -1 : 1, shifted: shifted)
+        }
+        if !shifted, sidebarShortcut?.matches(keyCode: keyCode, flags: flags) == true {
             _ = state.finish(commit: false)
             return .toggleSidebar
         }
@@ -328,10 +348,14 @@ final class ShortcutController: ObservableObject {
         }
         if state.isSwitching {
             if state.isSearchSession {
-                if !flags.contains(.maskShift), searchShortcut?.matches(keyCode: keyCode, flags: flags) == true {
+                if !shifted, searchShortcut?.matches(keyCode: keyCode, flags: flags) == true {
                     return isRepeat ? nil : state.finish(commit: false)
                 }
                 if keyCode == 36 || keyCode == 76 { return state.finish(commit: true) }
+            }
+            if switcherGroupsEnabled, let groupModeShortcut, keyCode == groupModeShortcut.keyCode, !shifted,
+               modifiers == state.heldModifiers.union(groupModeShortcut.modifiers) {
+                return isRepeat ? nil : .toggleGroups
             }
             if state.searchQuery.isEmpty,
                allWindowsShortcut.matches(keyCode: keyCode, flags: flags)
@@ -355,7 +379,7 @@ final class ShortcutController: ObservableObject {
             }
         }
 
-        if !flags.contains(.maskShift), searchShortcut?.matches(keyCode: keyCode, flags: flags) == true {
+        if !shifted, searchShortcut?.matches(keyCode: keyCode, flags: flags) == true {
             guard !isRepeat else { return nil }
             return state.beginSearch(allowed: canBegin?(false) ?? true)
         }
@@ -557,6 +581,30 @@ final class ShortcutController: ObservableObject {
               searchController.keyAction(keyCode: 16, flags: custom.modifiers, characters: "y") == .search("ay"),
               searchController.modifierAction(flags: .maskControl) == .commit,
               searchController.state.searchQuery.isEmpty else { return false }
+        let groupKey = KeyboardShortcut(keyCode: 118, modifiers: .maskAlternate, keyLabel: "F4")
+        let arrow = KeyboardShortcut(keyCode: 124, modifiers: .maskCommand, keyLabel: "→")
+        let grouped = ShortcutController()
+        grouped.configure(allWindows: .allWindows, currentApp: .currentApp, sidebar: arrow, groupMode: groupKey)
+        guard grouped.keyAction(keyCode: 123, flags: .maskCommand) == nil,
+              grouped.keyAction(keyCode: 124, flags: .maskCommand) == .toggleSidebar,
+              grouped.keyAction(keyCode: 118, flags: [.maskCommand, .maskAlternate]) == nil,
+              grouped.keyAction(keyCode: 48, flags: .maskCommand) == .begin(currentAppOnly: false, reverse: false),
+              grouped.keyAction(keyCode: 123, flags: .maskCommand) == .groupArrow(-1, shifted: false),
+              grouped.keyAction(keyCode: 124, flags: .maskCommand) == .groupArrow(1, shifted: false),
+              grouped.keyAction(keyCode: 124, flags: [.maskCommand, .maskShift]) == .groupArrow(1, shifted: true),
+              grouped.keyAction(keyCode: 124, flags: .maskCommand, isRepeat: true) == nil,
+              grouped.keyAction(keyCode: 118, flags: .maskCommand) == nil,
+              grouped.keyAction(keyCode: 118, flags: [.maskCommand, .maskAlternate]) == .toggleGroups,
+              grouped.keyAction(keyCode: 118, flags: [.maskCommand, .maskAlternate], isRepeat: true) == nil,
+              grouped.modifierAction(flags: .maskCommand) == nil,
+              grouped.modifierAction(flags: []) == .commit else { return false }
+        grouped.configure(allWindows: .allWindows, currentApp: .currentApp, sidebar: arrow,
+                          groupMode: groupKey, switcherGroupsEnabled: false)
+        guard grouped.keyAction(keyCode: 48, flags: .maskCommand) == .begin(currentAppOnly: false, reverse: false),
+              grouped.keyAction(keyCode: 123, flags: .maskCommand) == nil,
+              grouped.keyAction(keyCode: 118, flags: [.maskCommand, .maskAlternate]) == nil,
+              grouped.keyAction(keyCode: 48, flags: .maskCommand) == .step(1),
+              grouped.keyAction(keyCode: 124, flags: .maskCommand) == .toggleSidebar else { return false }
         return searchShortcutSelfCheck()
     }
 
@@ -640,6 +688,19 @@ final class ShortcutController: ObservableObject {
                     "search must still begin after rejected configuration"),
               check(controller.keyAction(keyCode: 11, flags: [.maskControl, .maskCommand]) == .toggleSidebar
                   && !controller.state.isSwitching, "sidebar shortcut must retain priority") else { return false }
+        let groupKey = KeyboardShortcut(keyCode: 118, modifiers: [], keyLabel: "F4")
+        controller.configure(allWindows: .allWindows, currentApp: .currentApp, search: .search, groupMode: groupKey)
+        guard check(controller.keyAction(keyCode: 49, flags: .maskAlternate) == .beginSearch,
+                    "search must begin alongside group mode"),
+              check(controller.keyAction(keyCode: 124, flags: []) == .groupArrow(1, shifted: false)
+                  && controller.keyAction(keyCode: 118, flags: []) == .toggleGroups,
+                    "group navigation must work in search"),
+              check(controller.keyAction(keyCode: 36, flags: []) == .commit, "Return must still commit grouped search")
+        else { return false }
+        controller.configure(allWindows: .allWindows, currentApp: .currentApp, search: .search,
+                             groupMode: KeyboardShortcut(keyCode: 49, modifiers: [], keyLabel: "Space"))
+        guard check(controller.searchShortcut == .search && controller.keyAction(keyCode: 118, flags: []) == nil,
+                    "configure must reject search sharing the group mode key") else { return false }
         return true
     }
 }

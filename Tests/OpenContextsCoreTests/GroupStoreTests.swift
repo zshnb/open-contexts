@@ -52,6 +52,7 @@ final class GroupStoreTests: XCTestCase {
         store.moveWindow(id: "2", to: work)
         store.moveWindow(id: "1", to: work, before: "2")
         XCTAssertEqual(store.windows(in: work).map(\.id), ["1", "2"])
+        XCTAssertEqual(store.groupIDsByWindowID, ["1": work, "2": work, "3": GroupStore.ungroupedID])
 
         store.renameGroup(id: work, name: "Focus")
         store.renameGroup(id: GroupStore.ungroupedID, name: "Nope")
@@ -61,6 +62,7 @@ final class GroupStoreTests: XCTestCase {
         store.deleteGroup(id: work)
         XCTAssertEqual(store.groups.map(\.name), ["未分组", "Later"])
         XCTAssertEqual(store.windows(in: GroupStore.ungroupedID).map(\.id), ["3", "1", "2"])
+        XCTAssertEqual(Set(store.groupIDsByWindowID.values), [GroupStore.ungroupedID])
     }
 
     func testRestartRestoresDocumentWindowsAndKeepsClosedPosition() throws {
@@ -83,6 +85,7 @@ final class GroupStoreTests: XCTestCase {
             window("new-1", title: "Anything", documentURL: "file:///one")
         ])
         XCTAssertEqual(restarted.windows(in: docs).map(\.id), ["new-1", "new-2"])
+        XCTAssertEqual(restarted.groupIDsByWindowID, ["new-1": docs, "new-2": docs])
     }
 
     func testLaterLiveDuplicateRestoresSavedGroup() throws {

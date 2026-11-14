@@ -84,3 +84,8 @@
 "Open the switcher with a shortcut to search" = "使用快捷键唤出切换器进行搜索";
 "Press %@, type to filter, then press Return to switch. Esc cancels." = "按 %@ 后输入关键字过滤，按回车切换，按 Esc 取消。";
 "This shortcut is already in use. Change it in Shortcuts." = "这个快捷键已被占用，请在“快捷键”页修改。";
+"Enable window switcher groups" = "启用窗口切换器分组";
+"Open switcher in group mode" = "默认以分组模式打开切换器";
+"Toggle switcher groups" = "进入或退出切换器分组模式";
+"Choose a key other than Shift or the window navigation keys." = "请选择 Shift 和窗口导航键之外的按键。";
+"No windows in this group" = "此分组没有可切换的窗口";

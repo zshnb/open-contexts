@@ -15,6 +15,7 @@
     general: '通用', features: '功能', shortcuts: '快捷键', groups: '分组', language: '语言',
     showUngrouped: '显示未分组（为空时自动隐藏）', showCreateGroup: '显示新建分组按钮',
     allDesktops: '显示所有桌面的窗口', desktop: '桌面', current: '当前',
+    switcherGroups: '启用窗口切换器分组', startsInGroupMode: '默认以分组模式打开切换器',
     sidebarShortcut: '唤起侧边栏', enableShortcut: '启用侧边栏快捷键',
   } : {
     ungrouped: 'Ungrouped', newGroupName: 'New Group', code: 'Code', team: 'Team',
@@ -27,6 +28,7 @@
     general: 'General', features: 'Features', shortcuts: 'Shortcuts', groups: 'Groups', language: 'Language',
     showUngrouped: 'Show Ungrouped (hidden when empty)', showCreateGroup: 'Show New Group button',
     allDesktops: 'Show windows from all desktops', desktop: 'Desktop', current: 'Current',
+    switcherGroups: 'Enable window switcher groups', startsInGroupMode: 'Open switcher in group mode',
     sidebarShortcut: 'Show sidebar', enableShortcut: 'Enable sidebar shortcut',
   }
 
@@ -71,7 +73,8 @@
   }
   const sidebarDefaults = { pos: 'left', display: 'title', mode: 'always', align: 'center', width: 188,
     showUngrouped: true, showCreateGroup: true, page: 'sidebar',
-    allDesktops: false, desktop: 1, front: 'terminal', sidebarShortcut: true }
+    allDesktops: false, desktop: 1, front: 'terminal', sidebarShortcut: true,
+    switcherGroups: true, startsInGroupMode: false }
   const barHTML = (groups, badges, tag, settings = sidebarDefaults) =>
     groups.map(g => ({ ...g, items: g.items.filter(id => APPS[id].desktop === settings.desktop) }))
       .filter(g => g.id !== 'u' || settings.showUngrouped && g.items.length)
@@ -120,7 +123,8 @@
     }
     return html + (marked ? '</mark>' : '')
   }
-  function switcherWindows(mru, query, allDesktops, desktop) {
+  function switcherWindows(mru, query, allDesktops, desktop, group) {
+    if (group) mru = mru.filter(id => group.items.includes(id))
     const desktops = allDesktops ? [desktop, ...[...new Set(mru.map(id => APPS[id].desktop))].filter(d => d !== desktop).sort((a, b) => a - b)] : [desktop]
     return desktops.flatMap(d => {
       const windows = mru.filter(id => APPS[id].desktop === d)
@@ -128,10 +132,22 @@
       return searchWindows(windows, query)
     })
   }
-  const swRows = (list, sel, tag = 'div', query = '', allDesktops = false, desktop = 1) => list.map((id, i) =>
-    (allDesktops && (i === 0 || APPS[list[i - 1]].desktop !== APPS[id].desktop)
-      ? `<div class="desktop-heading" role="presentation">${T.desktop} ${APPS[id].desktop}${APPS[id].desktop === desktop ? ` · ${T.current}` : ''}</div>` : '')
-    + `<${tag} class="srow" role="option" data-i="${i}" aria-selected="${i === sel}"><span class="app">${highlight(APPS[id].name, query)}</span>${ICON[id]}<span class="t">${highlight(APPS[id].title, query)}</span></${tag}>`).join('')
+  const swRows = (list, sel, tag = 'div', query = '', allDesktops = false, desktop = 1, groups = []) => list.map((id, i) => {
+    const group = groups.find(g => g.id !== 'u' && g.items.includes(id))
+    const heading = allDesktops && (i === 0 || APPS[list[i - 1]].desktop !== APPS[id].desktop)
+      ? `<div class="desktop-heading" role="presentation">${T.desktop} ${APPS[id].desktop}${APPS[id].desktop === desktop ? ` · ${T.current}` : ''}</div>` : ''
+    const label = group ? `<span class="sw-group-label" title="${esc(group.name)}">${esc(group.name)}</span>` : ''
+    return heading + `<${tag} class="srow" role="option" data-i="${i}" aria-selected="${i === sel}"><span class="app">${highlight(APPS[id].name, query)}</span>${ICON[id]}<span class="t">${highlight(APPS[id].title, query)}</span>${label}</${tag}>`
+  }).join('')
+  const switcherGroupCounts = (groups, list) => groups
+    .map(group => ({ ...group, count: group.items.filter(id => list.includes(id)).length }))
+    .filter(group => group.id !== 'u' || group.count)
+  const swGroupBar = (groups, selected, interactive = true) => groups.map(group => {
+    const attrs = `aria-pressed="${group.id === selected}"`
+    const label = `${esc(group.name)} <small>${group.count}</small>`
+    return interactive ? `<button type="button" data-sw-group="${group.id}" ${attrs}${group.count ? '' : ' disabled'}>${label}</button>`
+      : `<span aria-current="${group.id === selected}">${label}</span>`
+  }).join('')
   const seg = (k, opts, cur, mock) => `<div class="seg" role="radiogroup" aria-label="${T[{ mode: 'sidebar', pos: 'position', align: 'alignment', display: 'display' }[k]]}">${opts.map(([v, label]) =>
     `<label><input class="bc-input" type="radio" name="${mock ? 'mock' : 'demo'}-${k}" data-k="${k}" data-v="${v}" value="${v}" ${v === cur ? 'checked' : ''}>${label}</label>`).join('')}</div>`
   const settingsForm = s => `<div class="form"><nav class="settings-nav" aria-label="${T.settings}">
@@ -141,7 +157,11 @@
     </nav><div class="settings-content">${s.page === 'general' ? `
     <div class="frow"><span>${T.language}</span><span class="val">${zh ? '中文' : 'English'}</span></div>
     <div class="frow"><span>${T.access}</span><span class="val">${T.granted}</span></div>
-    <div class="frow"><div class="group-options"><label><input class="bc-input" type="checkbox" data-setting="allDesktops" ${s.allDesktops ? 'checked' : ''}>${T.allDesktops}</label></div></div>` : s.page === 'shortcuts' ? `
+    <div class="frow"><div class="group-options">
+      <label><input class="bc-input" type="checkbox" data-setting="switcherGroups" ${s.switcherGroups ? 'checked' : ''}>${T.switcherGroups}</label>
+      <label><input class="bc-input" type="checkbox" data-setting="startsInGroupMode" ${s.startsInGroupMode ? 'checked' : ''} ${s.switcherGroups ? '' : 'disabled'}>${T.startsInGroupMode}</label>
+      <label><input class="bc-input" type="checkbox" data-setting="allDesktops" ${s.allDesktops ? 'checked' : ''}>${T.allDesktops}</label>
+    </div></div>` : s.page === 'shortcuts' ? `
     <div class="frow"><span>${T.allWin}</span><span class="val">⌘Tab</span></div>
     <div class="frow"><span>${T.curWin}</span><span class="val">⌘\`</span></div>
     <div class="frow"><span>${T.sidebarShortcut}</span><span class="val">⌃⌘B</span></div>
@@ -176,13 +196,13 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
       <h5>Open Contexts</h5><div class="sk" style="width:92%"></div><div class="sk" style="width:84%"></div><div class="sk" style="width:60%"></div>
       <div class="sk" style="width:88%;margin-top:22px"></div><div class="sk" style="width:74%"></div><div class="sk" style="width:80%"></div><div class="sk" style="width:40%"></div></div>`,
     notes: () => titlebar(APPS.notes.title) + `<div class="wbody notes"><aside><p class="on"><b>${zh ? '发版检查清单' : 'Release checklist'}</b><small>${zh ? '今天 · 4 项' : 'Today · 4 items'}</small></p><p><b>${zh ? '窗口分组灵感' : 'Group ideas'}</b><small>${zh ? '昨天' : 'Yesterday'}</small></p><p><b>${zh ? '快捷键配置' : 'Shortcuts'}</b><small>${zh ? '周一' : 'Monday'}</small></p></aside>
-      <main><h6>${zh ? '发版检查清单' : 'Release checklist'}</h6>☑ ${zh ? '更新 VERSION 至 0.5.1' : 'Bump VERSION to 0.5.1'}<br>☑ ${zh ? '更新 CHANGELOG' : 'Update CHANGELOG'}<br>☑ ${zh ? '发布 v0.5.1' : 'Release v0.5.1'}<br>☑ ${zh ? '检查 appcast.xml' : 'Check appcast.xml'}</main></div>`,
+      <main><h6>${zh ? '发版检查清单' : 'Release checklist'}</h6>☑ ${zh ? '更新 VERSION 至 0.6.0' : 'Bump VERSION to 0.6.0'}<br>☑ ${zh ? '更新 CHANGELOG' : 'Update CHANGELOG'}<br>☑ ${zh ? '发布 v0.6.0' : 'Release v0.6.0'}<br>☑ ${zh ? '检查 appcast.xml' : 'Check appcast.xml'}</main></div>`,
     chatgpt: () => titlebar('ChatGPT') + `<div class="wbody chat"><div class="bubble me">${zh ? '如何在 Mac 上按窗口而不是按应用切换？' : 'How do I switch between windows, not apps, on a Mac?'}</div>
       <div>${zh ? 'macOS 自带的 ⌘Tab 只切换应用。窗口切换器按最近使用顺序列出每个独立窗口，按一次键即可回到刚才的窗口。' : 'macOS ⌘Tab switches apps. A window switcher lists every window in most-recently-used order, so one keystroke gets you back to where you were.'}</div><div class="sk" style="width:70%"></div><div class="sk" style="width:55%"></div></div>`,
     claude: () => titlebar('Claude') + `<div class="wbody chat" style="background:#faf9f5;height:100%"><div class="bubble me" style="background:#ece9df">${zh ? '为什么按 ⌘Tab 默认选中第二个窗口？' : 'Why does ⌘Tab start on the second window?'}</div>
       <div>${zh ? '列表第一项是你当前正在使用的窗口。默认选中第二项意味着轻按一次 ⌘Tab 就能立即切回上一个窗口。' : "The first window in the list is the one you're already in. Starting on the second one means a quick ⌘Tab always takes you back to the previous window."}</div><div class="sk" style="width:66%;background:#ece9df"></div></div>`,
     slack: () => titlebar(APPS.slack.title) + `<div class="wbody slack"><aside><b>Open Contexts</b># general<div class="on"># releases</div># design<br># support</aside><main>
-      <div class="msg"><span class="av" style="background:#e8a33d"></span><div><b>Mia</b><br>${zh ? 'v0.5.1 已发布：支持中文拼音搜索 🎉' : 'Find your window by app name or title 🎉'}</div></div>
+      <div class="msg"><span class="av" style="background:#e8a33d"></span><div><b>Mia</b><br>${zh ? 'v0.6.0 已发布，切换器支持在组内循环和切组。' : 'The v0.6.0 switcher lets you cycle within a group and jump to another group.'}</div></div>
       <div class="msg"><span class="av" style="background:#5b8def"></span><div><b>Leo</b><br>${zh ? '开启所有桌面，就能按桌面分组选择窗口。' : 'Enable all desktops to choose windows in desktop groups.'}</div></div>
       <div class="msg"><span class="av" style="background:#3fb68b"></span><div style="flex:1"><b>Ana</b><div class="sk" style="width:80%"></div><div class="sk" style="width:50%"></div></div></div></main></div>`,
     wechat: () => titlebar(APPS.wechat.title) + `<div class="wbody chat"><div class="bubble me">${zh ? '发布清单准备好了吗？' : 'Is the release checklist ready?'}</div><div>${zh ? '准备好了，窗口已按任务分组。输入 weixin 或 weix 就能找到这个窗口。' : 'Ready. Related windows are together in the same task group.'}</div></div>`,
@@ -246,11 +266,23 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
       sw.hidden = !st.sw
       $('.cmd-pill').hidden = !!st.sw // the button comes back whenever the switcher closes
       if (!st.sw) { sw.innerHTML = ''; return }
-      if (!sw.querySelector('input')) sw.innerHTML = `<input class="search-query" type="text" aria-label="${T.search}" placeholder="${T.search}" autocomplete="off" spellcheck="false">`
-        + `<div role="listbox" aria-label="${T.allWin}"></div><div class="search-query" role="status"></div>`
+      if (!sw.querySelector('input')) sw.innerHTML = `<div class="sw-controls"><input class="search-query" type="text" aria-label="${T.search}" placeholder="${T.search}" autocomplete="off" spellcheck="false">
+        <button type="button" data-act="switcher-groups"></button></div>
+        <div class="sw-group-bar" role="group" aria-label="${T.groups}"></div>
+        <div role="listbox" aria-label="${T.allWin}"></div><div class="search-query" role="status"></div>`
       const input = sw.querySelector('input')
       if (input.value !== st.sw.query) input.value = st.sw.query
-      sw.querySelector('[role="listbox"]').innerHTML = swRows(st.sw.list, st.sw.sel, 'button', st.sw.query, st.allDesktops, st.desktop)
+      const group = st.groups.find(g => g.id === st.sw.group)
+      const button = sw.querySelector('[data-act="switcher-groups"]')
+      button.hidden = !st.switcherGroups
+      button.textContent = group ? T.allWin : T.groups
+      const tabs = sw.querySelector('.sw-group-bar')
+      tabs.hidden = !group
+      tabs.innerHTML = group ? swGroupBar(switcherGroupCounts(st.groups, switcherList('', null)), group.id) : ''
+      const rows = sw.querySelector('[role="listbox"]')
+      rows.setAttribute('aria-label', group?.name ?? T.allWin)
+      rows.innerHTML = swRows(st.sw.list, st.sw.sel, 'button', st.sw.query, st.allDesktops, st.desktop,
+        st.switcherGroups && !group ? st.groups : [])
       const status = sw.querySelector('[role="status"]')
       status.textContent = st.sw.list.length ? '' : T.noMatches
       status.hidden = !!st.sw.list.length
@@ -266,10 +298,33 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
       st.desktop = APPS[id].desktop
       render()
     }
-    // AppController: first ⌘Tab selects index 1 (the previous window), ⇧ starts from the end
+    const switcherList = (query, groupID = st.sw?.group) => switcherWindows(
+      st.mru, query, st.allDesktops, st.desktop, st.groups.find(group => group.id === groupID))
+    const groupForWindow = id => st.groups.find(group => group.items.includes(id))?.id
+    function changeGroup(group) {
+      const selected = st.sw.list[st.sw.sel]
+      const list = switcherList(st.sw.query, group)
+      Object.assign(st.sw, { group, list, sel: Math.max(0, list.indexOf(selected)) })
+      renderSw()
+    }
+    const toggleGroups = () => {
+      if (!st.switcherGroups) return
+      const group = groupForWindow(st.sw.list[st.sw.sel]) ?? groupForWindow(switcherList('', null)[0])
+      changeGroup(st.sw.group ? null : group)
+    }
+    function stepGroup(direction, shifted) {
+      if (!st.sw.group) { if (!shifted) toggleGroups(); return }
+      if (shifted) { changeGroup(null); return }
+      const groups = switcherGroupCounts(st.groups, switcherList('', null)).filter(group => group.count)
+      const index = groups.findIndex(group => group.id === st.sw.group)
+      if (index >= 0) changeGroup(groups[(index + direction + groups.length) % groups.length].id)
+    }
     function openSw(reverse, held) {
-      const list = switcherWindows(st.mru, '', st.allDesktops, st.desktop)
-      st.sw = { list, query: '', sel: reverse ? list.length - 1 : Math.min(1, list.length - 1), held }
+      const all = switcherList('', null)
+      const group = st.switcherGroups && st.startsInGroupMode
+        ? groupForWindow(all.includes(st.front) ? st.front : all[0]) : null
+      const list = switcherList('', group)
+      st.sw = { list, group, query: '', sel: reverse ? list.length - 1 : Math.min(list[0] === st.front ? 1 : 0, list.length - 1), held }
       st.menu = false
       render()
     }
@@ -277,7 +332,7 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
     const commit = () => { const id = st.sw.list[st.sw.sel]; st.sw = null; id ? activate(id) : renderSw() }
     const cancel = () => { st.sw = null; renderSw() }
     const cmdTab = () => st.sw ? step(1) : openSw(false, false)
-    const openSettings = () => { st.settings = true; st.front = 'settings'; st.menu = false; render() }
+    const openSettings = () => { st.settings = true; st.front = 'settings'; st.menu = false; st.sw = null; render() }
     const toggleSidebar = () => {
       if (!st.sidebarShortcut) return
       st.sidebarExpanded = !st.sidebarExpanded
@@ -313,6 +368,8 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
       else if (t.closest('.close')) { st.settings = false; st.front = st.mru[0]; render() }
       else if (t.closest('.newgrp')) { st.groups.push({ id: 'g' + st.groups.length + Date.now(), name: T.newGroupName, items: [] }); render() }
       else if (t.closest('.row')) activate(t.closest('.row').dataset.id)
+      else if (t.closest('[data-act="switcher-groups"]')) toggleGroups()
+      else if (t.closest('[data-sw-group]')) changeGroup(t.closest('[data-sw-group]').dataset.swGroup)
       else if (t.closest('.srow')) { st.sw.sel = +t.closest('.srow').dataset.i; commit() }
       else if (t.closest('[data-act="reset-width"]')) { st.width = sidebarDefaults.width; render() }
       else if (t.closest('button[data-k]')) { const b = t.closest('button[data-k]'); st[b.dataset.k] = b.dataset.v; render() }
@@ -329,7 +386,7 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
         st[k] = v
         render()
         screen.querySelector(`input[data-k="${k}"][data-v="${v}"]`).focus({ preventScroll: true })
-      } else if (['showUngrouped', 'showCreateGroup', 'allDesktops', 'sidebarShortcut'].includes(e.target.dataset.setting)) {
+      } else if (['showUngrouped', 'showCreateGroup', 'allDesktops', 'sidebarShortcut', 'switcherGroups', 'startsInGroupMode'].includes(e.target.dataset.setting)) {
         st[e.target.dataset.setting] = e.target.checked
         if (!st.sidebarShortcut) st.sidebarExpanded = false
         render()
@@ -342,7 +399,7 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
     })
     sw.addEventListener('input', e => {
       if (/^[\x20-\x7e]*$/.test(e.target.value)) {
-        st.sw.query = e.target.value; st.sw.list = switcherWindows(st.mru, st.sw.query, st.allDesktops, st.desktop); st.sw.sel = 0
+        st.sw.query = e.target.value; st.sw.list = switcherList(st.sw.query); st.sw.sel = 0
       }
       renderSw()
     })
@@ -380,12 +437,15 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
       if (k === 'Tab') step(e.shiftKey ? -1 : 1)
       else if (k === 'ArrowDown') step(1)
       else if (k === 'ArrowUp') step(-1)
+      else if (st.switcherGroups && (k === 'ArrowLeft' || k === 'ArrowRight') && (e.altKey || !st.sw.query)) {
+        if (!e.repeat) stepGroup(k === 'ArrowLeft' ? -1 : 1, e.shiftKey)
+      }
       else if (k === 'Enter') commit()
       else if (k === 'Escape') cancel()
       else if ((e.altKey || !e.target.matches('input.search-query'))
         && (k === 'Backspace' || !e.isComposing && /^[\x20-\x7e]$/.test(k))) {
         st.sw.query = k === 'Backspace' ? st.sw.query.slice(0, -1) : st.sw.query + k
-        st.sw.list = switcherWindows(st.mru, st.sw.query, st.allDesktops, st.desktop)
+        st.sw.list = switcherList(st.sw.query)
         st.sw.sel = 0
         renderSw()
       }
@@ -411,7 +471,12 @@ ${zh ? '正在构建生产版本...' : 'Building for production...'}
       const query = zh ? 'weix' : 'chr context'
       return `<div class="mac switcher static"><div class="search-query">${query}</div>${swRows(searchWindows(MRU0, query), 0, 'div', query)}</div>`
     },
-    switcher: () => `<div class="mac switcher static">${swRows(switcherWindows(MRU0, '', true, 1), 1, 'div', '', true)}</div>`,
+    switcher: () => {
+      const groups = groups0()
+      const code = groups[1]
+      return `<div class="mac switcher static"><div class="sw-group-bar">${swGroupBar(switcherGroupCounts(groups, MRU0), code.id, false)}</div>
+        ${swRows(switcherWindows(MRU0, '', true, 1, code), 1, 'div', '', true)}</div>`
+    },
     appbar: () => `<div class="mac desk-mock">
       <div class="appbar static edge" data-pos="left" data-display="title" data-mode="always">${barHTML(groups0(), badges0(), 'div')}</div>
       <div class="appbar static" data-pos="bottom" data-display="title" data-mode="always">${barHTML(groups0(), badges0(), 'div')}</div></div>`,

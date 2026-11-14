@@ -96,6 +96,9 @@ final class AppSettings: ObservableObject {
     @Published private(set) var sidebarShortcut: KeyboardShortcut?
     @Published private(set) var searchShortcut: KeyboardShortcut
     @Published private(set) var searchShortcutEnabled: Bool
+    @Published private(set) var groupModeShortcut: KeyboardShortcut?
+    @Published private(set) var switcherGroupsEnabled: Bool
+    @Published private(set) var startsInGroupMode: Bool
     @Published private(set) var showWindowsFromAllDesktops: Bool
     @Published private(set) var switcherDisplayMode: SwitcherDisplayMode
 
@@ -104,6 +107,7 @@ final class AppSettings: ObservableObject {
     var searchShortcutHasConflict: Bool {
         [allWindowsShortcut, currentAppShortcut, sidebarShortcut].compactMap { $0 }
             .contains { searchShortcut.conflicts(with: $0) }
+            || groupModeShortcut?.keyCode == searchShortcut.keyCode
     }
 
     var activeSearchShortcut: KeyboardShortcut? {
@@ -117,6 +121,8 @@ final class AppSettings: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        switcherGroupsEnabled = defaults.object(forKey: "switcherGroupsEnabled") as? Bool ?? true
+        startsInGroupMode = defaults.bool(forKey: "startsInGroupMode")
         showWindowsFromAllDesktops = defaults.object(forKey: "showWindowsFromAllDesktops") as? Bool ?? false
         switcherDisplayMode = SwitcherDisplayMode(rawValue: defaults.string(forKey: "switcherDisplayMode") ?? "") ?? .allDisplays
         func loadShortcut(_ key: String, fallback: KeyboardShortcut) -> KeyboardShortcut {
@@ -157,6 +163,14 @@ final class AppSettings: ObservableObject {
         } else {
             sidebarPosition = .right
             if savedPosition != nil { defaults.set(SidebarPosition.right.rawValue, forKey: "sidebarPosition") }
+        }
+        if let data = defaults.data(forKey: "groupModeShortcut"),
+           let shortcut = try? JSONDecoder().decode(KeyboardShortcut.self, from: data),
+           shortcut.isValidGroupMode,
+           ![allWindowsShortcut, currentAppShortcut, sidebarShortcut].compactMap({ $0 }).contains(where: {
+               $0.keyCode == shortcut.keyCode
+           }) {
+            groupModeShortcut = shortcut
         }
     }
 
@@ -211,12 +225,26 @@ final class AppSettings: ObservableObject {
         defaults.set(enabled, forKey: "showWindowsFromAllDesktops")
     }
 
+    func setSwitcherGroupsEnabled(_ enabled: Bool) {
+        switcherGroupsEnabled = enabled
+        defaults.set(enabled, forKey: "switcherGroupsEnabled")
+    }
+
+    func setStartsInGroupMode(_ enabled: Bool) {
+        startsInGroupMode = enabled
+        defaults.set(enabled, forKey: "startsInGroupMode")
+    }
+
     @discardableResult
     func setShortcut(_ shortcut: KeyboardShortcut, target: ShortcutTarget) -> Bool {
-        let others = ShortcutTarget.allCases.filter {
+        let conflicts = ShortcutTarget.allCases.filter {
             $0 != target && (searchShortcutEnabled || $0 != .search)
-        }.compactMap { self.shortcut(for: $0) }
-        guard shortcut.isValid, !others.contains(where: { shortcut.conflicts(with: $0) }),
+        }.contains { other in
+            guard let assigned = self.shortcut(for: other) else { return false }
+            if target == .groupMode || other == .groupMode { return shortcut.keyCode == assigned.keyCode }
+            return shortcut.conflicts(with: assigned)
+        }
+        guard (target == .groupMode ? shortcut.isValidGroupMode : shortcut.isValid), !conflicts,
               let data = try? JSONEncoder().encode(shortcut) else { return false }
         switch target {
         case .allWindows: allWindowsShortcut = shortcut
@@ -225,6 +253,7 @@ final class AppSettings: ObservableObject {
             sidebarShortcut = shortcut
             defaults.set(true, forKey: "sidebarShortcutEnabled")
         case .search: searchShortcut = shortcut
+        case .groupMode: groupModeShortcut = shortcut
         }
         defaults.set(data, forKey: target.rawValue + "Shortcut")
         return true
@@ -236,6 +265,7 @@ final class AppSettings: ObservableObject {
         case .currentApp: currentAppShortcut
         case .sidebar: sidebarShortcut
         case .search: searchShortcut
+        case .groupMode: groupModeShortcut
         }
     }
 
@@ -244,7 +274,13 @@ final class AppSettings: ObservableObject {
         defaults.set(false, forKey: "sidebarShortcutEnabled")
     }
 
+    func resetGroupModeShortcut() {
+        groupModeShortcut = nil
+        defaults.removeObject(forKey: "groupModeShortcut")
+    }
+
     func resetShortcuts() {
+        resetGroupModeShortcut()
         allWindowsShortcut = .allWindows
         currentAppShortcut = .currentApp
         sidebarShortcut = .sidebar
@@ -271,7 +307,24 @@ final class AppSettings: ObservableObject {
         defaults.set("invalid", forKey: "switcherDisplayMode")
         guard AppSettings(defaults: defaults).switcherDisplayMode == .allDisplays else { return false }
         initial.setSwitcherDisplayMode(.allDisplays)
-        guard !initial.showWindowsFromAllDesktops else { return false }
+        guard !initial.showWindowsFromAllDesktops, initial.switcherGroupsEnabled, !initial.startsInGroupMode,
+              initial.groupModeShortcut == nil else { return false }
+        initial.setStartsInGroupMode(true)
+        let groupKey = KeyboardShortcut(keyCode: 118, modifiers: [], keyLabel: "F4")
+        guard initial.setShortcut(groupKey, target: .groupMode),
+              !initial.setShortcut(.allWindows, target: .groupMode),
+              !initial.setShortcut(KeyboardShortcut(keyCode: 118, modifiers: .maskCommand, keyLabel: "F4"),
+                                   target: .allWindows),
+              AppSettings(defaults: defaults).startsInGroupMode,
+              AppSettings(defaults: defaults).groupModeShortcut == groupKey else { return false }
+        initial.setSwitcherGroupsEnabled(false)
+        let groupsDisabled = AppSettings(defaults: defaults)
+        guard !groupsDisabled.switcherGroupsEnabled, groupsDisabled.startsInGroupMode,
+              groupsDisabled.groupModeShortcut == groupKey else { return false }
+        initial.setSwitcherGroupsEnabled(true)
+        guard AppSettings(defaults: defaults).switcherGroupsEnabled else { return false }
+        initial.resetGroupModeShortcut()
+        guard AppSettings(defaults: defaults).groupModeShortcut == nil else { return false }
         initial.setShowWindowsFromAllDesktops(true)
         guard AppSettings(defaults: defaults).showWindowsFromAllDesktops else { return false }
         initial.setShowWindowsFromAllDesktops(false)
@@ -414,7 +467,9 @@ final class AppSettings: ObservableObject {
               check(!settings.setShortcut(.search, target: .currentApp)
                   && !settings.setShortcut(.search, target: .sidebar), "enabled search must reserve its shortcut"),
               check(!settings.setShortcut(.currentApp, target: .search),
-                    "search must reject other active shortcuts") else { return false }
+                    "search must reject other active shortcuts"),
+              check(!settings.setShortcut(KeyboardShortcut(keyCode: 49, modifiers: [], keyLabel: "Space"),
+                                          target: .groupMode), "group mode must not reuse the search key") else { return false }
         return true
     }
 }
@@ -499,6 +554,13 @@ struct SettingsView: View {
         Group {
             settingsRow("Window switcher") {
                 VStack(alignment: .leading, spacing: 8) {
+                    Toggle(L10n.text("Enable window switcher groups", language: language), isOn: Binding(
+                        get: { settings.switcherGroupsEnabled }, set: settings.setSwitcherGroupsEnabled
+                    ))
+                    Toggle(L10n.text("Open switcher in group mode", language: language), isOn: Binding(
+                        get: { settings.startsInGroupMode }, set: settings.setStartsInGroupMode
+                    ))
+                    .disabled(!settings.switcherGroupsEnabled)
                     Toggle(L10n.text("Show windows from all desktops", language: language), isOn: Binding(
                         get: { settings.showWindowsFromAllDesktops }, set: settings.setShowWindowsFromAllDesktops
                     ))
@@ -674,7 +736,14 @@ struct SettingsView: View {
                                 settings.disableSidebarShortcut()
                             }
                         }
+                        if target == .groupMode, settings.groupModeShortcut != nil {
+                            Button(L10n.text("Restore defaults", language: language)) {
+                                shortcuts.cancelRecording()
+                                settings.resetGroupModeShortcut()
+                            }
+                        }
                     }
+                    .disabled(target == .groupMode && !settings.switcherGroupsEnabled)
                 }
             }
             settingsRow("Shortcuts") {
@@ -697,7 +766,8 @@ struct SettingsView: View {
 
     private func shortcutButton(target: ShortcutTarget) -> some View {
         let recording = shortcuts.recordingTarget == target
-        let display = settings.shortcut(for: target)?.display ?? L10n.text("Off", language: language)
+        let display = settings.shortcut(for: target)?.display
+            ?? (target == .groupMode ? "← / →" : L10n.text("Off", language: language))
         return Button(recording ? L10n.text("Press shortcut…", language: language) : display) {
             if recording {
                 shortcuts.cancelRecording()

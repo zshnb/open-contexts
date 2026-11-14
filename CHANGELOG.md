@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-12
+
+### Added
+
+- The window switcher shows saved group labels. While holding the switcher modifier, press either horizontal arrow to enter group mode, use the arrows to change groups, and press Shift with either arrow to return to all windows.
+- Use Tab or Shift+Tab to cycle through windows in the selected group, or click a group in the switcher's tab bar.
+- Choose whether the switcher opens in group mode, customize the shortcut for entering and leaving group mode, or turn off switcher grouping while keeping groups available in the sidebar.
+
+### 新增
+
+- 窗口切换器显示已保存的分组标签。按住切换器修饰键时，用左右方向键进入分组模式和切组，用 Shift 加任意左右方向键返回全部窗口。
+- 用 Tab 或 Shift+Tab 在当前组内循环，也可点击切换器顶部的分组标签切组。
+- 可设置切换器默认进入分组模式、自定义进出分组模式的快捷键，或关闭切换器分组并继续在侧边栏使用分组。
+
 ## [0.5.1] - 2026-10-30
 
 ### Added

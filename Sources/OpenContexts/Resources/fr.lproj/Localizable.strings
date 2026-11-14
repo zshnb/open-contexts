@@ -84,3 +84,8 @@
 "Open the switcher with a shortcut to search" = "Ouvrir le sélecteur avec un raccourci pour rechercher";
 "Press %@, type to filter, then press Return to switch. Esc cancels." = "Appuyez sur %@, saisissez pour filtrer, puis appuyez sur Retour pour basculer. Échap annule.";
 "This shortcut is already in use. Change it in Shortcuts." = "Ce raccourci est déjà utilisé. Modifiez-le dans Raccourcis.";
+"Enable window switcher groups" = "Activer les groupes dans le sélecteur de fenêtres";
+"Open switcher in group mode" = "Ouvrir le sélecteur en mode groupe";
+"Toggle switcher groups" = "Basculer le mode groupe du sélecteur";
+"Choose a key other than Shift or the window navigation keys." = "Choisissez une touche autre que Maj ou les touches de navigation.";
+"No windows in this group" = "Aucune fenêtre dans ce groupe";
