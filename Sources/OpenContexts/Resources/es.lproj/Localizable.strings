@@ -77,3 +77,6 @@
 "Toggle switcher groups" = "Alternar el modo de grupos del selector";
 "Choose a key other than Shift or the window navigation keys." = "Elige una tecla distinta de Mayús y de las teclas de navegación.";
 "No windows in this group" = "No hay ventanas en este grupo";
+"Menu bar" = "Barra de menús";
+"Hide menu bar icon" = "Ocultar el icono de la barra de menús";
+"While the icon is hidden, open OpenContexts again from Applications or Spotlight to show Settings." = "Con el icono oculto, vuelve a abrir OpenContexts desde Aplicaciones o Spotlight para ver los ajustes.";

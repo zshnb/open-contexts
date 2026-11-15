@@ -74,9 +74,15 @@ final class AppSettings: ObservableObject {
     @Published private(set) var groupModeShortcut: KeyboardShortcut?
     @Published private(set) var switcherGroupsEnabled: Bool
     @Published private(set) var startsInGroupMode: Bool
+    @Published private(set) var hideMenuBarIcon: Bool
     @Published private(set) var showWindowsFromAllDesktops: Bool
 
     private let defaults: UserDefaults
+
+    func setHideMenuBarIcon(_ hidden: Bool) {
+        hideMenuBarIcon = hidden
+        defaults.set(hidden, forKey: "hideMenuBarIcon")
+    }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -90,6 +96,7 @@ final class AppSettings: ObservableObject {
             return shortcut
         }
         let allWindows = loadShortcut("allWindowsShortcut", fallback: .allWindows)
+        hideMenuBarIcon = defaults.bool(forKey: "hideMenuBarIcon")
         let currentApp = loadShortcut("currentAppShortcut", fallback: .currentApp)
         let conflict = allWindows.conflicts(with: currentApp)
         allWindowsShortcut = conflict ? .allWindows : allWindows
@@ -260,6 +267,11 @@ final class AppSettings: ObservableObject {
         guard AppSettings(defaults: defaults).switcherGroupsEnabled else { return false }
         initial.resetGroupModeShortcut()
         guard AppSettings(defaults: defaults).groupModeShortcut == nil else { return false }
+        guard !initial.hideMenuBarIcon else { return false }
+        initial.setHideMenuBarIcon(true)
+        guard AppSettings(defaults: defaults).hideMenuBarIcon else { return false }
+        initial.setHideMenuBarIcon(false)
+        guard !AppSettings(defaults: defaults).hideMenuBarIcon else { return false }
         initial.setShowWindowsFromAllDesktops(true)
         guard AppSettings(defaults: defaults).showWindowsFromAllDesktops else { return false }
         initial.setShowWindowsFromAllDesktops(false)
@@ -450,6 +462,17 @@ struct SettingsView: View {
                         get: { settings.showWindowsFromAllDesktops }, set: settings.setShowWindowsFromAllDesktops
                     ))
                     Text(L10n.text("The current desktop comes first in recent order. Other desktops stay grouped in a stable order.", language: language))
+                        .foregroundStyle(.secondary)
+                }
+                .toggleStyle(.checkbox)
+            }
+            settingsRow("Menu bar") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle(L10n.text("Hide menu bar icon", language: language), isOn: Binding(
+                        get: { settings.hideMenuBarIcon }, set: settings.setHideMenuBarIcon
+                    ))
+                    Text(L10n.text("While the icon is hidden, open OpenContexts again from Applications or Spotlight to show Settings.",
+                                   language: language))
                         .foregroundStyle(.secondary)
                 }
                 .toggleStyle(.checkbox)
