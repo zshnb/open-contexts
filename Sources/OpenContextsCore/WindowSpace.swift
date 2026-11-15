@@ -15,6 +15,18 @@ public struct WindowSpace: Equatable, Sendable {
 }
 
 public enum WindowSwitcher {
+    /// Lists `windows` (most recent first) for a new switcher session and picks the initially selected row.
+    public static func start(_ windows: [WindowInfo], allSpaces: Bool, focusedID: String?,
+                             reverse: Bool) -> (results: [WindowSearch.Match], selectedIndex: Int) {
+        let results = filter(windows, query: "", allSpaces: allSpaces)
+        guard !results.isEmpty else { return (results, 0) }
+        if reverse { return (results, results.count - 1) }
+        // Desktop grouping can move the previous window away from the second row, so select it by recency.
+        let listed = Set(results.map(\.window.id))
+        let previousID = windows.first { $0.id != focusedID && listed.contains($0.id) }?.id
+        return (results, previousID.flatMap { id in results.firstIndex { $0.window.id == id } } ?? 0)
+    }
+
     public static func filter(_ windows: [WindowInfo], query: String, allSpaces: Bool) -> [WindowSearch.Match] {
         guard allSpaces else { return WindowSearch.filter(windows.filter(\.isOnCurrentSpace), query: query) }
         let ordered = windows.enumerated().sorted { lhs, rhs in

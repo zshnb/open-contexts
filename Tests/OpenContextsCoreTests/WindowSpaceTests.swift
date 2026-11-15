@@ -39,6 +39,36 @@ final class WindowSpaceTests: XCTestCase {
         XCTAssertTrue(WindowSwitcher.filter(windows, query: "missing", allSpaces: true).isEmpty)
     }
 
+    func testQuickSwitchSelectsPreviousWindowOnAnotherDesktop() {
+        let current = WindowSpace(id: 2, index: 2, isCurrent: true)
+        let other = WindowSpace(id: 1, index: 1, isCurrent: false)
+        // Most recent first: just switched from A (other desktop) to B; C is older on the current desktop.
+        let windows = [window("B", app: "Beta", space: current), window("A", app: "Alpha", space: other),
+                       window("C", app: "Gamma", space: current)]
+        let start = WindowSwitcher.start(windows, allSpaces: true, focusedID: "B", reverse: false)
+        XCTAssertEqual(start.results.map(\.window.id), ["B", "C", "A"])
+        XCTAssertEqual(start.results[start.selectedIndex].window.id, "A")
+    }
+
+    func testStartSelectionWithoutOtherDesktopsOrFocus() {
+        let current = WindowSpace(id: 2, index: 2, isCurrent: true)
+        let other = WindowSpace(id: 1, index: 1, isCurrent: false)
+        let windows = [window("B", app: "Beta", space: current), window("A", app: "Alpha", space: other),
+                       window("C", app: "Gamma", space: current)]
+        func selected(allSpaces: Bool, focusedID: String?, reverse: Bool = false) -> String {
+            let start = WindowSwitcher.start(windows, allSpaces: allSpaces, focusedID: focusedID, reverse: reverse)
+            return start.results[start.selectedIndex].window.id
+        }
+        XCTAssertEqual(selected(allSpaces: false, focusedID: "B"), "C")
+        XCTAssertEqual(selected(allSpaces: false, focusedID: nil), "B")
+        XCTAssertEqual(selected(allSpaces: true, focusedID: "B", reverse: true), "A")
+        XCTAssertEqual(selected(allSpaces: true, focusedID: "C"), "B")
+        let single = WindowSwitcher.start([window("B", app: "Beta", space: current)], allSpaces: true,
+                                          focusedID: "B", reverse: false)
+        XCTAssertEqual(single.selectedIndex, 0)
+        XCTAssertTrue(WindowSwitcher.start([], allSpaces: true, focusedID: nil, reverse: false).results.isEmpty)
+    }
+
     func testUnknownDesktopRemainsAvailableWhenTopologyIsUnavailable() {
         let windows = [window("fallback", app: "Editor", space: nil)]
         XCTAssertEqual(WindowSwitcher.filter(windows, query: "", allSpaces: false).map(\.window.id), ["fallback"])
