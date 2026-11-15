@@ -77,3 +77,8 @@
 "Toggle switcher groups" = "进入或退出切换器分组模式";
 "Choose a key other than Shift or the window navigation keys." = "请选择 Shift 和窗口导航键之外的按键。";
 "No windows in this group" = "此分组没有可切换的窗口";
+"Startup" = "启动";
+"Open at login" = "登录时自动打开";
+"Allow OpenContexts in System Settings to finish turning this on." = "请在系统设置中允许 OpenContexts，开启后才会生效。";
+"Open System Settings" = "打开系统设置";
+"Could not change the login setting: %@" = "无法更改登录时打开设置：%@";

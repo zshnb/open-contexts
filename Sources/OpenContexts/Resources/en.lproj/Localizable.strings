@@ -77,3 +77,8 @@
 "Toggle switcher groups" = "Toggle switcher groups";
 "Choose a key other than Shift or the window navigation keys." = "Choose a key other than Shift or the window navigation keys.";
 "No windows in this group" = "No windows in this group";
+"Startup" = "Startup";
+"Open at login" = "Open at login";
+"Allow OpenContexts in System Settings to finish turning this on." = "Allow OpenContexts in System Settings to finish turning this on.";
+"Open System Settings" = "Open System Settings";
+"Could not change the login setting: %@" = "Could not change the login setting: %@";

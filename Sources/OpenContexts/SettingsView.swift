@@ -380,6 +380,7 @@ struct SettingsView: View {
     @ObservedObject var groupStore: GroupStore
     @ObservedObject var shortcuts: ShortcutController
     @State private var page: SettingsPage = .general
+    @StateObject private var launchAtLogin = LaunchAtLoginController()
 
     private var language: AppLanguage { settings.language }
 
@@ -416,6 +417,10 @@ struct SettingsView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
             shortcuts.cancelRecording()
         }
+        .onAppear { launchAtLogin.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            launchAtLogin.refresh()
+        }
     }
 
     private func navigationItem(_ destination: SettingsPage) -> some View {
@@ -451,6 +456,25 @@ struct SettingsView: View {
                     ))
                     Text(L10n.text("The current desktop comes first in recent order. Other desktops stay grouped in a stable order.", language: language))
                         .foregroundStyle(.secondary)
+                }
+                .toggleStyle(.checkbox)
+            }
+            settingsRow("Startup") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle(L10n.text("Open at login", language: language), isOn: Binding(
+                        get: { launchAtLogin.state.isOn }, set: launchAtLogin.setEnabled
+                    ))
+                    if launchAtLogin.state.needsApproval {
+                        Text(L10n.text("Allow OpenContexts in System Settings to finish turning this on.", language: language))
+                            .foregroundStyle(.secondary)
+                        Button(L10n.text("Open System Settings", language: language)) {
+                            launchAtLogin.openSystemSettings()
+                        }
+                    }
+                    if let error = launchAtLogin.state.errorDescription {
+                        Text(L10n.format("Could not change the login setting: %@", error, language: language))
+                            .foregroundStyle(.red)
+                    }
                 }
                 .toggleStyle(.checkbox)
             }

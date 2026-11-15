@@ -19,7 +19,8 @@ MainActor.assumeIsolated {
     }
 
     if CommandLine.arguments.contains("--self-check") {
-        exit(ShortcutController.selfCheck() && AppSettings.selfCheck() && L10n.selfCheck() ? 0 : 1)
+        exit(ShortcutController.selfCheck() && AppSettings.selfCheck() && LaunchAtLoginController.selfCheck()
+             && L10n.selfCheck() ? 0 : 1)
     }
 
     if CommandLine.arguments.contains("--window-self-check") {
