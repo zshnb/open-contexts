@@ -413,7 +413,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let mode = settings.switcherDisplayMode
         if mode.usesAnchorDisplay {
             if switcherAnchorDisplayID.map(displays.contains) != true {
-                switcherAnchorDisplayID = currentAnchorDisplayID(for: mode) ?? displays.first
+                switcherAnchorDisplayID = currentFocusedDisplayID() ?? displays.first
             }
         } else {
             switcherAnchorDisplayID = nil
@@ -421,9 +421,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return Set(mode.targetDisplays(from: displays, anchor: switcherAnchorDisplayID))
     }
 
-    private func currentAnchorDisplayID(for mode: SwitcherDisplayMode) -> CGDirectDisplayID? {
+    private func currentFocusedDisplayID() -> CGDirectDisplayID? {
         let displays = NSScreen.screens.map(Self.displayID).map { (id: $0, bounds: CGDisplayBounds($0)) }
-        if mode == .focusedDisplay, let frame = windowService.frontmostWindowFrame(),
+        if let frame = windowService.frontmostWindowFrame(),
            let id = SwitcherDisplayMode.display(containing: frame, in: displays) {
             return id
         }

@@ -113,36 +113,15 @@ final class SwitcherDisplayModeTests: XCTestCase {
         ))
     }
 
-    func testPointerDisplaySelectsAnchorOnThirdScreen() {
-        XCTAssertEqual(SwitcherDisplayMode.pointerDisplay.targetDisplays(from: [42, 7, 99], anchor: 99), [99])
-    }
-
-    func testPointerDisplayFallsBackToPrimaryWithoutAnchor() {
-        XCTAssertEqual(SwitcherDisplayMode.pointerDisplay.targetDisplays(from: [42, 7, 99]), [42])
-    }
-
-    func testPointerDisplayFallsBackToPrimaryWhenAnchorScreenWasRemoved() {
-        XCTAssertEqual(SwitcherDisplayMode.pointerDisplay.targetDisplays(from: [42, 7, 99], anchor: 123), [42])
-    }
-
-    func testPointerDisplayHandlesNoScreensEvenWithAnchor() {
-        XCTAssertEqual(SwitcherDisplayMode.pointerDisplay.targetDisplays(from: [Int](), anchor: 99), [])
-    }
-
-    func testPointerDisplayPersistedRawValueRemainsStable() {
-        XCTAssertEqual(SwitcherDisplayMode.pointerDisplay.rawValue, "pointerDisplay")
-        XCTAssertEqual(SwitcherDisplayMode(rawValue: "pointerDisplay"), .pointerDisplay)
-    }
-
-    func testOnlyFocusedAndPointerModesUseAnAnchorDisplay() {
+    func testOnlyFocusedModeUsesAnAnchorDisplay() {
         XCTAssertFalse(SwitcherDisplayMode.allDisplays.usesAnchorDisplay)
         XCTAssertFalse(SwitcherDisplayMode.primaryDisplay.usesAnchorDisplay)
         XCTAssertTrue(SwitcherDisplayMode.focusedDisplay.usesAnchorDisplay)
-        XCTAssertTrue(SwitcherDisplayMode.pointerDisplay.usesAnchorDisplay)
     }
 
     func testDisplayModeOrderMatchesSettingsOptions() {
-        XCTAssertEqual(SwitcherDisplayMode.allCases, [.allDisplays, .primaryDisplay, .focusedDisplay, .pointerDisplay])
+        XCTAssertEqual(SwitcherDisplayMode.allCases, [.allDisplays, .primaryDisplay, .focusedDisplay])
+        XCTAssertNil(SwitcherDisplayMode(rawValue: "pointerDisplay"))
     }
 
     func testPointerRectangleInsideThirdDisplaySelectsIt() {

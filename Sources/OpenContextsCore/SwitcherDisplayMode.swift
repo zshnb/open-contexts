@@ -4,7 +4,6 @@ public enum SwitcherDisplayMode: String, CaseIterable, Identifiable, Sendable {
     case allDisplays
     case primaryDisplay
     case focusedDisplay
-    case pointerDisplay
 
     public var id: String { rawValue }
 
@@ -12,7 +11,7 @@ public enum SwitcherDisplayMode: String, CaseIterable, Identifiable, Sendable {
     public var usesAnchorDisplay: Bool {
         switch self {
         case .allDisplays, .primaryDisplay: false
-        case .focusedDisplay, .pointerDisplay: true
+        case .focusedDisplay: true
         }
     }
 
@@ -23,7 +22,7 @@ public enum SwitcherDisplayMode: String, CaseIterable, Identifiable, Sendable {
             displays
         case .primaryDisplay:
             Array(displays.prefix(1))
-        case .focusedDisplay, .pointerDisplay:
+        case .focusedDisplay:
             if let anchor, displays.contains(anchor) { [anchor] } else { Array(displays.prefix(1)) }
         }
     }
