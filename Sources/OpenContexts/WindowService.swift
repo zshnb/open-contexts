@@ -922,6 +922,12 @@ final class WindowService: ObservableObject {
         return result
     }
 
+    /// Reads from the window server only, so a hung app cannot delay the switcher.
+    func frontmostWindowFrame() -> CGRect? {
+        guard let processID = NSWorkspace.shared.frontmostApplication?.processIdentifier else { return nil }
+        return Self.onScreenWindowFrames()[processID]?.first { $0.width >= 50 && $0.height >= 50 }
+    }
+
     nonisolated private static func onScreenWindowFrames() -> [pid_t: [CGRect]] {
         guard let raw = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
                 as? [[String: Any]] else { return [:] }

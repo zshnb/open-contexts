@@ -7,6 +7,7 @@ struct KeyboardShortcut: Codable, Equatable {
     static let allWindows = KeyboardShortcut(keyCode: 48, modifiers: .maskCommand, keyLabel: "Tab")
     static let currentApp = KeyboardShortcut(keyCode: 50, modifiers: .maskCommand, keyLabel: "`")
     static let sidebar = KeyboardShortcut(keyCode: 11, modifiers: [.maskControl, .maskCommand], keyLabel: "B")
+    static let search = KeyboardShortcut(keyCode: 49, modifiers: .maskAlternate, keyLabel: "Space")
 
     let keyCode: UInt16
     let modifierRawValue: UInt64
@@ -61,13 +62,14 @@ struct KeyboardShortcut: Codable, Equatable {
 }
 
 enum ShortcutTarget: String, CaseIterable {
-    case allWindows, currentApp, sidebar, groupMode
+    case allWindows, currentApp, sidebar, search, groupMode
 
     var title: String {
         switch self {
         case .allWindows: "All windows"
         case .currentApp: "Current app windows"
         case .sidebar: "Show or hide sidebar"
+        case .search: "Search windows"
         case .groupMode: "Toggle switcher groups"
         }
     }
@@ -77,6 +79,7 @@ enum SwitcherAction: Equatable {
     case toggleSidebar
     case dismissSidebar
     case begin(currentAppOnly: Bool, reverse: Bool)
+    case beginSearch
     case step(Int)
     case groupArrow(Int, shifted: Bool)
     case toggleGroups
@@ -87,13 +90,24 @@ enum SwitcherAction: Equatable {
 
 private struct ShortcutState {
     private(set) var isSwitching = false
+    private(set) var isSearchSession = false
     private(set) var heldModifiers: CGEventFlags = []
     private(set) var searchQuery = ""
+
+    mutating func beginSearch(allowed: Bool) -> SwitcherAction? {
+        guard !isSwitching, allowed else { return nil }
+        isSwitching = true
+        isSearchSession = true
+        heldModifiers = []
+        searchQuery = ""
+        return .beginSearch
+    }
 
     mutating func begin(currentAppOnly: Bool, reverse: Bool, allowed: Bool,
                         modifiers: CGEventFlags = .maskCommand) -> SwitcherAction? {
         guard !isSwitching, allowed else { return nil }
         isSwitching = true
+        isSearchSession = false
         heldModifiers = modifiers
         searchQuery = ""
         return .begin(currentAppOnly: currentAppOnly, reverse: reverse)
@@ -119,6 +133,7 @@ private struct ShortcutState {
     mutating func finish(commit: Bool) -> SwitcherAction? {
         guard isSwitching else { return nil }
         isSwitching = false
+        isSearchSession = false
         heldModifiers = []
         searchQuery = ""
         return commit ? .commit : .cancel
@@ -136,6 +151,7 @@ final class ShortcutController: ObservableObject {
     private(set) var allWindowsShortcut = KeyboardShortcut.allWindows
     private(set) var currentAppShortcut = KeyboardShortcut.currentApp
     private(set) var sidebarShortcut: KeyboardShortcut? = .sidebar
+    private(set) var searchShortcut: KeyboardShortcut?
     private var groupModeShortcut: KeyboardShortcut?
     private var switcherGroupsEnabled = true
 
@@ -147,17 +163,20 @@ final class ShortcutController: ObservableObject {
     private var saveRecording: ((KeyboardShortcut) -> Bool)?
 
     func configure(allWindows: KeyboardShortcut, currentApp: KeyboardShortcut,
-                   sidebar: KeyboardShortcut? = .sidebar, groupMode: KeyboardShortcut? = nil,
-                   switcherGroupsEnabled: Bool = true) {
+                   sidebar: KeyboardShortcut? = .sidebar, search: KeyboardShortcut? = nil,
+                   groupMode: KeyboardShortcut? = nil, switcherGroupsEnabled: Bool = true) {
         guard allWindows.isValid, currentApp.isValid, !allWindows.conflicts(with: currentApp),
               sidebar.map({ $0.isValid && !$0.conflicts(with: allWindows) && !$0.conflicts(with: currentApp) }) ?? true,
+              search.map({ $0.isValid && !$0.conflicts(with: allWindows) && !$0.conflicts(with: currentApp)
+                  && !(sidebar?.conflicts(with: $0) ?? false) && groupMode?.keyCode != $0.keyCode }) ?? true,
               allWindows != allWindowsShortcut || currentApp != currentAppShortcut
-                || sidebar != sidebarShortcut || groupMode != groupModeShortcut
+                || sidebar != sidebarShortcut || search != searchShortcut || groupMode != groupModeShortcut
                 || switcherGroupsEnabled != self.switcherGroupsEnabled else { return }
         if let action = state.finish(commit: false) { onAction?(action) }
         allWindowsShortcut = allWindows
         currentAppShortcut = currentApp
         sidebarShortcut = sidebar
+        searchShortcut = search
         groupModeShortcut = groupMode
         self.switcherGroupsEnabled = switcherGroupsEnabled
     }
@@ -294,7 +313,9 @@ final class ShortcutController: ObservableObject {
         let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
         guard let action = keyAction(keyCode: keyCode, flags: flags, characters: characters, isRepeat: isRepeat) else {
             // No key commands may reach the frontmost app while the switcher owns input.
-            return state.isSwitching ? nil : Unmanaged.passUnretained(event)
+            let repeatingSearchShortcut = isRepeat && !flags.contains(.maskShift)
+                && searchShortcut?.matches(keyCode: keyCode, flags: flags) == true
+            return state.isSwitching || repeatingSearchShortcut ? nil : Unmanaged.passUnretained(event)
         }
         if action != .toggleSidebar || !isRepeat {
             emit(action, deferred: true)
@@ -303,7 +324,7 @@ final class ShortcutController: ObservableObject {
     }
 
     private func modifierAction(flags: CGEventFlags) -> SwitcherAction? {
-        guard state.isSwitching, !flags.contains(state.heldModifiers) else { return nil }
+        guard state.isSwitching, !state.isSearchSession, !flags.contains(state.heldModifiers) else { return nil }
         return state.finish(commit: true)
     }
 
@@ -326,6 +347,12 @@ final class ShortcutController: ObservableObject {
             return .dismissSidebar
         }
         if state.isSwitching {
+            if state.isSearchSession {
+                if !shifted, searchShortcut?.matches(keyCode: keyCode, flags: flags) == true {
+                    return isRepeat ? nil : state.finish(commit: false)
+                }
+                if keyCode == 36 || keyCode == 76 { return state.finish(commit: true) }
+            }
             if switcherGroupsEnabled, let groupModeShortcut, keyCode == groupModeShortcut.keyCode, !shifted,
                modifiers == state.heldModifiers.union(groupModeShortcut.modifiers) {
                 return isRepeat ? nil : .toggleGroups
@@ -347,8 +374,14 @@ final class ShortcutController: ObservableObject {
             case 53:
                 return state.finish(commit: false)
             default:
+                if state.isSearchSession, !flags.intersection([.maskCommand, .maskControl]).isEmpty { return nil }
                 return characters.flatMap { state.appendToSearch($0) }
             }
+        }
+
+        if !shifted, searchShortcut?.matches(keyCode: keyCode, flags: flags) == true {
+            guard !isRepeat else { return nil }
+            return state.beginSearch(allowed: canBegin?(false) ?? true)
         }
 
         let currentAppOnly: Bool
@@ -572,6 +605,102 @@ final class ShortcutController: ObservableObject {
               grouped.keyAction(keyCode: 118, flags: [.maskCommand, .maskAlternate]) == nil,
               grouped.keyAction(keyCode: 48, flags: .maskCommand) == .step(1),
               grouped.keyAction(keyCode: 124, flags: .maskCommand) == .toggleSidebar else { return false }
+        return searchShortcutSelfCheck()
+    }
+
+    private static func searchShortcutSelfCheck() -> Bool {
+        func check(_ passed: Bool, _ message: String) -> Bool {
+            if !passed {
+                FileHandle.standardError.write(Data("ShortcutController.selfCheck assertion failed: \(message)\n".utf8))
+            }
+            return passed
+        }
+        guard check(KeyboardShortcut.search.display == "⌥Space" && KeyboardShortcut.search.isValid,
+                    "search shortcut must be valid ⌥Space") else { return false }
+        var searchState = ShortcutState()
+        guard check(searchState.beginSearch(allowed: false) == nil && !searchState.isSwitching,
+                    "disallowed search must not capture input"),
+              check(searchState.beginSearch(allowed: true) == .beginSearch && searchState.isSwitching
+                  && searchState.isSearchSession && searchState.heldModifiers.isEmpty,
+                    "allowed search must begin without held modifiers"),
+              check(searchState.beginSearch(allowed: true) == nil, "search must not begin twice"),
+              check(searchState.finish(commit: false) == .cancel && !searchState.isSearchSession,
+                    "search cancellation must clear its state"),
+              check(searchState.begin(currentAppOnly: false, reverse: false, allowed: true)
+                  == .begin(currentAppOnly: false, reverse: false) && !searchState.isSearchSession,
+                    "ordinary switching must clear search mode") else { return false }
+
+        let controller = ShortcutController()
+        guard check(controller.searchShortcut == nil && controller.keyAction(keyCode: 49, flags: .maskAlternate) == nil,
+                    "disabled search shortcut must pass through") else { return false }
+        controller.configure(allWindows: .allWindows, currentApp: .currentApp, search: .search)
+        guard check(controller.searchShortcut == .search, "configure must install search shortcut"),
+              check(controller.keyAction(keyCode: 49, flags: [.maskAlternate, .maskShift]) == nil,
+                    "Shift must not begin search") else { return false }
+        controller.canBegin = { _ in false }
+        guard check(controller.keyAction(keyCode: 49, flags: .maskAlternate) == nil,
+                    "search must respect canBegin") else { return false }
+        controller.canBegin = { !$0 }
+        guard check(controller.keyAction(keyCode: 49, flags: .maskAlternate) == .beginSearch,
+                    "Option-Space must begin all-window search"),
+              check(controller.modifierAction(flags: []) == nil && controller.state.isSearchSession,
+                    "releasing modifiers must keep search open"),
+              check(controller.keyAction(keyCode: 13, flags: [], characters: "w") == .search("w"),
+                    "plain characters must filter"),
+              check(controller.keyAction(keyCode: 0, flags: .maskAlternate, characters: "a") == .search("wa"),
+                    "Option-held characters must filter"),
+              check(controller.keyAction(keyCode: 8, flags: .maskCommand, characters: "c") == nil
+                  && controller.keyAction(keyCode: 9, flags: .maskControl, characters: "v") == nil
+                  && controller.state.searchQuery == "wa", "Command/Control characters must not enter query"),
+              check(controller.keyAction(keyCode: 126, flags: []) == .step(-1)
+                  && controller.keyAction(keyCode: 125, flags: []) == .step(1)
+                  && controller.keyAction(keyCode: 48, flags: []) == .step(1)
+                  && controller.keyAction(keyCode: 48, flags: .maskShift) == .step(-1),
+                    "search navigation must move selection"),
+              check(controller.keyAction(keyCode: 51, flags: []) == .search("w"),
+                    "Backspace must delete one character"),
+              check(controller.keyAction(keyCode: 49, flags: .maskAlternate, characters: " ", isRepeat: true) == nil
+                  && controller.state.isSwitching && controller.state.searchQuery == "w",
+                    "shortcut autorepeat must not toggle or insert spaces"),
+              check(controller.keyAction(keyCode: 36, flags: []) == .commit && !controller.state.isSearchSession,
+                    "Return must commit search") else { return false }
+        for keyCode: UInt16 in [76, 53, 49] {
+            guard check(controller.keyAction(keyCode: 49, flags: .maskAlternate) == .beginSearch,
+                        "search must reopen after finishing") else { return false }
+            let flags: CGEventFlags = keyCode == 49 ? .maskAlternate : []
+            guard check(controller.keyAction(keyCode: keyCode, flags: flags) == (keyCode == 76 ? .commit : .cancel),
+                        "Enter must commit; Esc and shortcut must cancel") else { return false }
+        }
+        guard check(controller.keyAction(keyCode: 49, flags: .maskAlternate, isRepeat: true) == nil
+                  && !controller.state.isSwitching, "autorepeat must not reopen a cancelled search"),
+              check(controller.keyAction(keyCode: 48, flags: .maskCommand)
+                  == .begin(currentAppOnly: false, reverse: false), "ordinary switching must still begin"),
+              check(controller.keyAction(keyCode: 36, flags: .maskCommand) == nil && controller.state.isSwitching,
+                    "Return must not commit ordinary switching"),
+              check(controller.modifierAction(flags: []) == .commit,
+                    "modifier release must still commit ordinary switching") else { return false }
+        for conflicting in [KeyboardShortcut.allWindows, .currentApp, .sidebar,
+                            KeyboardShortcut(keyCode: 53, modifiers: .maskAlternate, keyLabel: "Esc")] {
+            controller.configure(allWindows: .allWindows, currentApp: .currentApp, search: conflicting)
+            guard check(controller.searchShortcut == .search, "configure must reject conflicting or invalid search") else { return false }
+        }
+        guard check(controller.keyAction(keyCode: 49, flags: .maskAlternate) == .beginSearch,
+                    "search must still begin after rejected configuration"),
+              check(controller.keyAction(keyCode: 11, flags: [.maskControl, .maskCommand]) == .toggleSidebar
+                  && !controller.state.isSwitching, "sidebar shortcut must retain priority") else { return false }
+        let groupKey = KeyboardShortcut(keyCode: 118, modifiers: [], keyLabel: "F4")
+        controller.configure(allWindows: .allWindows, currentApp: .currentApp, search: .search, groupMode: groupKey)
+        guard check(controller.keyAction(keyCode: 49, flags: .maskAlternate) == .beginSearch,
+                    "search must begin alongside group mode"),
+              check(controller.keyAction(keyCode: 124, flags: []) == .groupArrow(1, shifted: false)
+                  && controller.keyAction(keyCode: 118, flags: []) == .toggleGroups,
+                    "group navigation must work in search"),
+              check(controller.keyAction(keyCode: 36, flags: []) == .commit, "Return must still commit grouped search")
+        else { return false }
+        controller.configure(allWindows: .allWindows, currentApp: .currentApp, search: .search,
+                             groupMode: KeyboardShortcut(keyCode: 49, modifiers: [], keyLabel: "Space"))
+        guard check(controller.searchShortcut == .search && controller.keyAction(keyCode: 118, flags: []) == nil,
+                    "configure must reject search sharing the group mode key") else { return false }
         return true
     }
 }

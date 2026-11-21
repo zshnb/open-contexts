@@ -2,6 +2,26 @@ import AppKit
 import OpenContextsCore
 import SwiftUI
 
+extension SwitcherDisplayMode {
+    func title(_ language: AppLanguage) -> String {
+        switch self {
+        case .allDisplays: L10n.text("All displays", language: language)
+        case .primaryDisplay: L10n.text("Primary display", language: language)
+        case .focusedDisplay: L10n.text("Focused display", language: language)
+        }
+    }
+
+    func caption(_ language: AppLanguage) -> String? {
+        switch self {
+        case .allDisplays: nil
+        case .primaryDisplay:
+            L10n.text("The primary display is the one set as Main display in System Settings → Displays.", language: language)
+        case .focusedDisplay:
+            L10n.text("Shows on the display with the focused window, or on the primary display if there is none.", language: language)
+        }
+    }
+}
+
 enum SidebarVisibilityMode: String, CaseIterable, Identifiable {
     case always
     case hover
@@ -71,18 +91,37 @@ final class AppSettings: ObservableObject {
     @Published private(set) var allWindowsShortcut: KeyboardShortcut
     @Published private(set) var currentAppShortcut: KeyboardShortcut
     @Published private(set) var sidebarShortcut: KeyboardShortcut?
+    @Published private(set) var searchShortcut: KeyboardShortcut
+    @Published private(set) var searchShortcutEnabled: Bool
     @Published private(set) var groupModeShortcut: KeyboardShortcut?
     @Published private(set) var switcherGroupsEnabled: Bool
     @Published private(set) var startsInGroupMode: Bool
     @Published private(set) var showWindowsFromAllDesktops: Bool
+    @Published private(set) var switcherDisplayMode: SwitcherDisplayMode
 
     private let defaults: UserDefaults
+
+    var searchShortcutHasConflict: Bool {
+        [allWindowsShortcut, currentAppShortcut, sidebarShortcut].compactMap { $0 }
+            .contains { searchShortcut.conflicts(with: $0) }
+            || groupModeShortcut?.keyCode == searchShortcut.keyCode
+    }
+
+    var activeSearchShortcut: KeyboardShortcut? {
+        searchShortcutEnabled && !searchShortcutHasConflict ? searchShortcut : nil
+    }
+
+    func setSearchShortcutEnabled(_ enabled: Bool) {
+        searchShortcutEnabled = enabled
+        defaults.set(enabled, forKey: "searchShortcutEnabled")
+    }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         switcherGroupsEnabled = defaults.object(forKey: "switcherGroupsEnabled") as? Bool ?? true
         startsInGroupMode = defaults.bool(forKey: "startsInGroupMode")
         showWindowsFromAllDesktops = defaults.object(forKey: "showWindowsFromAllDesktops") as? Bool ?? false
+        switcherDisplayMode = SwitcherDisplayMode(rawValue: defaults.string(forKey: "switcherDisplayMode") ?? "") ?? .allDisplays
         func loadShortcut(_ key: String, fallback: KeyboardShortcut) -> KeyboardShortcut {
             guard let data = defaults.data(forKey: key),
                   let shortcut = try? JSONDecoder().decode(KeyboardShortcut.self, from: data),
@@ -90,6 +129,8 @@ final class AppSettings: ObservableObject {
             return shortcut
         }
         let allWindows = loadShortcut("allWindowsShortcut", fallback: .allWindows)
+        searchShortcut = loadShortcut("searchShortcut", fallback: .search)
+        searchShortcutEnabled = defaults.object(forKey: "searchShortcutEnabled") as? Bool ?? false
         let currentApp = loadShortcut("currentAppShortcut", fallback: .currentApp)
         let conflict = allWindows.conflicts(with: currentApp)
         allWindowsShortcut = conflict ? .allWindows : allWindows
@@ -133,6 +174,11 @@ final class AppSettings: ObservableObject {
     func setSidebarMode(_ mode: SidebarVisibilityMode) {
         sidebarMode = mode
         defaults.set(mode.rawValue, forKey: "sidebarMode")
+    }
+
+    func setSwitcherDisplayMode(_ mode: SwitcherDisplayMode) {
+        switcherDisplayMode = mode
+        defaults.set(mode.rawValue, forKey: "switcherDisplayMode")
     }
 
     func setSidebarPosition(_ position: SidebarPosition) {
@@ -188,7 +234,9 @@ final class AppSettings: ObservableObject {
 
     @discardableResult
     func setShortcut(_ shortcut: KeyboardShortcut, target: ShortcutTarget) -> Bool {
-        let conflicts = ShortcutTarget.allCases.filter { $0 != target }.contains { other in
+        let conflicts = ShortcutTarget.allCases.filter {
+            $0 != target && (searchShortcutEnabled || $0 != .search)
+        }.contains { other in
             guard let assigned = self.shortcut(for: other) else { return false }
             if target == .groupMode || other == .groupMode { return shortcut.keyCode == assigned.keyCode }
             return shortcut.conflicts(with: assigned)
@@ -201,6 +249,7 @@ final class AppSettings: ObservableObject {
         case .sidebar:
             sidebarShortcut = shortcut
             defaults.set(true, forKey: "sidebarShortcutEnabled")
+        case .search: searchShortcut = shortcut
         case .groupMode: groupModeShortcut = shortcut
         }
         defaults.set(data, forKey: target.rawValue + "Shortcut")
@@ -212,6 +261,7 @@ final class AppSettings: ObservableObject {
         case .allWindows: allWindowsShortcut
         case .currentApp: currentAppShortcut
         case .sidebar: sidebarShortcut
+        case .search: searchShortcut
         case .groupMode: groupModeShortcut
         }
     }
@@ -231,17 +281,29 @@ final class AppSettings: ObservableObject {
         allWindowsShortcut = .allWindows
         currentAppShortcut = .currentApp
         sidebarShortcut = .sidebar
+        searchShortcut = .search
         defaults.removeObject(forKey: "allWindowsShortcut")
         defaults.removeObject(forKey: "currentAppShortcut")
         defaults.removeObject(forKey: "sidebarShortcut")
         defaults.removeObject(forKey: "sidebarShortcutEnabled")
+        defaults.removeObject(forKey: "searchShortcut")
     }
 
     static func selfCheck() -> Bool {
+        guard searchShortcutSelfCheck() else { return false }
         let suite = "OpenContexts.self-check.\(UUID().uuidString)"
         guard let defaults = UserDefaults(suiteName: suite) else { return false }
         defer { defaults.removePersistentDomain(forName: suite) }
         let initial = AppSettings(defaults: defaults)
+        guard initial.switcherDisplayMode == .allDisplays else { return false }
+        for mode in SwitcherDisplayMode.allCases {
+            initial.setSwitcherDisplayMode(mode)
+            guard initial.switcherDisplayMode == mode,
+                  AppSettings(defaults: defaults).switcherDisplayMode == mode else { return false }
+        }
+        defaults.set("invalid", forKey: "switcherDisplayMode")
+        guard AppSettings(defaults: defaults).switcherDisplayMode == .allDisplays else { return false }
+        initial.setSwitcherDisplayMode(.allDisplays)
         guard !initial.showWindowsFromAllDesktops, initial.switcherGroupsEnabled, !initial.startsInGroupMode,
               initial.groupModeShortcut == nil else { return false }
         initial.setStartsInGroupMode(true)
@@ -357,6 +419,56 @@ final class AppSettings: ObservableObject {
             && settings.sidebarItemDisplayMode == .icon
             && defaults.string(forKey: "sidebarPosition") == SidebarPosition.left.rawValue
     }
+
+    private static func searchShortcutSelfCheck() -> Bool {
+        let suite = "OpenContexts.search-shortcut-check.\(UUID().uuidString)"
+        guard let defaults = UserDefaults(suiteName: suite) else { return false }
+        defer { defaults.removePersistentDomain(forName: suite) }
+        func check(_ passed: Bool, _ message: String) -> Bool {
+            if !passed {
+                FileHandle.standardError.write(Data("AppSettings.selfCheck assertion failed: \(message)\n".utf8))
+            }
+            return passed
+        }
+        let settings = AppSettings(defaults: defaults)
+        guard check(!settings.searchShortcutEnabled && settings.searchShortcut == .search
+                  && settings.activeSearchShortcut == nil, "search must default to disabled") else { return false }
+        settings.setSearchShortcutEnabled(true)
+        guard check(AppSettings(defaults: defaults).searchShortcutEnabled
+                  && settings.activeSearchShortcut == .search, "enabled search must persist and become active") else { return false }
+        let custom = KeyboardShortcut(keyCode: 16, modifiers: [.maskControl, .maskAlternate], keyLabel: "Y")
+        guard check(settings.setShortcut(custom, target: .search)
+                  && AppSettings(defaults: defaults).searchShortcut == custom, "custom search shortcut must persist") else { return false }
+        settings.setSearchShortcutEnabled(false)
+        guard check(settings.activeSearchShortcut == nil && AppSettings(defaults: defaults).searchShortcut == custom,
+                    "disabling must preserve custom shortcut") else { return false }
+        settings.setSearchShortcutEnabled(true)
+        guard check(settings.activeSearchShortcut == custom, "reenabling must restore custom shortcut") else { return false }
+        settings.resetShortcuts()
+        guard check(settings.searchShortcut == .search && settings.searchShortcutEnabled
+                  && AppSettings(defaults: defaults).activeSearchShortcut == .search
+                  && defaults.object(forKey: "searchShortcut") == nil, "reset must restore shortcut and preserve enabled state") else { return false }
+        settings.setSearchShortcutEnabled(false)
+        settings.resetShortcuts()
+        guard check(!AppSettings(defaults: defaults).searchShortcutEnabled,
+                    "reset must preserve disabled state"),
+              check(settings.setShortcut(.search, target: .allWindows),
+                    "disabled search must not reserve Option-Space") else { return false }
+        settings.setSearchShortcutEnabled(true)
+        guard check(settings.searchShortcutHasConflict && settings.activeSearchShortcut == nil
+                  && AppSettings(defaults: defaults).activeSearchShortcut == nil,
+                    "enabling conflicting search must expose conflict and stay inactive"),
+              check(settings.setShortcut(.allWindows, target: .allWindows)
+                  && !settings.searchShortcutHasConflict && settings.activeSearchShortcut == .search,
+                    "resolving conflict must activate search"),
+              check(!settings.setShortcut(.search, target: .currentApp)
+                  && !settings.setShortcut(.search, target: .sidebar), "enabled search must reserve its shortcut"),
+              check(!settings.setShortcut(.currentApp, target: .search),
+                    "search must reject other active shortcuts"),
+              check(!settings.setShortcut(KeyboardShortcut(keyCode: 49, modifiers: [], keyLabel: "Space"),
+                                          target: .groupMode), "group mode must not reuse the search key") else { return false }
+        return true
+    }
 }
 
 private enum SettingsPage: String, CaseIterable, Identifiable {
@@ -451,6 +563,37 @@ struct SettingsView: View {
                     ))
                     Text(L10n.text("The current desktop comes first in recent order. Other desktops stay grouped in a stable order.", language: language))
                         .foregroundStyle(.secondary)
+                }
+                .toggleStyle(.checkbox)
+            }
+            settingsRow("Show switcher on") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Picker(L10n.text("Show switcher on", language: language), selection: Binding(
+                        get: { settings.switcherDisplayMode }, set: settings.setSwitcherDisplayMode
+                    )) {
+                        ForEach(SwitcherDisplayMode.allCases) { mode in
+                            Text(mode.title(language)).tag(mode)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 200)
+                    if let caption = settings.switcherDisplayMode.caption(language) {
+                        Text(caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            settingsRow("Window search") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle(L10n.text("Open the switcher with a shortcut to search", language: language), isOn: Binding(
+                        get: { settings.searchShortcutEnabled }, set: settings.setSearchShortcutEnabled
+                    ))
+                    Text(L10n.format("Press %@, type to filter, then press Return to switch. Esc cancels.",
+                                     settings.searchShortcut.display, language: language))
+                        .foregroundStyle(.secondary)
+                    if settings.searchShortcutEnabled, settings.searchShortcutHasConflict {
+                        Text(L10n.text("This shortcut is already in use. Change it in Shortcuts.", language: language))
+                            .foregroundStyle(.red)
+                    }
                 }
                 .toggleStyle(.checkbox)
             }

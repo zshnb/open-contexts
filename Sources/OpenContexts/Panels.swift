@@ -1,5 +1,6 @@
 import AppKit
 import OpenContextsCore
+import QuartzCore
 
 let appAccentColor = NSColor(srgbRed: 80 / 255, green: 151 / 255,
                             blue: 247 / 255, alpha: 1)
@@ -1167,6 +1168,9 @@ final class SwitcherPanel: NSPanel {
     private weak var selectedGroupTab: NSButton?
     private let groupModeButton: CallbackButton
     private let queryLabel = NSTextField(labelWithString: "")
+    private let searchCaret = NSView()
+    private var searchCaretLeading: NSLayoutConstraint?
+    private var searchCaretTrailing: NSLayoutConstraint?
     private let countLabel = NSTextField(labelWithString: "")
     private let emptyTitle = NSTextField(labelWithString: "")
     private let emptyHint = NSTextField(labelWithString: "")
@@ -1214,6 +1218,9 @@ final class SwitcherPanel: NSPanel {
         queryLabel.font = .systemFont(ofSize: 13)
         queryLabel.lineBreakMode = .byTruncatingTail
         queryLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        searchCaret.isHidden = true
+        searchCaret.wantsLayer = true
+        searchCaret.layer?.backgroundColor = appAccentColor.cgColor
         countLabel.font = .systemFont(ofSize: 12)
         countLabel.textColor = .secondaryLabelColor
         countLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
@@ -1224,12 +1231,15 @@ final class SwitcherPanel: NSPanel {
         let controls = NSStackView(views: [countLabel, groupModeButton])
         controls.alignment = .centerY
         controls.spacing = 8
-        for view in [searchIcon, queryLabel, controls] {
+        for view in [searchIcon, queryLabel, controls, searchCaret] {
             view.translatesAutoresizingMaskIntoConstraints = false
             header.addSubview(view)
         }
         header.translatesAutoresizingMaskIntoConstraints = false
         background.addSubview(header)
+        searchCaretLeading = searchCaret.leadingAnchor.constraint(equalTo: queryLabel.leadingAnchor)
+        searchCaretTrailing = searchCaret.leadingAnchor.constraint(equalTo: queryLabel.trailingAnchor)
+        searchCaretLeading?.isActive = true
 
         let emptyIcon = NSImageView()
         emptyIcon.image = searchIcon.image
@@ -1286,6 +1296,9 @@ final class SwitcherPanel: NSPanel {
             queryLabel.leadingAnchor.constraint(equalTo: searchIcon.trailingAnchor, constant: 10),
             queryLabel.centerYAnchor.constraint(equalTo: header.centerYAnchor),
             queryLabel.trailingAnchor.constraint(lessThanOrEqualTo: controls.leadingAnchor, constant: -12),
+            searchCaret.widthAnchor.constraint(equalToConstant: 2),
+            searchCaret.heightAnchor.constraint(equalToConstant: 16),
+            searchCaret.centerYAnchor.constraint(equalTo: queryLabel.centerYAnchor),
             controls.centerYAnchor.constraint(equalTo: header.centerYAnchor),
             controls.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -12),
             divider.leadingAnchor.constraint(equalTo: background.leadingAnchor),
@@ -1312,9 +1325,10 @@ final class SwitcherPanel: NSPanel {
 
     func show(results: [WindowSearch.Match], selectedIndex: Int, query: String = "",
               groupBySpace: Bool = false,
-              totalWindowCount: Int? = nil, language: AppLanguage = .system) {
+              totalWindowCount: Int? = nil, language: AppLanguage = .system, searchFocused: Bool = false) {
         update(results: results, selectedIndex: selectedIndex, resetHover: true,
-               groupBySpace: groupBySpace, query: query, totalWindowCount: totalWindowCount, language: language)
+               groupBySpace: groupBySpace, query: query, totalWindowCount: totalWindowCount,
+               language: language, searchFocused: searchFocused)
         present()
     }
 
@@ -1327,7 +1341,7 @@ final class SwitcherPanel: NSPanel {
     func update(results: [WindowSearch.Match], selectedIndex: Int, resetHover: Bool = false,
                 groupBySpace: Bool = false,
                 query: String = "", totalWindowCount: Int? = nil, language: AppLanguage = .system,
-                scope: GroupScope? = nil) {
+                searchFocused: Bool = false, scope: GroupScope? = nil) {
         if resetHover {
             hoverOrigin = NSEvent.mouseLocation
         }
@@ -1336,6 +1350,7 @@ final class SwitcherPanel: NSPanel {
         queryLabel.stringValue = query.isEmpty ? L10n.text("Type an app name or window title", language: language) : query
         queryLabel.textColor = query.isEmpty ? .secondaryLabelColor : .labelColor
         queryLabel.setAccessibilityLabel(L10n.text("Window search", language: language))
+        updateSearchCaret(focused: searchFocused, empty: query.isEmpty)
         countLabel.stringValue = L10n.format(query.isEmpty ? "%@ windows" : "%@ results",
                                             String(results.count), language: language)
         let emptyGroup = scope?.selectedID != nil && totalWindowCount == 0
@@ -1410,7 +1425,28 @@ final class SwitcherPanel: NSPanel {
     }
 
     func hideSwitcher() {
+        updateSearchCaret(focused: false, empty: true)
         orderOut(nil)
+    }
+
+    private func updateSearchCaret(focused: Bool, empty: Bool) {
+        searchCaretLeading?.isActive = false
+        searchCaretTrailing?.isActive = false
+        (empty ? searchCaretLeading : searchCaretTrailing)?.isActive = true
+        searchCaret.isHidden = !focused
+        guard focused else {
+            searchCaret.layer?.removeAnimation(forKey: "searchCaretBlink")
+            return
+        }
+        if searchCaret.layer?.animation(forKey: "searchCaretBlink") == nil {
+            let animation = CABasicAnimation(keyPath: "opacity")
+            animation.fromValue = 1
+            animation.toValue = 0
+            animation.duration = 0.5
+            animation.repeatCount = .infinity
+            animation.autoreverses = true
+            searchCaret.layer?.add(animation, forKey: "searchCaretBlink")
+        }
     }
 
     private func canHover(at pointer: NSPoint) -> Bool {
@@ -1528,6 +1564,11 @@ final class SwitcherPanel: NSPanel {
 
     fileprivate var smokeSearchHeader: (query: String, count: String, empty: Bool, hasSelection: Bool) {
         (queryLabel.stringValue, countLabel.stringValue, !emptyState.isHidden, selectedRow != nil)
+    }
+
+    fileprivate var smokeSearchCaret: (visible: Bool, blinking: Bool, frame: NSRect, queryAlignmentRect: NSRect) {
+        (!searchCaret.isHidden, searchCaret.layer?.animation(forKey: "searchCaretBlink") != nil,
+         searchCaret.frame, queryLabel.alignmentRect(forFrame: queryLabel.frame))
     }
 
     fileprivate var smokeSearchHighlightsAreValid: Bool {
@@ -2769,6 +2810,36 @@ enum PanelSmokeCheck {
         let initialIndex = switcherWindows.count - 1
         switcher.show(results: switcherResults, selectedIndex: initialIndex)
         switcher.contentView?.layoutSubtreeIfNeeded()
+        guard !switcher.smokeSearchCaret.visible, !switcher.smokeSearchCaret.blinking else {
+            switcher.close()
+            sidebar.close()
+            return fail("search caret must default to hidden")
+        }
+        switcher.show(results: switcherResults, selectedIndex: initialIndex, searchFocused: true)
+        switcher.contentView?.layoutSubtreeIfNeeded()
+        let emptyCaret = switcher.smokeSearchCaret
+        guard emptyCaret.visible, emptyCaret.blinking,
+              abs(emptyCaret.frame.width - 2) < 0.5, abs(emptyCaret.frame.height - 16) < 0.5,
+              abs(emptyCaret.frame.minX - emptyCaret.queryAlignmentRect.minX) < 0.5 else {
+            switcher.close()
+            sidebar.close()
+            return fail("empty search caret visibility or leading position mismatch: \(emptyCaret)")
+        }
+        switcher.update(results: switcherResults, selectedIndex: initialIndex, query: "smoke", searchFocused: true)
+        switcher.contentView?.layoutSubtreeIfNeeded()
+        let typedCaret = switcher.smokeSearchCaret
+        guard typedCaret.visible, typedCaret.blinking,
+              abs(typedCaret.frame.minX - typedCaret.queryAlignmentRect.maxX) < 0.5 else {
+            switcher.close()
+            sidebar.close()
+            return fail("typed search caret trailing position mismatch: \(typedCaret)")
+        }
+        switcher.update(results: switcherResults, selectedIndex: initialIndex)
+        guard !switcher.smokeSearchCaret.visible, !switcher.smokeSearchCaret.blinking else {
+            switcher.close()
+            sidebar.close()
+            return fail("search caret must hide and stop blinking after ordinary update")
+        }
         let origin = switcher.smokeHoverOrigin
         let initial = switcher.smokeLayoutIsValid && switcher.smokeHighlightedIndices == [initialIndex]
         switcher.smokeMove(to: 0, pointer: origin)

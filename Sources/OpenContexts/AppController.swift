@@ -31,7 +31,12 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var selectedIndex = 0
     private var currentAppOnly: Bool?
     private var currentAppPID: pid_t?
+    private var switcherAnchorDisplayID: CGDirectDisplayID?
     private var didRestoreGroups = false
+    private var isSearchSession = false
+    private var searchDismissMonitors: [Any] = []
+    private var searchDismissObserver: NSObjectProtocol?
+    private var searchSessionID: UUID?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -45,6 +50,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        stopSearchDismissal()
         shortcuts.stop()
         windowService.stop()
         sidebars.values.forEach { $0.close() }
@@ -53,7 +59,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func configureShortcuts() {
         shortcuts.configure(allWindows: settings.allWindowsShortcut, currentApp: settings.currentAppShortcut,
-                            sidebar: settings.sidebarShortcut, groupMode: settings.groupModeShortcut,
+                            sidebar: settings.sidebarShortcut, search: settings.activeSearchShortcut,
+                            groupMode: settings.groupModeShortcut,
                             switcherGroupsEnabled: settings.switcherGroupsEnabled)
         shortcuts.canBegin = { [weak self] currentAppOnly in
             self?.availableWindows(currentAppOnly: currentAppOnly).isEmpty == false
@@ -105,13 +112,18 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         // objectWillChange fires before the new value is stored, so read settings on the next turn.
         settings.objectWillChange.sink { [weak self] _ in
+            let previousSwitcherDisplayMode = self?.settings.switcherDisplayMode
             DispatchQueue.main.async {
                 self?.updateSidebars()
                 self?.configureMenuBar()
                 if let self {
+                    if previousSwitcherDisplayMode != self.settings.switcherDisplayMode {
+                        self.switcherAnchorDisplayID = nil
+                    }
                     self.shortcuts.configure(allWindows: self.settings.allWindowsShortcut,
                                              currentApp: self.settings.currentAppShortcut,
                                              sidebar: self.settings.sidebarShortcut,
+                                             search: self.settings.activeSearchShortcut,
                                              groupMode: self.settings.groupModeShortcut,
                                              switcherGroupsEnabled: self.settings.switcherGroupsEnabled)
                     self.windowService.setIncludeAllSpaces(self.settings.showWindowsFromAllDesktops)
@@ -264,23 +276,10 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
             panel.setShortcutExpanded(expanded)
         case .dismissSidebar:
             dismissSidebar()
+        case .beginSearch:
+            beginSwitcher(currentAppOnly: false, reverse: false, searchSession: true)
         case let .begin(currentAppOnly, reverse):
-            dismissSidebar()
-            searchQuery = ""
-            selectionBeforeSearch = nil
-            self.currentAppOnly = currentAppOnly
-            currentAppPID = currentAppOnly ? NSWorkspace.shared.frontmostApplication?.processIdentifier : nil
-            let windows = switcherWindows(currentAppOnly: currentAppOnly)
-            guard !windows.isEmpty else { finishSwitcher(activating: nil); return }
-            switchingGroupID = settings.switcherGroupsEnabled && settings.startsInGroupMode
-                ? windowService.focusedWindowID.flatMap { switchingGroupIDs[$0] }
-                    ?? windows.first.flatMap { switchingGroupIDs[$0.id] }
-                : nil
-            filterSwitcherWindows(windows)
-            let firstIsFocused = switchingResults.first?.window.id == windowService.focusedWindowID
-            selectedIndex = reverse ? switchingResults.count - 1
-                : firstIsFocused ? min(1, switchingResults.count - 1) : 0
-            showSwitchers()
+            beginSwitcher(currentAppOnly: currentAppOnly, reverse: reverse, searchSession: false)
         case let .step(amount):
             guard !switchingResults.isEmpty else { return }
             selectedIndex = (selectedIndex + amount % switchingResults.count + switchingResults.count)
@@ -324,6 +323,65 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
+    private func beginSwitcher(currentAppOnly: Bool, reverse: Bool, searchSession: Bool) {
+        stopSearchDismissal()
+        isSearchSession = false
+        dismissSidebar()
+        searchQuery = ""
+        selectionBeforeSearch = nil
+        self.currentAppOnly = currentAppOnly
+        currentAppPID = currentAppOnly ? NSWorkspace.shared.frontmostApplication?.processIdentifier : nil
+        let windows = switcherWindows(currentAppOnly: currentAppOnly)
+        guard !windows.isEmpty else { finishSwitcher(activating: nil); return }
+        switchingGroupID = settings.switcherGroupsEnabled && settings.startsInGroupMode
+            ? windowService.focusedWindowID.flatMap { switchingGroupIDs[$0] }
+                ?? windows.first.flatMap { switchingGroupIDs[$0.id] }
+            : nil
+        filterSwitcherWindows(windows)
+        let firstIsFocused = switchingResults.first?.window.id == windowService.focusedWindowID
+        selectedIndex = reverse ? switchingResults.count - 1
+            : firstIsFocused ? min(1, switchingResults.count - 1) : 0
+        switcherAnchorDisplayID = nil
+        isSearchSession = searchSession
+        if searchSession { startSearchDismissal() }
+        showSwitchers()
+    }
+
+    private func startSearchDismissal() {
+        let sessionID = UUID()
+        searchSessionID = sessionID
+        let mask: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
+        if let monitor = NSEvent.addGlobalMonitorForEvents(matching: mask, handler: { [weak self] _ in
+            DispatchQueue.main.async { self?.dismissSearchSession(sessionID) }
+        }) { searchDismissMonitors.append(monitor) }
+        if let monitor = NSEvent.addLocalMonitorForEvents(matching: mask, handler: { [weak self] event in
+            if !(event.window is SwitcherPanel) {
+                DispatchQueue.main.async { self?.dismissSearchSession(sessionID) }
+            }
+            return event
+        }) { searchDismissMonitors.append(monitor) }
+        searchDismissObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.dismissSearchSession(sessionID) }
+        }
+    }
+
+    private func dismissSearchSession(_ sessionID: UUID) {
+        guard isSearchSession, searchSessionID == sessionID else { return }
+        finishSwitcher(activating: nil)
+    }
+
+    private func stopSearchDismissal() {
+        searchDismissMonitors.forEach(NSEvent.removeMonitor)
+        searchDismissMonitors = []
+        if let searchDismissObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(searchDismissObserver)
+        }
+        searchDismissObserver = nil
+        searchSessionID = nil
+    }
+
     private func refreshVisibleSwitcher(resetHover: Bool = false) {
         guard let currentAppOnly else { return }
         let selectedID = selectedWindowID
@@ -350,38 +408,61 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         updateSwitchers()
     }
 
-    private func updateSwitchers(resetHover: Bool = false) {
-        let scope: SwitcherPanel.GroupScope?
-        if settings.switcherGroupsEnabled {
-            let groups = groupStore.groups.filter {
-                $0.id != GroupStore.ungroupedID || switchingGroupCounts[$0.id, default: 0] > 0
-                    || switchingGroupID == $0.id
+    private func switcherTargetDisplayIDs() -> Set<CGDirectDisplayID> {
+        let displays = NSScreen.screens.map(Self.displayID)
+        let mode = settings.switcherDisplayMode
+        if mode.usesAnchorDisplay {
+            if switcherAnchorDisplayID.map(displays.contains) != true {
+                switcherAnchorDisplayID = currentFocusedDisplayID() ?? displays.first
             }
-            let names = Dictionary(uniqueKeysWithValues: groups.filter { $0.id != GroupStore.ungroupedID }
-                .map { ($0.id, $0.name) })
-            scope = SwitcherPanel.GroupScope(
-                selectedID: switchingGroupID,
-                tabs: groups.map { SwitcherPanel.GroupTab(group: $0, count: switchingGroupCounts[$0.id, default: 0]) },
-                windowGroupNames: switchingGroupIDs.compactMapValues { names[$0] },
-                shortcut: settings.groupModeShortcut?.display
-            )
         } else {
-            scope = nil
+            switcherAnchorDisplayID = nil
         }
-        switchers.values.forEach {
-            $0.update(results: switchingResults, selectedIndex: selectedIndex, resetHover: resetHover,
-                      groupBySpace: settings.showWindowsFromAllDesktops,
-                      query: searchQuery, totalWindowCount: switchingWindowCount, language: settings.language,
-                      scope: scope)
+        return Set(mode.targetDisplays(from: displays, anchor: switcherAnchorDisplayID))
+    }
+
+    private func currentFocusedDisplayID() -> CGDirectDisplayID? {
+        let displays = NSScreen.screens.map(Self.displayID).map { (id: $0, bounds: CGDisplayBounds($0)) }
+        return SwitcherDisplayMode.focusedDisplay(windowFrame: windowService.frontmostWindowFrame(), in: displays)
+    }
+
+    private func updateSwitchers(resetHover: Bool = false) {
+        let scope = switcherGroupScope()
+        let targets = switcherTargetDisplayIDs()
+        for (id, panel) in switchers {
+            guard targets.contains(id) else { panel.hideSwitcher(); continue }
+            let isPresented = panel.isVisible
+            panel.update(results: switchingResults, selectedIndex: selectedIndex, resetHover: resetHover || !isPresented,
+                         groupBySpace: settings.showWindowsFromAllDesktops,
+                         query: searchQuery, totalWindowCount: switchingWindowCount, language: settings.language,
+                         searchFocused: isSearchSession, scope: scope)
+            if !isPresented { panel.present() }
         }
     }
 
     private func showSwitchers() {
         updateSwitchers(resetHover: true)
-        switchers.values.forEach { $0.present() }
+    }
+
+    private func switcherGroupScope() -> SwitcherPanel.GroupScope? {
+        guard settings.switcherGroupsEnabled else { return nil }
+        let groups = groupStore.groups.filter {
+            $0.id != GroupStore.ungroupedID || switchingGroupCounts[$0.id, default: 0] > 0
+                || switchingGroupID == $0.id
+        }
+        let names = Dictionary(uniqueKeysWithValues: groups.filter { $0.id != GroupStore.ungroupedID }
+            .map { ($0.id, $0.name) })
+        return SwitcherPanel.GroupScope(
+            selectedID: switchingGroupID,
+            tabs: groups.map { SwitcherPanel.GroupTab(group: $0, count: switchingGroupCounts[$0.id, default: 0]) },
+            windowGroupNames: switchingGroupIDs.compactMapValues { names[$0] },
+            shortcut: settings.groupModeShortcut?.display
+        )
     }
 
     private func finishSwitcher(activating id: String?) {
+        stopSearchDismissal()
+        isSearchSession = false
         shortcuts.resetState()
         switchers.values.forEach { $0.hideSwitcher() }
         switchingResults = []
@@ -394,6 +475,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
         selectedIndex = 0
         currentAppOnly = nil
         currentAppPID = nil
+        switcherAnchorDisplayID = nil
         if let id { windowService.activate(id) }
     }
 
