@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-22
+
+### Added
+
+- Choose where the window switcher appears: on all displays, on the primary display, or on the display with the focused window.
+- Enable a dedicated window search shortcut in Settings. The default is `⌥Space`. The switcher stays open while you type, and Return activates the selected window.
+
+### Fixed
+
+- Release keyboard input if all windows disappear just as the switcher opens.
+
+### 新增
+
+- 可设置窗口切换器显示在所有显示器、主显示器或焦点窗口所在的显示器上。
+- 可在设置中启用独立的窗口搜索快捷键，默认是 `⌥Space`。松开快捷键后仍可继续输入，按回车切换到选中的窗口。
+
+### 修复
+
+- 修复切换器打开时所有窗口恰好消失，导致键盘输入仍被拦截的问题。
+
 ## [0.6.0] - 2026-11-12
 
 ### Added
