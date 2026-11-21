@@ -27,6 +27,11 @@ public enum SwitcherDisplayMode: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// Returns nil when the window cannot be placed; callers then use the primary display, not the pointer's.
+    public static func focusedDisplay<ID>(windowFrame: CGRect?, in displays: [(id: ID, bounds: CGRect)]) -> ID? {
+        windowFrame.flatMap { display(containing: $0, in: displays) }
+    }
+
     /// Returns the display overlapping `frame` the most, or nil when nothing overlaps.
     public static func display<ID>(containing frame: CGRect, in displays: [(id: ID, bounds: CGRect)]) -> ID? {
         var selected: ID?

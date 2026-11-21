@@ -423,13 +423,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func currentFocusedDisplayID() -> CGDirectDisplayID? {
         let displays = NSScreen.screens.map(Self.displayID).map { (id: $0, bounds: CGDisplayBounds($0)) }
-        if let frame = windowService.frontmostWindowFrame(),
-           let id = SwitcherDisplayMode.display(containing: frame, in: displays) {
-            return id
-        }
-        guard let pointer = CGEvent(source: nil)?.location else { return nil }
-        return SwitcherDisplayMode.display(containing: CGRect(origin: pointer, size: CGSize(width: 1, height: 1)),
-                                           in: displays)
+        return SwitcherDisplayMode.focusedDisplay(windowFrame: windowService.frontmostWindowFrame(), in: displays)
     }
 
     private func updateSwitchers(resetHover: Bool = false) {

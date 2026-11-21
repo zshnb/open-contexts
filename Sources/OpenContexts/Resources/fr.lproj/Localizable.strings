@@ -77,7 +77,7 @@
 "Primary display" = "Écran principal";
 "The primary display is the one set as Main display in System Settings → Displays." = "L’écran principal est celui défini comme moniteur principal dans Réglages Système → Moniteurs.";
 "Focused display" = "Écran de la fenêtre active";
-"Shows on the display with the focused window, or under the pointer if there is none." = "S’affiche sur l’écran de la fenêtre active, ou sur celui du pointeur s’il n’y en a pas.";
+"Shows on the display with the focused window, or on the primary display if there is none." = "S’affiche sur l’écran de la fenêtre active, ou sur l’écran principal s’il n’y en a pas.";
 "Search windows" = "Rechercher des fenêtres";
 "Open the switcher with a shortcut to search" = "Ouvrir le sélecteur avec un raccourci pour rechercher";
 "Press %@, type to filter, then press Return to switch. Esc cancels." = "Appuyez sur %@, saisissez pour filtrer, puis appuyez sur Retour pour basculer. Échap annule.";

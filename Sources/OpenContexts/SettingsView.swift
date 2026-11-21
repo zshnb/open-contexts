@@ -17,7 +17,7 @@ extension SwitcherDisplayMode {
         case .primaryDisplay:
             L10n.text("The primary display is the one set as Main display in System Settings → Displays.", language: language)
         case .focusedDisplay:
-            L10n.text("Shows on the display with the focused window, or under the pointer if there is none.", language: language)
+            L10n.text("Shows on the display with the focused window, or on the primary display if there is none.", language: language)
         }
     }
 }

@@ -156,6 +156,24 @@ final class SwitcherDisplayModeTests: XCTestCase {
         ), "above")
     }
 
+    func testFocusedDisplayUsesPrimaryWhenWindowIsUnresolved() {
+        let anchor = SwitcherDisplayMode.focusedDisplay(windowFrame: nil, in: sideBySideDisplays)
+        XCTAssertEqual(SwitcherDisplayMode.focusedDisplay.targetDisplays(from: ["primary", "external"], anchor: anchor),
+                       ["primary"])
+    }
+
+    func testFocusedDisplayUsesPrimaryWhenWindowIsOffScreen() {
+        let anchor = SwitcherDisplayMode.focusedDisplay(windowFrame: CGRect(x: 500, y: 500, width: 100, height: 100),
+                                                        in: sideBySideDisplays)
+        XCTAssertEqual(SwitcherDisplayMode.focusedDisplay.targetDisplays(from: ["primary", "external"], anchor: anchor),
+                       ["primary"])
+    }
+
+    func testFocusedDisplaySelectsTheDisplayWithTheWindow() {
+        XCTAssertEqual(SwitcherDisplayMode.focusedDisplay(windowFrame: CGRect(x: 120, y: 10, width: 60, height: 60),
+                                                          in: sideBySideDisplays), "external")
+    }
+
     private var threeDisplays: [(id: String, bounds: CGRect)] {
         sideBySideDisplays + [(id: "third", bounds: CGRect(x: 200, y: 0, width: 100, height: 100))]
     }
